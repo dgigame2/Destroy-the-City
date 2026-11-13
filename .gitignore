@@ -1,0 +1,12 @@
+# Gerados pelo Rojo / Studio
+build.rbxl
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+sourcemap.json
+
+# Pacotes do Wally
+Packages/
+ServerPackages/
+DevPackages/

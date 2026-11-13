@@ -1,0 +1,31 @@
+{
+	"name": "jogo2",
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"Shared": {
+				"$path": "src/shared"
+			}
+		},
+		"ServerScriptService": {
+			"Server": {
+				"$path": "src/server"
+			}
+		},
+		"StarterPlayer": {
+			"StarterPlayerScripts": {
+				"Client": {
+					"$path": "src/client"
+				},
+				"RbxCharacterSounds": {
+					"$path": "src/overrides/RbxCharacterSounds.client.luau"
+				}
+			},
+			"StarterCharacterScripts": {
+				"Animate": {
+					"$path": "src/overrides/Animate.client.luau"
+				}
+			}
+		}
+	}
+}

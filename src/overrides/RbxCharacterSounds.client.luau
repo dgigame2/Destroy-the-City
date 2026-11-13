@@ -1,0 +1,3 @@
+--!strict
+-- Substitui o script de sons do personagem do Roblox (mesmo nome em StarterPlayerScripts):
+-- sem som de passos e de pulo, como pedido.
