@@ -1,44 +1,32 @@
-# eatCity — Rojo + Wally + VS Code
+# Eat City — Rojo + Lune + VS Code
 
 ## Instalar as ferramentas (só na primeira vez)
 
-1. Baixe o **Rokit** (gerenciador das ferramentas): https://github.com/rojo-rbx/rokit/releases
-   Pegue o arquivo `windows-x86_64.zip`, extraia, e no PowerShell, dentro da pasta extraída:
+1. Instale o **Rokit**: https://github.com/rojo-rbx/rokit/releases (arquivo `windows-x86_64.zip`, depois `.\rokit.exe self-install`).
+2. Dentro desta pasta, no terminal do VS Code:
    ```powershell
-   .\rokit.exe self-install
-   ```
-   Feche e abra o PowerShell de novo.
-
-2. Dentro desta pasta do projeto:
-   ```powershell
-   cd $HOME\Documents\eatCity
-   rokit init
-   rokit add rojo-rbx/rojo
-   rokit add UpliftGames/wally
-   rokit add JohnnyMorganz/StyLua
-   rokit add Kampfkarren/selene
-   rokit add lune-org/lune
+   rokit install
    rojo plugin install
    ```
-
-3. Abra a pasta no VS Code (`code .`) e aceite instalar as extensões recomendadas.
 
 ## Uso no dia a dia
 
 | O que | Comando |
 |---|---|
-| Baixar pacotes do Wally | `wally install` |
-| Ligar o Rojo (sincronizar com o Studio) | `rojo serve` → no Studio: aba Plugins → Rojo → Connect |
-| 1. Build | `rojo build -o jogo2.rbxl` |
-| 2. Testes | `lune run tests/Economy.spec` |
-| 3. Linter | `selene src` |
-| 4. Formatter | `stylua src tests` |
+| Ligar o Rojo (sincronizar com o Studio) | `rojo serve` → no Studio: Plugins → Rojo → Connect |
+| **Pipeline completo** (build + testes + linter + formatter) | `lune run check` |
+| Pipeline formatando os arquivos antes | `lune run check fix` |
+| Só os testes | `lune run test` |
+| Relatório de ritmo da progressão | `lune run balance` |
 
 ## Onde fica cada coisa
 
-- `src/shared/Config/` → todos os números do jogo (preços, velocidade, etc.)
-- `src/shared/Remotes/RemoteNames.luau` → todos os nomes de RemoteEvents
+- `src/shared/Config/` → todos os números do jogo (mapas, tiers, upgrades, classes, loja, roleta, recompensas, Robux, UI, animações)
+- `src/shared/Config/ProductConfig.luau` → IDs dos produtos de Robux (preencher depois de publicar o jogo)
 - `src/shared/Logic/` → matemática pura, testável sem o Studio
-- `src/server/` → vira `ServerScriptService.Server`
-- `src/client/` → vira `StarterPlayerScripts.Client`
-- `Packages/` → criada pelo `wally install` (não edite à mão)
+- `src/shared/Buildings/Templates.luau` → formato de cada construção
+- `src/shared/Remotes/RemoteNames.luau` → nomes de todos os RemoteEvents/Functions
+- `src/server/` → servidor (partidas, lobby, comer, loja, roleta, recompensas, dados salvos)
+- `src/client/` → cliente (interfaces, efeitos, animações, câmera)
+- `src/overrides/` → substituem o Animate e os sons de passos padrão do Roblox
+- `tests/` → testes (rodam no PC com `lune run test`)

@@ -1,12 +1,7 @@
 [package]
-name = "gabri/eatcity"
+name = "win11-user/jogo2"
 version = "0.1.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 
 [dependencies]
-# Pacotes que cliente e servidor usam. Exemplo:
-# Promise = "evaera/promise@4.0.0"
-
-[server-dependencies]
-# Pacotes só do servidor (vão para ServerScriptService.ServerPackages)

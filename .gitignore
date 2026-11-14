@@ -1,6 +1,12 @@
-Packages/
-ServerPackages/
-sourcemap.json
+# Gerados pelo Rojo / Studio
+build.rbxl
 *.rbxl
 *.rbxlx
-*.lock
+*.rbxl.lock
+*.rbxlx.lock
+sourcemap.json
+
+# Pacotes do Wally
+Packages/
+ServerPackages/
+DevPackages/

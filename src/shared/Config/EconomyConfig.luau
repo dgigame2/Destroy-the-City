@@ -1,8 +1,6 @@
--- Todos os números de economia do jogo ficam aqui.
-local EconomyConfig = {
-	StartingCoins = 0,
-	BaseUpgradeCost = 10,
-	UpgradeCostGrowth = 1.15,
-}
+--!strict
+-- Números gerais de economia. Custos de upgrade ficam em UpgradeConfig; moedas por construção em TierConfig.
 
-return table.freeze(EconomyConfig)
+return table.freeze({
+	StartingCoins = 0,
+})
