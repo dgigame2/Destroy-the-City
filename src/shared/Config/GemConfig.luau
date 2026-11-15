@@ -1,5 +1,5 @@
 --!strict
--- Gemas: moeda rara. Caem ao comer construções grandes, ao vencer e ao terminar partidas.
+-- Gemas: moeda rara (da conta). Caem ao comer construções grandes; a vitória da run dá mais (RunConfig).
 
 return table.freeze({
 	-- Por tier (mesmo índice do TierConfig): chance de cair gema e quantidade.
@@ -12,6 +12,4 @@ return table.freeze({
 		{ Chance = 0.5, Amount = 3 },
 		{ Chance = 1, Amount = 10 },
 	}),
-	WinGems = 25, -- vencedor da partida
-	PlayedRoundGems = 3, -- quem estava na partida quando ela terminou
 })

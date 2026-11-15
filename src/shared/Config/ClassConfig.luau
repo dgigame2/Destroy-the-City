@@ -1,8 +1,8 @@
 --!strict
 -- Classes compradas com gemas. Só uma fica equipada; os bônus valem enquanto você joga.
 -- Buffs: Speed/Magnet/Growth/Coins somam ao bônus dos upgrades (0.25 = +25%).
--- RespawnKeep: fração do tamanho mantida ao ser engolido (substitui os 35% padrão se for maior).
--- StartPoints: pontos de crescimento ao começar cada partida.
+-- Gems: multiplica a chance de cair gema ao comer (1 = +100%, ou seja, 2x).
+-- StartPoints: pontos de crescimento ao começar cada run.
 
 export type ClassInfo = {
 	Id: string,
@@ -40,17 +40,17 @@ local classes: { ClassInfo } = {
 	},
 	{ Id = "Tycoon", Name = "Tycoon", Description = "+50% cash", Icon = "💰", Price = 250, Buffs = { Coins = 0.5 } },
 	{
-		Id = "Survivor",
-		Name = "Survivor",
-		Description = "Keep 60% size when eaten",
-		Icon = "🛡️",
+		Id = "Lucky",
+		Name = "Lucky",
+		Description = "2x gem drops",
+		Icon = "🍀",
 		Price = 400,
-		Buffs = { RespawnKeep = 0.6 },
+		Buffs = { Gems = 1 },
 	},
 	{
 		Id = "Titan",
 		Name = "Titan",
-		Description = "Start every round bigger",
+		Description = "Start every run bigger",
 		Icon = "🦖",
 		Price = 600,
 		Buffs = { StartPoints = 60 },

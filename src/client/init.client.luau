@@ -1,20 +1,35 @@
 --!strict
--- Ponto de entrada do cliente do Eat City.
+-- Ponto de entrada do cliente do Eat City (o mesmo nos dois lugares; cada um liga só o que usa).
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Place = require(ReplicatedStorage:WaitForChild("Shared").Place)
+
+local Feedback = require(script.Feedback)
 local EatEffects = require(script.Controllers.EatEffects)
 local InterfaceController = require(script.Controllers.InterfaceController)
 local ShopController = require(script.Controllers.ShopController)
 local WheelController = require(script.Controllers.WheelController)
 local RewardsController = require(script.Controllers.RewardsController)
-local LobbyController = require(script.Controllers.LobbyController)
 local CameraController = require(script.Controllers.CameraController)
-local AnimationController = require(script.Controllers.AnimationController)
+local MovementController = require(script.Controllers.MovementController)
 
+Feedback.init()
 EatEffects.init()
 InterfaceController.init()
 ShopController.init()
 WheelController.init()
 RewardsController.init()
-LobbyController.init()
 CameraController.init()
-AnimationController.init()
+MovementController.init()
+
+if Place.isRun() then
+	require(script.Controllers.UpgradesController).init()
+	require(script.Controllers.EatIndicator).init()
+	require(script.Controllers.ZoneController).init()
+	require(script.Controllers.AmbienceController).init()
+	require(script.Controllers.AreaSignsController).init()
+else
+	require(script.Controllers.LobbyController).init()
+	require(script.Controllers.PartyController).init()
+end

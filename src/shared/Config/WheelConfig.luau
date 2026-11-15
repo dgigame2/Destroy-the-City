@@ -5,6 +5,7 @@
 
 export type Segment = {
 	Label: string,
+	Short: string, -- texto curto mostrado na fatia da roleta da janela (o ícone diz o que é)
 	Icon: string,
 	Color: { number },
 	Weight: number,
@@ -13,14 +14,16 @@ export type Segment = {
 
 local segments: { Segment } = {
 	{
-		Label = "500 Cash",
-		Icon = "💵",
+		Label = "10 Gems", -- dinheiro agora é da run; prêmios do lobby são em gemas
+		Short = "10",
+		Icon = "💎",
 		Color = { 80, 200, 90 },
 		Weight = 22,
-		Reward = { Kind = "Coins", Amount = 500 },
+		Reward = { Kind = "Gems", Amount = 10 },
 	},
 	{
 		Label = "25 Gems",
+		Short = "25",
 		Icon = "💎",
 		Color = { 70, 150, 255 },
 		Weight = 18,
@@ -28,6 +31,7 @@ local segments: { Segment } = {
 	},
 	{
 		Label = "2x Cash",
+		Short = "2X",
 		Icon = "💰",
 		Color = { 255, 200, 50 },
 		Weight = 14,
@@ -35,6 +39,7 @@ local segments: { Segment } = {
 	},
 	{
 		Label = "Free Spin",
+		Short = "+1",
 		Icon = "🎡",
 		Color = { 255, 120, 180 },
 		Weight = 10,
@@ -42,6 +47,7 @@ local segments: { Segment } = {
 	},
 	{
 		Label = "2x Growth",
+		Short = "2X",
 		Icon = "📈",
 		Color = { 255, 140, 50 },
 		Weight = 12,
@@ -49,6 +55,7 @@ local segments: { Segment } = {
 	},
 	{
 		Label = "100 Gems",
+		Short = "100",
 		Icon = "💎",
 		Color = { 40, 90, 220 },
 		Weight = 8,
@@ -56,6 +63,7 @@ local segments: { Segment } = {
 	},
 	{
 		Label = "Frost Aura",
+		Short = "AURA",
 		Icon = "❄️",
 		Color = { 150, 90, 240 },
 		Weight = 4,
@@ -63,6 +71,7 @@ local segments: { Segment } = {
 	},
 	{
 		Label = "Rainbow Trail",
+		Short = "TRAIL",
 		Icon = "🌈",
 		Color = { 240, 70, 90 },
 		Weight = 1.5,

@@ -5,6 +5,12 @@
 		"ReplicatedStorage": {
 			"Shared": {
 				"$path": "src/shared"
+			},
+			"PlaceRole": {
+				"$className": "StringValue",
+				"$properties": {
+					"Value": "Lobby"
+				}
 			}
 		},
 		"ServerScriptService": {
@@ -13,17 +19,16 @@
 			}
 		},
 		"StarterPlayer": {
+			"$properties": {
+				"CharacterUseJumpPower": true,
+				"CharacterJumpPower": 50
+			},
 			"StarterPlayerScripts": {
 				"Client": {
 					"$path": "src/client"
 				},
 				"RbxCharacterSounds": {
 					"$path": "src/overrides/RbxCharacterSounds.client.luau"
-				}
-			},
-			"StarterCharacterScripts": {
-				"Animate": {
-					"$path": "src/overrides/Animate.client.luau"
 				}
 			}
 		}

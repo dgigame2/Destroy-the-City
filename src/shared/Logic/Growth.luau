@@ -6,9 +6,6 @@ export type GrowthConfig = {
 	ScalePerSqrtPoint: number,
 	MaxScale: number,
 	BaseEatRadius: number,
-	PlayerEatRatio: number,
-	PlayerEatGainFraction: number,
-	RespawnKeepFraction: number,
 }
 
 export type Tier = {
@@ -41,24 +38,12 @@ function Growth.eatRadius(scale: number, magnetBonus: number, config: GrowthConf
 	return config.BaseEatRadius * scale * (1 + magnetBonus)
 end
 
-function Growth.canEatPlayer(eaterScale: number, victimScale: number, config: GrowthConfig): boolean
-	return eaterScale >= victimScale * config.PlayerEatRatio
-end
-
 function Growth.gainFromTier(tier: Tier, growthBonus: number): number
 	return tier.Growth * (1 + growthBonus)
 end
 
 function Growth.coinsFromTier(tier: Tier, coinBonus: number): number
 	return math.max(1, math.floor(tier.Coins * (1 + coinBonus) + 0.5))
-end
-
-function Growth.gainFromPlayer(victimPoints: number, config: GrowthConfig): number
-	return victimPoints * config.PlayerEatGainFraction
-end
-
-function Growth.respawnPoints(points: number, config: GrowthConfig): number
-	return points * config.RespawnKeepFraction
 end
 
 -- Índice do maior tier que a escala permite comer (0 se nenhum).

@@ -5,8 +5,9 @@ local LobbyConfig = require("../src/shared/Config/LobbyConfig")
 
 return function(t)
 	local g = MovementConfig.Gravity
-	-- Altura do pulo (VALOR CALCULADO) a partir do JumpPower: h = v² / (2g)
-	local h = MovementConfig.JumpPower ^ 2 / (2 * g)
+	-- Altura de referência para testar as fórmulas (pulo padrão do Roblox, JumpPower 50: h = v² / (2g)).
+	-- O jogo só tem pulo no lobby (MovementConfig.LobbyJumpPower); o alcance real é testado no fim.
+	local h = 50 ^ 2 / (2 * g)
 	local speed = MovementConfig.WalkSpeed
 
 	t.test("velocidade de decolagem atinge a altura configurada", function()
@@ -43,11 +44,31 @@ return function(t)
 		end)
 	end)
 
+	t.test("pulo só no lobby", function()
+		t.equal(MovementConfig.RunJumpPower, 0)
+		t.truthy(MovementConfig.LobbyJumpPower > 0)
+	end)
+
+	t.test("os arquivos do Rojo usam o mesmo pulo do MovementConfig em cada lugar", function()
+		local fs = require("@lune/fs")
+		local serde = require("@lune/serde")
+		for file, expected in
+			{
+				["default.project.json"] = MovementConfig.LobbyJumpPower,
+				["run.project.json"] = MovementConfig.RunJumpPower,
+			}
+		do
+			local project = serde.decode("json", fs.readFile(file))
+			local props = project.tree.StarterPlayer["$properties"]
+			t.equal(props.CharacterJumpPower, expected)
+			t.equal(props.CharacterUseJumpPower, true)
+		end
+	end)
+
 	t.test("lobby fora do alcance de qualquer jogador na cidade (pulo + altura do corpo)", function()
-		-- VALOR CALCULADO: maior escala possível, pulo com JumpPower escalado, corpo ~5 studs por escala
+		-- VALOR CALCULADO: maior escala possível, corpo ~5 studs por escala (e pulo, se um dia voltar)
 		local s = GrowthConfig.MaxScale
-		local jumpPower = MovementConfig.JumpPower * s ^ MovementConfig.JumpScaleExponent
-		local jumpHeight = jumpPower ^ 2 / (2 * g)
+		local jumpHeight = MovementConfig.RunJumpPower ^ 2 / (2 * g)
 		local reach = jumpHeight + 5 * s
 		t.truthy(reach < LobbyConfig.FloorHeight)
 	end)

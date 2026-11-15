@@ -1,5 +1,6 @@
 --!strict
--- Loja: abas UPGRADES (dinheiro), ITEMS (gemas: rastros, auras, boosts), CLASSES (gemas) e ROBUX.
+-- Loja: abas ITEMS (gemas: rastros, auras, boosts), CLASSES (gemas) e ROBUX.
+-- Os upgrades (dinheiro) ficam na janela própria da partida (UpgradesController).
 
 local HttpService = game:GetService("HttpService")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -7,9 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Upgrades = require(Shared.Logic.Upgrades)
 local Buffs = require(Shared.Logic.Buffs)
-local UpgradeConfig = require(Shared.Config.UpgradeConfig)
 local ShopConfig = require(Shared.Config.ShopConfig)
 local ClassConfig = require(Shared.Config.ClassConfig)
 local ProductConfig = require(Shared.Config.ProductConfig)
@@ -18,6 +17,7 @@ local Remotes = require(Shared.Remotes)
 local Screens = require(script.Parent.Parent.Ui.Screens)
 local Style = require(script.Parent.Parent.Ui.Style)
 local InterfaceController = require(script.Parent.InterfaceController)
+local Feedback = require(script.Parent.Parent.Feedback)
 
 local localPlayer = Players.LocalPlayer
 
@@ -45,7 +45,7 @@ local function setButton(card: Screens.Card, text: string, theme: Style.Theme)
 end
 
 -- Executa uma compra/ação no servidor e atualiza a aba.
-local function request(remote: string, id: string)
+local function request(remote: string, id: string, gui: GuiObject?, price: number?)
 	if busy then
 		return
 	end
@@ -55,8 +55,10 @@ local function request(remote: string, id: string)
 	if remote == Remotes.Names.Functions.BuyItem then
 		if ok then
 			InterfaceController.bump(InterfaceController.refs().Shop)
+			Feedback.play("Buy", { Gui = gui, Amount = price })
 		elseif reason then
 			InterfaceController.toast(string.upper(reason), Color3.fromRGB(255, 120, 120))
+			Feedback.play("Fail", { Gui = gui, Amount = price })
 		end
 	end
 	ShopController.refresh()
@@ -67,47 +69,6 @@ local function clear(content: ScrollingFrame)
 		if child:IsA("Frame") then
 			child:Destroy()
 		end
-	end
-end
-
-local function buildUpgrades(content: ScrollingFrame)
-	local coins = (localPlayer:GetAttribute("Coins") :: number?) or 0
-	for index, upgrade in UpgradeConfig do
-		local level = (localPlayer:GetAttribute("Upgrade_" .. upgrade.Id) :: number?) or 0
-		local canBuy, cost = Upgrades.canBuy(upgrade, level, coins)
-		local icons = { Speed = "👟", Magnet = "🧲", Growth = "🍔", Coins = "💵" }
-		local card = Screens.card(
-			content,
-			"Rare",
-			upgrade.DisplayName,
-			icons[upgrade.Id] or "⬆️",
-			upgrade.Description .. "\nLv " .. level,
-			""
-		)
-		card.Holder.LayoutOrder = index
-		if level >= upgrade.MaxLevel then
-			setButton(card, "MAX", Style.Themes.Gray)
-		else
-			setButton(
-				card,
-				"💵 " .. InterfaceController.formatNumber(cost),
-				if canBuy then Style.Themes.Green else Style.Themes.Gray
-			)
-		end
-		card.Button.Activated:Connect(function()
-			if busy or level >= upgrade.MaxLevel then
-				return
-			end
-			busy = true
-			local ok = Remotes.func(Remotes.Names.Functions.BuyUpgrade):InvokeServer(upgrade.Id)
-			busy = false
-			if ok then
-				InterfaceController.bump(InterfaceController.refs().Shop)
-			else
-				InterfaceController.toast("NOT ENOUGH CASH", Color3.fromRGB(255, 120, 120))
-			end
-			ShopController.refresh()
-		end)
 	end
 end
 
@@ -143,7 +104,7 @@ local function buildItems(content: ScrollingFrame)
 		else
 			setButton(card, "💎 " .. item.Price, if gems >= item.Price then Style.Themes.Green else Style.Themes.Gray)
 			card.Button.Activated:Connect(function()
-				request(Remotes.Names.Functions.BuyItem, item.Id)
+				request(Remotes.Names.Functions.BuyItem, item.Id, card.Button, item.Price)
 			end)
 		end
 	end
@@ -172,7 +133,7 @@ local function buildClasses(content: ScrollingFrame)
 				if gems >= class.Price then Style.Themes.Green else Style.Themes.Gray
 			)
 			card.Button.Activated:Connect(function()
-				request(Remotes.Names.Functions.BuyItem, class.Id)
+				request(Remotes.Names.Functions.BuyItem, class.Id, card.Button, class.Price)
 			end)
 		end
 	end
@@ -200,9 +161,7 @@ function ShopController.refresh()
 	end
 	local content = refs.ShopContent
 	clear(content)
-	if currentTab == "UPGRADES" then
-		buildUpgrades(content)
-	elseif currentTab == "ITEMS" then
+	if currentTab == "ITEMS" then
 		buildItems(content)
 	elseif currentTab == "CLASSES" then
 		buildClasses(content)
@@ -235,7 +194,7 @@ function ShopController.init()
 	refs.ClassesIcon.Activated:Connect(function()
 		ShopController.openTab("CLASSES")
 	end)
-	for _, attribute in { "Coins", "Gems", "Owned", "EquippedTrail", "EquippedAura", "EquippedClass" } do
+	for _, attribute in { "Gems", "Owned", "EquippedTrail", "EquippedAura", "EquippedClass" } do
 		localPlayer:GetAttributeChangedSignal(attribute):Connect(ShopController.refresh)
 	end
 end

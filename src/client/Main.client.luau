@@ -1,1 +1,0 @@
--- Arquivo antigo do esqueleto inicial: pode apagar.

@@ -5,9 +5,9 @@
 export type Reward = { Kind: string, Amount: number?, Id: string?, Label: string, Icon: string }
 
 local daily: { Reward } = {
-	{ Kind = "Coins", Amount = 200, Label = "200 Cash", Icon = "💵" },
+	{ Kind = "Gems", Amount = 5, Label = "5 Gems", Icon = "💎" },
 	{ Kind = "Gems", Amount = 10, Label = "10 Gems", Icon = "💎" },
-	{ Kind = "Coins", Amount = 600, Label = "600 Cash", Icon = "💵" },
+	{ Kind = "Gems", Amount = 15, Label = "15 Gems", Icon = "💎" },
 	{ Kind = "Spin", Amount = 1, Label = "1 Spin", Icon = "🎡" },
 	{ Kind = "Gems", Amount = 25, Label = "25 Gems", Icon = "💎" },
 	{ Kind = "Item", Id = "GrowthBoost", Label = "2x Growth", Icon = "📈" },

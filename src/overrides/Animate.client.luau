@@ -1,3 +1,0 @@
---!strict
--- Substitui o Animate padrão do Roblox (mesmo nome em StarterCharacterScripts).
--- As animações do jogo são procedurais e ficam no AnimationController do cliente.

@@ -65,4 +65,54 @@ function LightingService.apply()
 	clouds.Color = color(c.Clouds.Color)
 end
 
+export type BiomeLighting = {
+	Ambient: { number },
+	OutdoorAmbient: { number },
+	AtmosphereColor: { number },
+	AtmosphereDecay: { number },
+	AtmosphereDensity: number,
+	Haze: number,
+	Glare: number,
+	Saturation: number,
+	Contrast: number,
+	TintColor: { number },
+	ClockTime: number, -- hora do dia (posição do sol e comprimento das sombras)
+	Brightness: number,
+	ShadowSoftness: number,
+	Bloom: { Intensity: number, Size: number, Threshold: number },
+	SunRays: { Intensity: number, Spread: number },
+	Clouds: { Cover: number, Density: number, Color: { number } },
+}
+
+-- Clima do mapa atual: hora do dia, sol, nuvens, névoa e cores (manhã de jardim, tarde tropical,
+-- sol baixo de inverno).
+function LightingService.applyBiome(b: BiomeLighting)
+	Lighting.ClockTime = b.ClockTime
+	Lighting.Brightness = b.Brightness
+	Lighting.ShadowSoftness = b.ShadowSoftness
+	Lighting.Ambient = color(b.Ambient)
+	Lighting.OutdoorAmbient = color(b.OutdoorAmbient)
+	local atmosphere = ensure("Atmosphere", Lighting) :: Atmosphere
+	atmosphere.Color = color(b.AtmosphereColor)
+	atmosphere.Decay = color(b.AtmosphereDecay)
+	atmosphere.Density = b.AtmosphereDensity
+	atmosphere.Haze = b.Haze
+	atmosphere.Glare = b.Glare
+	local cc = ensure("ColorCorrectionEffect", Lighting) :: ColorCorrectionEffect
+	cc.Saturation = b.Saturation
+	cc.Contrast = b.Contrast
+	cc.TintColor = color(b.TintColor)
+	local bloom = ensure("BloomEffect", Lighting) :: BloomEffect
+	bloom.Intensity = b.Bloom.Intensity
+	bloom.Size = b.Bloom.Size
+	bloom.Threshold = b.Bloom.Threshold
+	local rays = ensure("SunRaysEffect", Lighting) :: SunRaysEffect
+	rays.Intensity = b.SunRays.Intensity
+	rays.Spread = b.SunRays.Spread
+	local clouds = ensure("Clouds", Workspace.Terrain) :: Clouds
+	clouds.Cover = b.Clouds.Cover
+	clouds.Density = b.Clouds.Density
+	clouds.Color = color(b.Clouds.Color)
+end
+
 return LightingService

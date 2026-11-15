@@ -15,10 +15,6 @@ function Buffs.multiplier(sources: Sources): number
 	return if sources.BoostActive then base * 2 else base
 end
 
-function Buffs.respawnKeep(defaultKeep: number, classKeep: number?): number
-	return math.max(defaultKeep, classKeep or 0)
-end
-
 function Buffs.boostActive(untilTime: number?, now: number): boolean
 	return untilTime ~= nil and untilTime > now
 end
@@ -29,9 +25,9 @@ function Buffs.extendBoost(untilTime: number?, now: number, seconds: number): nu
 	return start + seconds
 end
 
--- Gemas que caem ao comer uma construção do tier dado.
-function Buffs.gemDrop(drop: { Chance: number, Amount: number }?, roll: number): number
-	if drop == nil or roll >= drop.Chance then
+-- Gemas que caem ao comer uma construção do tier dado. luck multiplica a chance (classe Lucky = 2).
+function Buffs.gemDrop(drop: { Chance: number, Amount: number }?, roll: number, luck: number?): number
+	if drop == nil or roll >= drop.Chance * (luck or 1) then
 		return 0
 	end
 	return drop.Amount

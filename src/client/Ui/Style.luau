@@ -28,6 +28,7 @@ Style.Themes = {
 	Red = theme({ 255, 107, 107 }, { 201, 42, 42 }, { 74, 11, 11 }),
 	Purple = theme({ 194, 123, 255 }, { 123, 53, 214 }, { 42, 11, 87 }),
 	Pink = theme({ 255, 122, 200 }, { 214, 51, 154 }, { 74, 11, 51 }),
+	Orange = theme({ 255, 190, 80 }, { 240, 120, 30 }, { 74, 30, 0 }),
 	Gray = theme({ 154, 160, 184 }, { 106, 112, 136 }, { 30, 32, 48 }),
 	Paper = theme({ 246, 248, 255 }, { 220, 228, 255 }, { 11, 18, 48 }),
 	-- raridades
@@ -193,12 +194,12 @@ function Style.iconButton(name: string, t: Theme, icon: string, text: string): (
 	local iconLabel = Style.label("Icon", icon)
 	iconLabel.AnchorPoint = Vector2.new(0.5, 0)
 	iconLabel.Position = UDim2.new(0.5, 0, 0, 6)
-	iconLabel.Size = UDim2.new(1, -16, 0.58, 0)
+	iconLabel.Size = UDim2.new(1, -16, 0.5, 0)
 	iconLabel.Parent = face
 	local caption = Style.label("Caption", text)
 	caption.AnchorPoint = Vector2.new(0.5, 1)
 	caption.Position = UDim2.new(0.5, 0, 1, -4)
-	caption.Size = UDim2.new(1, -6, 0.26, 0)
+	caption.Size = UDim2.new(1, -6, 0.34, 0) -- alto o bastante para a fonte mínima no celular
 	caption.Parent = face
 	return holder, hit
 end

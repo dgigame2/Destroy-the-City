@@ -11,18 +11,26 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Wheel = require(Shared.Logic.Wheel)
 local WheelConfig = require(Shared.Config.WheelConfig)
+local LobbyConfig = require(Shared.Config.LobbyConfig)
+local UiConfig = require(Shared.Config.UiConfig)
 local ProductConfig = require(Shared.Config.ProductConfig)
 local Remotes = require(Shared.Remotes)
 
 local Style = require(script.Parent.Parent.Ui.Style)
 local InterfaceController = require(script.Parent.InterfaceController)
+local Feedback = require(script.Parent.Parent.Feedback)
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local localPlayer = Players.LocalPlayer
 
 local WheelController = {}
 
-type Spinner = { Rotor: Model, Rest: CFrame, Angle: number, Token: number }
+type Spinner = { Rotor: Model, Rest: CFrame, Angle: number, Token: number, Overlay: GuiObject? }
+
+-- câmera da roda dentro da janela
+local PREVIEW_FOV = UiConfig.WheelCamera.Fov
+local PREVIEW_DISTANCE = UiConfig.WheelCamera.Distance
+local PREVIEW_LIFT = UiConfig.WheelCamera.Lift
 
 local world: Spinner? = nil
 local preview: Spinner? = nil
@@ -32,6 +40,10 @@ local function rotate(spinner: Spinner, angle: number)
 	spinner.Angle = angle
 	-- eixo da roda = X local do cubo central; ângulo negativo = horário para quem olha de frente
 	spinner.Rotor:PivotTo(spinner.Rest * CFrame.Angles(-math.rad(angle), 0, 0))
+	-- os nomes dos prêmios (2D) giram junto: ângulo positivo = horário na tela também
+	if spinner.Overlay then
+		spinner.Overlay.Rotation = angle
+	end
 end
 
 local function spin(spinner: Spinner, index: number, duration: number)
@@ -79,13 +91,20 @@ local function buildPreview(viewport: ViewportFrame, source: Model): Spinner?
 	copy.Parent = viewport
 	local hub = rotor.PrimaryPart :: BasePart
 	local camera = Instance.new("Camera")
-	camera.FieldOfView = 40
+	camera.FieldOfView = PREVIEW_FOV
 	local front = hub.CFrame.XVector -- aponta para quem olha a roda
-	camera.CFrame =
-		CFrame.lookAt(hub.Position + front * 46 + Vector3.new(0, 1.5, 0), hub.Position + Vector3.new(0, 1.5, 0))
+	local lift = Vector3.new(0, PREVIEW_LIFT, 0)
+	camera.CFrame = CFrame.lookAt(hub.Position + front * PREVIEW_DISTANCE + lift, hub.Position + lift)
 	camera.Parent = viewport
 	viewport.CurrentCamera = camera
-	return { Rotor = rotor, Rest = rotor:GetPivot(), Angle = 0, Token = 0 }
+
+	-- Encaixa os nomes dos prêmios em cima da roda: projeção da câmera (FOV vertical, janela quadrada).
+	local halfHeight = PREVIEW_DISTANCE * math.tan(math.rad(PREVIEW_FOV / 2))
+	local overlay = InterfaceController.refs().WheelLabels
+	local diameter = LobbyConfig.WheelRadius / halfHeight -- fração da altura da janela
+	overlay.Size = UDim2.fromScale(diameter, diameter)
+	overlay.Position = UDim2.fromScale(0.5, 0.5 + (PREVIEW_LIFT / halfHeight) / 2)
+	return { Rotor = rotor, Rest = rotor:GetPivot(), Angle = 0, Token = 0, Overlay = overlay }
 end
 
 local function setButton(button: any, title: string, sub: string, enabled: boolean, enabledTheme: Style.Theme)
@@ -132,7 +151,7 @@ local function refresh()
 	refs.SpinBadge.Visible = wait == 0 or extra > 0
 end
 
-local function request(payment: string)
+local function request(payment: string, gui: GuiObject)
 	if spinning then
 		return
 	end
@@ -142,8 +161,14 @@ local function request(payment: string)
 	if index == nil then
 		spinning = false
 		InterfaceController.toast("CAN'T SPIN NOW", Color3.fromRGB(255, 120, 120))
+		Feedback.play("Fail", { Gui = gui, Text = "✖" })
 		refresh()
 		return
+	end
+	if payment == "Gems" then
+		Feedback.play("Spin", { Gui = gui, Amount = WheelConfig.GemCost, Text = `-{WheelConfig.GemCost} 💎` })
+	else
+		Feedback.play("Spin", { Gui = gui, Text = if payment == "Free" then "FREE!" else "-1 🎟️" })
 	end
 	if preview then
 		spin(preview, index, WheelConfig.SpinSeconds - 0.3)
@@ -162,13 +187,13 @@ function WheelController.init()
 	end)
 	local buttons = refs.WheelButtons
 	buttons.Free.Hit.Activated:Connect(function()
-		request("Free")
+		request("Free", buttons.Free.Holder)
 	end)
 	buttons.Extra.Hit.Activated:Connect(function()
-		request("Extra")
+		request("Extra", buttons.Extra.Holder)
 	end)
 	buttons.Gems.Hit.Activated:Connect(function()
-		request("Gems")
+		request("Gems", buttons.Gems.Holder)
 	end)
 	buttons.Robux.Hit.Activated:Connect(function()
 		local product = ProductConfig[4]

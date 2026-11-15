@@ -1,6 +1,7 @@
 --!strict
--- Integração das telas com o jogo (etapa 3 do goat): HUD, janelas, avisos, votação, vencedor e barra do lobby.
--- Os outros controladores (loja, roleta, recompensas, espectar) usam a API daqui para abrir janelas e avisar.
+-- Integração das telas com o jogo (etapa 3 do goat): HUD, janelas, avisos, progresso e vitória da run.
+-- No lobby: gemas, vitórias e atalhos. Na run: dinheiro, gemas, progresso ("% EATEN") e a barra de baixo.
+-- Os outros controladores (loja, roleta, recompensas, party) usam a API daqui para abrir janelas e avisar.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,10 +12,14 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UiConfig = require(Shared.Config.UiConfig)
 local UiLayout = require(Shared.Logic.UiLayout)
+local Zones = require(Shared.Logic.Zones)
+local RunConfig = require(Shared.Config.RunConfig)
+local Place = require(Shared.Place)
 local Remotes = require(Shared.Remotes)
 
 local Screens = require(script.Parent.Parent.Ui.Screens)
 local EatEffects = require(script.Parent.EatEffects)
+local Feedback = require(script.Parent.Parent.Feedback)
 
 local localPlayer = Players.LocalPlayer
 
@@ -23,7 +28,7 @@ local InterfaceController = {}
 local refs: Screens.Refs
 local currentScale = 1
 local toastToken, comboToken, popupToken = 0, 0, 0
-local voteOptionIds: { string } = {}
+local isRun = Place.isRun()
 local openWindow: string? = nil
 local onWindowOpened: { [string]: () -> () } = {}
 
@@ -41,14 +46,14 @@ function InterfaceController.formatNumber(n: number): string
 	return (formatted:gsub("^%.", ""))
 end
 
-local function formatTime(seconds: number): string
+-- "1:05" / "2h 03m": tempo até a próxima roleta grátis, recompensa etc.
+function InterfaceController.formatTime(seconds: number): string
 	seconds = math.max(0, math.ceil(seconds))
 	if seconds >= 3600 then
 		return string.format("%dh %02dm", seconds // 3600, (seconds % 3600) // 60)
 	end
 	return string.format("%d:%02d", seconds // 60, seconds % 60)
 end
-InterfaceController.formatTime = formatTime
 
 -- Pulinho num elemento escalado (feedback de ganho/compra).
 function InterfaceController.bump(target: GuiObject)
@@ -62,23 +67,20 @@ function InterfaceController.bump(target: GuiObject)
 		:Play()
 end
 
-local function inMatch(): boolean
-	return localPlayer:GetAttribute("InMatch") == true
+local function runState(): string
+	return (ReplicatedStorage:GetAttribute("RunState") :: string?) or "Loading"
 end
 
-local function roundState(): string
-	return (ReplicatedStorage:GetAttribute("RoundState") :: string?) or "Loading"
-end
-
--- HUD visível só sem janela aberta. Barra do lobby só fora da partida.
+-- HUD visível só sem janela aberta. Lobby: gemas, vitórias e atalhos. Run: dinheiro, gemas, progresso e barra.
 local function updateHud()
 	local hud = openWindow == nil
-	local state = roundState()
-	refs.CashHolder.Visible = hud
+	local state = runState()
+	refs.CashHolder.Visible = hud and isRun
 	refs.GemsHolder.Visible = hud
-	refs.Icons.Visible = hud and state ~= "Voting"
-	refs.TimerHolder.Visible = hud and state ~= "Voting"
-	refs.LobbyBar.Visible = hud and not inMatch() and state ~= "Voting"
+	refs.WinsHolder.Visible = hud and not isRun
+	refs.Icons.Visible = hud and not isRun
+	refs.TimerHolder.Visible = hud and isRun and state ~= "Loading"
+	refs.MatchBar.Visible = hud and isRun and state == "Playing"
 end
 InterfaceController.updateHud = updateHud
 
@@ -86,9 +88,13 @@ function InterfaceController.onOpen(name: string, callback: () -> ())
 	onWindowOpened[name] = callback
 end
 
--- Abre uma janela (fecha a anterior). name: "Shop", "Wheel" ou "Rewards".
+local function windows(): { Frame }
+	return { refs.Shop, refs.Wheel, refs.Rewards, refs.Upgrades, refs.Party }
+end
+
+-- Abre uma janela (fecha a anterior). name: "Shop", "Wheel", "Rewards", "Upgrades" ou "Party".
 function InterfaceController.open(name: string)
-	for _, window in { refs.Shop, refs.Wheel, refs.Rewards } do
+	for _, window in windows() do
 		window.Visible = window.Name == name
 	end
 	openWindow = name
@@ -101,9 +107,9 @@ function InterfaceController.open(name: string)
 end
 
 function InterfaceController.close()
-	refs.Shop.Visible = false
-	refs.Wheel.Visible = false
-	refs.Rewards.Visible = false
+	for _, window in windows() do
+		window.Visible = false
+	end
 	openWindow = nil
 	updateHud()
 end
@@ -112,26 +118,68 @@ function InterfaceController.isOpen(name: string): boolean
 	return openWindow == name
 end
 
+local function place(obj: GuiObject, r: UiLayout.Rect)
+	obj.AnchorPoint = Vector2.zero
+	obj.Position = UDim2.fromOffset(r.X0, r.Y0)
+end
+
+local function setScale(obj: GuiObject, value: number)
+	local s = obj:FindFirstChildOfClass("UIScale")
+	if s then
+		s.Scale = value
+	end
+end
+
+-- Posiciona tudo pelo Logic/UiLayout (o mesmo cálculo que os testes verificam em vários aparelhos).
 local function updateScale()
 	local area = refs.Gui.AbsoluteSize
 	if area.X <= 0 or area.Y <= 0 then
 		return
 	end
-	currentScale = UiLayout.scale(area.X, area.Y, UiConfig)
+	local C = UiConfig
+	local layout = UiLayout.place(area.X, area.Y, C)
+	currentScale = layout.Scale
 	for _, obj in refs.Scaled do
-		local s = obj:FindFirstChildOfClass("UIScale")
-		if s then
-			s.Scale = currentScale
-		end
+		setScale(obj, currentScale)
 	end
-	-- gemas abaixo do dinheiro; atalhos abaixo das gemas (posições reais dependem da escala)
-	local m, gap = UiConfig.Margin, UiConfig.Gap * currentScale
-	local gemsY = m + UiConfig.Currency.H * currentScale + gap
-	refs.GemsHolder.Position = UDim2.fromOffset(m, gemsY)
-	refs.Icons.Position = UDim2.fromOffset(m, gemsY + UiConfig.Currency.H * currentScale + 2 * gap)
-	refs.Toast.Position = UDim2.new(0.5, 0, 0, UiConfig.Toast.Y * currentScale)
-	refs.Popup.Position = UDim2.new(0.5, 0, 0, (UiConfig.Toast.Y + UiConfig.Toast.H + 20) * currentScale)
-	refs.SpectatingLabel.Position = UDim2.new(0.5, 0, 1, -(m + (UiConfig.Play.H + UiConfig.Gap) * currentScale))
+	-- janelas: nunca maiores que a tela (celulares bem curtos)
+	for _, window in windows() do
+		local size = { W = window.Size.X.Offset, H = window.Size.Y.Offset }
+		setScale(window, UiLayout.windowScale(area.X, area.Y, size, C))
+	end
+
+	-- lobby: gemas no primeiro lugar e vitórias ao lado (o dinheiro só existe na run)
+	if isRun then
+		place(refs.CashHolder, layout.Cash)
+		place(refs.GemsHolder, layout.Gems)
+	else
+		place(refs.GemsHolder, layout.Cash)
+		place(refs.WinsHolder, layout.Gems)
+	end
+	place(refs.TimerHolder, layout.Timer)
+	place(refs.MatchBar, layout.MatchBar)
+	place(refs.Toast, layout.Toast)
+	refs.Toast.Size = UDim2.fromOffset((layout.Toast.X1 - layout.Toast.X0) / currentScale, C.Toast.H)
+	place(refs.Popup, layout.Popup)
+	place(refs.Winner, layout.Victory)
+	refs.Winner.Size = UDim2.fromOffset((layout.Victory.X1 - layout.Victory.X0) / currentScale, C.WinnerBanner.H)
+	place(refs.Frenzy, layout.Frenzy)
+	place(refs.Celebration, layout.Celebration)
+	place(refs.ContinueHolder, layout.Continue)
+	refs.ContinueHolder.Size =
+		UDim2.fromOffset(layout.Continue.X1 - layout.Continue.X0, layout.Continue.Y1 - layout.Continue.Y0)
+	setScale(refs.Celebration, (layout.Celebration.X1 - layout.Celebration.X0) / C.Celebration.W)
+
+	-- atalhos: 1 coluna ou 2 (telas baixas), preenchidas coluna por coluna
+	local columns = layout.IconColumns
+	local rows = math.ceil(C.IconCount / columns)
+	local cell, gap = C.IconButton.W, C.Gap
+	refs.Icons.Size = UDim2.fromOffset(columns * cell + (columns - 1) * gap, rows * cell + (rows - 1) * gap)
+	place(refs.Icons, layout.Icons)
+	for index, holder in refs.IconHolders do
+		local col, r = (index - 1) // rows, (index - 1) % rows
+		holder.Position = UDim2.fromOffset(col * (cell + gap), r * (cell + gap))
+	end
 end
 
 function InterfaceController.toast(text: string, color: Color3?)
@@ -157,6 +205,7 @@ function InterfaceController.popup(text: string, icon: string)
 	refs.Popup.Visible = true
 	InterfaceController.bump(refs.Popup)
 	EatEffects.playTierUp()
+	Feedback.play("Reward", { Gui = refs.Popup, Text = "+1 " .. icon })
 	task.delay(2.6, function()
 		if popupToken == token then
 			refs.Popup.Visible = false
@@ -182,19 +231,25 @@ local function showCombo(count: number)
 end
 
 local function setupCurrencies()
-	local shownCash, shownGems = 0, 0
+	-- nil = ainda não leu (não mostra "+tudo" ao entrar)
+	local shownCash: number?, shownGems: number? = nil, nil
 	local function onCash()
 		local cash = (localPlayer:GetAttribute("Coins") :: number?) or 0
-		if cash > shownCash then
+		if shownCash and cash > shownCash then
 			InterfaceController.bump(refs.CashHolder)
+			Feedback.play("Coins", { Gui = refs.CashHolder, Amount = cash - shownCash })
 		end
 		shownCash = cash
 		refs.Cash.Text = InterfaceController.formatNumber(cash)
 	end
+	local function onWins()
+		refs.Wins.Text = InterfaceController.formatNumber((localPlayer:GetAttribute("Wins") :: number?) or 0)
+	end
 	local function onGems()
 		local gems = (localPlayer:GetAttribute("Gems") :: number?) or 0
-		if gems > shownGems then
+		if shownGems and gems > shownGems then
 			InterfaceController.bump(refs.GemsHolder)
+			Feedback.play("Gems", { Gui = refs.GemsHolder, Amount = gems - shownGems })
 		end
 		shownGems = gems
 		refs.Gems.Text = InterfaceController.formatNumber(gems)
@@ -202,66 +257,138 @@ local function setupCurrencies()
 	end
 	localPlayer:GetAttributeChangedSignal("Coins"):Connect(onCash)
 	localPlayer:GetAttributeChangedSignal("Gems"):Connect(onGems)
+	localPlayer:GetAttributeChangedSignal("Wins"):Connect(onWins)
 	onCash()
 	onGems()
+	onWins()
 end
 
-local function setupVote()
-	local castVote = Remotes.event(Remotes.Names.Events.CastVote)
-	for index, card in refs.VoteCards do
-		card.Hit.Activated:Connect(function()
-			local id = voteOptionIds[index]
-			if id == nil then
-				return
-			end
-			castVote:FireServer(id)
-			for i, other in refs.VoteCards do
-				other.Stroke.Enabled = i == index
-			end
+-- Progresso da run: "42% EATEN" e a barra.
+-- Progresso da área atual: nome da área, "AREA 2 OF 4" e a barra do quanto já foi comido nela.
+local function onProgress()
+	local zone = (ReplicatedStorage:GetAttribute("RunZone") :: number?) or 1
+	local zones = (ReplicatedStorage:GetAttribute("RunZones") :: number?) or 1
+	local left = (ReplicatedStorage:GetAttribute("RunZoneLeft") :: number?) or 0
+	local total = (ReplicatedStorage:GetAttribute("RunZoneTotal") :: number?) or 0
+	-- 98% real aparece como 95% (aos 98% o resto da área é coletado sozinho)
+	local percent = Zones.displayPercent(left, total, RunConfig.AutoCollect)
+	refs.Timer.Text = (ReplicatedStorage:GetAttribute("RunZoneName") :: string?) or ""
+	refs.MapName.Text = `AREA {zone}/{zones} • {percent}%`
+	refs.ProgressFill.Size = UDim2.fromScale(percent / 100, 1)
+end
+
+-- FRENZY (depois de abrir uma área): contagem regressiva embaixo do progresso.
+local function updateFrenzy()
+	local untilTime = ReplicatedStorage:GetAttribute("FrenzyUntil") :: number?
+	local now = Workspace:GetServerTimeNow()
+	local active = isRun and Zones.frenzyActive(untilTime, now)
+	refs.Frenzy.Visible = active and openWindow == nil and runState() == "Playing"
+	if active then
+		refs.FrenzyText.Text = `⚡ FRENZY {math.ceil((untilTime :: number) - now)}s`
+	end
+end
+
+-- Confete caindo pela tela inteira.
+local CONFETTI_COLORS = {
+	Color3.fromRGB(255, 90, 90),
+	Color3.fromRGB(90, 200, 255),
+	Color3.fromRGB(255, 220, 60),
+	Color3.fromRGB(120, 230, 120),
+	Color3.fromRGB(220, 120, 255),
+}
+
+local function confetti()
+	local area = refs.Gui.AbsoluteSize
+	for _ = 1, UiConfig.ConfettiPieces do
+		local piece = Instance.new("Frame")
+		piece.BorderSizePixel = 0
+		piece.BackgroundColor3 = CONFETTI_COLORS[math.random(1, #CONFETTI_COLORS)]
+		local size = math.random(6, 12) * currentScale * 1.4
+		piece.Size = UDim2.fromOffset(size, size * 1.6)
+		piece.Position = UDim2.fromOffset(math.random() * area.X, -40 - math.random() * area.Y * 0.4)
+		piece.Rotation = math.random(0, 360)
+		piece.ZIndex = 20
+		piece.Parent = refs.Confetti
+		local fall = math.random(18, 32) / 10
+		TweenService:Create(piece, TweenInfo.new(fall, Enum.EasingStyle.Sine, Enum.EasingDirection.In), {
+			Position = UDim2.fromOffset(piece.Position.X.Offset + math.random(-120, 120), area.Y + 40),
+			Rotation = piece.Rotation + math.random(180, 720),
+		}):Play()
+		task.delay(fall, function()
+			piece:Destroy()
 		end)
 	end
-	Remotes.event(Remotes.Names.Events.VoteStarted).OnClientEvent:Connect(function(options: { any })
-		table.clear(voteOptionIds)
-		for index, card in refs.VoteCards do
-			local option = options[index]
-			card.Holder.Visible = option ~= nil
-			card.Stroke.Enabled = false
-			if option then
-				voteOptionIds[index] = option.Id
-				card.Name.Text = option.Name
-				card.Icon.Text = option.Icon
-				card.Votes.Text = "0 votes"
-			end
-		end
-		InterfaceController.close()
-		refs.Vote.Visible = true
-		InterfaceController.bump(refs.Vote)
-	end)
-	Remotes.event(Remotes.Names.Events.VoteUpdated).OnClientEvent:Connect(function(counts: { [string]: number })
-		for index, card in refs.VoteCards do
-			local id = voteOptionIds[index]
-			local count = if id then counts[id] or 0 else 0
-			card.Votes.Text = count .. (if count == 1 then " vote" else " votes")
+end
+
+-- Números do prêmio subindo de 0 até o valor (efeito de contagem).
+local function countUp(label: TextLabel, prefix: string, value: number, suffix: string, seconds: number)
+	local started = os.clock()
+	local connection: RBXScriptConnection
+	connection = RunService.RenderStepped:Connect(function()
+		local t = math.min((os.clock() - started) / seconds, 1)
+		label.Text = prefix .. InterfaceController.formatNumber(value * t) .. suffix
+		if t >= 1 then
+			connection:Disconnect()
 		end
 	end)
+end
+
+local celebrationToken = 0
+local celebrationFinish: (() -> ())? = nil
+
+export type ZoneInfo = { Zone: number, Name: string?, Next: string?, Gems: number, Cash: number, Frenzy: number }
+
+-- Área limpa: painel grande com raios girando, confete e prêmios contando. Some antes da barreira cair.
+function InterfaceController.celebrate(info: ZoneInfo)
+	InterfaceController.close()
+	refs.Toast.Visible = false
+	refs.CelebrationTitle.Text = "AREA CLEARED!"
+	refs.CelebrationSub.Text = if info.Next then `NEXT: {info.Next}  →` else ""
+	refs.Chips[3].Text = `⚡ FRENZY {info.Frenzy}s`
+	refs.Celebration.Visible = true
+	refs.ContinueHolder.Visible = true
+	InterfaceController.bump(refs.Celebration)
+	countUp(refs.Chips[1], "+", info.Gems, " 💎", 1.2)
+	countUp(refs.Chips[2], "+$", info.Cash, "", 1.2)
+	confetti()
+	EatEffects.playTierUp()
+	Feedback.play("ZoneClear", { Gui = refs.Celebration, Amount = info.Gems })
+	local spin = RunService.RenderStepped:Connect(function(dt)
+		refs.Rays.Rotation = (refs.Rays.Rotation + dt * 25) % 360
+	end)
+	celebrationToken += 1
+	local token = celebrationToken
+	local function finish()
+		if token ~= celebrationToken then
+			return
+		end
+		celebrationToken += 1
+		spin:Disconnect()
+		refs.Celebration.Visible = false
+		refs.ContinueHolder.Visible = false
+		if info.Next then
+			InterfaceController.toast(`GO! {info.Next} IS OPEN!`, Color3.fromRGB(255, 227, 107))
+		end
+	end
+	celebrationFinish = finish
+	task.delay(RunConfig.ZoneCelebrationSeconds, finish)
 end
 
 local function onStateChanged()
-	local state = roundState()
-	refs.Winner.Visible = state == "Winner"
-	refs.Vote.Visible = state == "Voting"
-	refs.Status.Visible = state == "Loading" and inMatch()
+	local state = runState()
+	refs.Status.Visible = isRun and state == "Loading"
 	refs.Status.Text = "Building the city..."
-	refs.MapName.Text = (ReplicatedStorage:GetAttribute("MapName") :: string?) or ""
-	if state ~= "Playing" then
+	refs.Winner.Visible = isRun and state == "Victory"
+	if state == "Victory" then
+		InterfaceController.close()
 		refs.Toast.Visible = false
 		refs.Combo.Visible = false
-	end
-	if state == "Winner" then
-		local name = (ReplicatedStorage:GetAttribute("Winner") :: string?) or ""
-		refs.WinnerName.Text = if name ~= "" then name .. " WINS!" else "ROUND OVER!"
-		refs.WinnerSub.Text = "The biggest city eater!"
+		local gems = (ReplicatedStorage:GetAttribute("RunWinGems") :: number?) or 0
+		refs.WinnerName.Text = "CITY EATEN!"
+		refs.WinnerSub.Text = `+{gems} 💎   •   Going back to the lobby...`
 		InterfaceController.bump(refs.Winner)
+		EatEffects.playTierUp()
+		Feedback.play("ZoneClear", { Gui = refs.Winner, Amount = gems })
 	end
 	updateHud()
 end
@@ -270,28 +397,43 @@ local function setupTierToasts()
 	local lastTier = (localPlayer:GetAttribute("EdibleTier") :: number?) or 1
 	localPlayer:GetAttributeChangedSignal("EdibleTier"):Connect(function()
 		local tier = (localPlayer:GetAttribute("EdibleTier") :: number?) or 1
-		if tier > lastTier and inMatch() then
+		if tier > lastTier and isRun then
 			InterfaceController.toast(
 				"YOU CAN NOW EAT " .. EatEffects.tierName(tier) .. "!",
 				Color3.fromRGB(255, 227, 107)
 			)
 			EatEffects.playTierUp()
+			Feedback.play("TierUp", { Gui = refs.Toast, Amount = tier })
 		end
 		lastTier = tier
 	end)
 end
 
-local function setupLobbyBar()
-	local join = Remotes.event(Remotes.Names.Events.JoinMatch)
-	local autoJoin = Remotes.event(Remotes.Names.Events.SetAutoJoin)
-	refs.Play.Activated:Connect(function()
-		join:FireServer()
+-- Barra da run: UPGRADES abre a janela; LOBBY pede confirmação (segundo toque), salva e volta ao lobby.
+local function setupMatchBar()
+	refs.UpgradesButton.Activated:Connect(function()
+		InterfaceController.open("Upgrades")
 	end)
-	local auto = true
-	refs.AutoJoin.Activated:Connect(function()
-		auto = not auto
-		autoJoin:FireServer(auto)
-		refs.AutoJoinText.Text = if auto then "AUTO JOIN: ON" else "AUTO JOIN: OFF"
+	local leave = Remotes.event(Remotes.Names.Events.LeaveMatch)
+	local armedToken = 0
+	local function reset()
+		armedToken += 1
+		refs.LobbyButtonText.Text = "🏠 LOBBY"
+	end
+	refs.LobbyButton.Activated:Connect(function()
+		if refs.LobbyButtonText.Text ~= "SURE?" then
+			armedToken += 1
+			local token = armedToken
+			refs.LobbyButtonText.Text = "SURE?"
+			task.delay(UiConfig.LeaveConfirmSeconds, function()
+				if armedToken == token then
+					reset()
+				end
+			end)
+			return
+		end
+		reset()
+		leave:FireServer()
 	end)
 end
 
@@ -304,14 +446,14 @@ function InterfaceController.init()
 	updateScale()
 	refs.Gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateScale)
 
-	for _, close in { refs.ShopClose, refs.WheelClose, refs.RewardsClose } do
+	-- o X da CREATE PARTY também cancela a party: quem liga é o PartyController
+	for _, close in { refs.ShopClose, refs.WheelClose, refs.RewardsClose, refs.UpgradesClose } do
 		close.Activated:Connect(InterfaceController.close)
 	end
 
 	setupCurrencies()
-	setupVote()
 	setupTierToasts()
-	setupLobbyBar()
+	setupMatchBar()
 
 	EatEffects.onLocalBite(function(info)
 		showCombo(EatEffects.currentCombo())
@@ -319,41 +461,25 @@ function InterfaceController.init()
 			InterfaceController.toast("+" .. info.Gems .. " 💎 GEMS!", Color3.fromRGB(140, 210, 255))
 		end
 	end)
-	Remotes.event(Remotes.Names.Events.PlayerEaten).OnClientEvent:Connect(function(eater: Player, victim: Player)
-		if victim == localPlayer then
-			InterfaceController.toast("YOU GOT EATEN!", Color3.fromRGB(255, 120, 120))
-		elseif eater == localPlayer then
-			InterfaceController.toast("YOU ATE " .. victim.DisplayName:upper() .. "!", Color3.fromRGB(125, 255, 138))
-		end
+	Remotes.event(Remotes.Names.Events.Notice).OnClientEvent:Connect(function(text: string)
+		InterfaceController.toast(text, Color3.fromRGB(255, 227, 107))
 	end)
 	Remotes.event(Remotes.Names.Events.RewardGranted).OnClientEvent:Connect(InterfaceController.popup)
 
-	ReplicatedStorage:GetAttributeChangedSignal("RoundState"):Connect(onStateChanged)
-	ReplicatedStorage:GetAttributeChangedSignal("MapName"):Connect(onStateChanged)
-	localPlayer:GetAttributeChangedSignal("InMatch"):Connect(onStateChanged)
-	onStateChanged()
-
-	RunService.Heartbeat:Connect(function()
-		local endsAt = (ReplicatedStorage:GetAttribute("RoundEndsAt") :: number?) or 0
-		local remaining = endsAt - Workspace:GetServerTimeNow()
-		local state = roundState()
-		if state == "Playing" then
-			refs.Timer.Text = if inMatch() then formatTime(remaining) else "LIVE " .. formatTime(remaining)
-		elseif state == "Voting" then
-			refs.VoteTimer.Text = formatTime(remaining)
-			refs.Timer.Text = "VOTING"
-		elseif state == "Intermission" then
-			refs.Timer.Text = "STARTS IN " .. formatTime(remaining)
-		elseif state == "Winner" then
-			refs.Timer.Text = "ROUND OVER"
-		else
-			refs.Timer.Text = "LOBBY"
+	for _, name in { "RunZone", "RunZones", "RunZoneName", "RunZoneLeft", "RunZoneTotal" } do
+		ReplicatedStorage:GetAttributeChangedSignal(name):Connect(onProgress)
+	end
+	RunService.Heartbeat:Connect(updateFrenzy)
+	Remotes.event(Remotes.Names.Events.ZoneCleared).OnClientEvent:Connect(InterfaceController.celebrate)
+	-- CONTINUE fecha a comemoração antes do tempo
+	refs.Continue.Activated:Connect(function()
+		if celebrationFinish then
+			celebrationFinish()
 		end
-		refs.PlayText.Text = if state == "Playing"
-			then "▶ PLAY"
-			elseif state == "Intermission" then "READY " .. formatTime(remaining)
-			else "WAITING..."
 	end)
+	ReplicatedStorage:GetAttributeChangedSignal("RunState"):Connect(onStateChanged)
+	onProgress()
+	onStateChanged()
 end
 
 return InterfaceController

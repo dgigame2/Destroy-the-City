@@ -26,7 +26,7 @@ git checkout origin/main -- README.md wally.toml 2>nul
 rem arquivos antigos do esqueleto (vazios) que nao fazem mais parte do jogo
 del /q src\server\Main.server.luau src\client\Main.client.luau src\shared\Remotes\Names.luau src\shared\Logic\Economy.luau tests\Economy.spec.luau 2>nul
 git add -A
-git commit -m "Eat City: lobby, gemas, loja, classes, roleta, recompensas, animacoes e mapas novos"
+git commit -m "Eat City: mapas maiores com litoral, areas por etapas, modos EASY/MEDIUM/HARD, feedback triplo, placas e setas das areas"
 echo Enviando para o GitHub (pode abrir uma janela de login)...
 git push origin main
 if errorlevel 1 (

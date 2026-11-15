@@ -1,6 +1,8 @@
 --!strict
 -- Estado de cada jogador. Pontos de crescimento ficam só aqui (o jogador não vê o número).
--- Salvos no DataStore: moedas, gemas, upgrades, itens, equipados, recompensas, roleta e boosts.
+-- Salvos na conta (DataStore): gemas, vitórias, runs salvas, itens, equipados, recompensas, roleta e boosts.
+-- Dinheiro (Coins), upgrades e pontos são DA RUN: ficam aqui só enquanto a run está aberta e são salvos
+-- junto com a run (RunStore), não na conta.
 -- O cliente recebe tudo o que precisa mostrar por atributos do Player.
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -11,6 +13,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UpgradeConfig = require(Shared.Config.UpgradeConfig)
 local EconomyConfig = require(Shared.Config.EconomyConfig)
+local RunConfig = require(Shared.Config.RunConfig)
+local Runs = require(Shared.Logic.Runs)
 
 local STORE_NAME = "EatCity_PlayerData_v1"
 local MAX_RECEIPTS = 50
@@ -26,7 +30,9 @@ export type Data = {
 	Wheel: { LastFree: number, Extra: number },
 	Boosts: { [string]: number }, -- "Cash"/"Growth" -> os.time() em que termina
 	Receipts: { string }, -- compras com Robux já entregues (evita entregar duas vezes)
-	Points: number, -- da partida, não é salvo
+	Wins: number, -- cidades comidas inteiras (liberam capítulos e dificuldades)
+	SavedRuns: { Runs.Summary }, -- runs salvas desta conta (resumo para a lista do lobby)
+	Points: number, -- da run, não vai para a conta
 }
 
 local PlayerData = {}
@@ -56,6 +62,8 @@ local function fresh(): Data
 		Wheel = { LastFree = 0, Extra = 0 },
 		Boosts = {},
 		Receipts = {},
+		Wins = 0,
+		SavedRuns = {},
 		Points = 0,
 	}
 end
@@ -65,15 +73,30 @@ local function merge(entry: Data, saved: any)
 	if type(saved) ~= "table" then
 		return
 	end
-	entry.Coins = tonumber(saved.Coins) or entry.Coins
 	entry.Gems = tonumber(saved.Gems) or entry.Gems
-	if type(saved.Upgrades) == "table" then
-		for _, upgrade in UpgradeConfig do
-			local level = tonumber(saved.Upgrades[upgrade.Id])
-			if level then
-				entry.Upgrades[upgrade.Id] = math.clamp(math.floor(level), 0, upgrade.MaxLevel)
+	entry.Wins = math.max(0, math.floor(tonumber(saved.Wins) or 0))
+	if type(saved.SavedRuns) == "table" then
+		local list: { Runs.Summary } = {}
+		for _, run in saved.SavedRuns do
+			if
+				type(run) == "table"
+				and type(run.Id) == "string"
+				and type(run.Map) == "string"
+				and type(run.Difficulty) == "string"
+				and type(run.Members) == "table"
+			then
+				table.insert(list, {
+					Id = run.Id,
+					Map = run.Map,
+					Difficulty = run.Difficulty,
+					Members = run.Members,
+					Names = if type(run.Names) == "table" then run.Names else {},
+					Progress = tonumber(run.Progress) or 0,
+					UpdatedAt = tonumber(run.UpdatedAt) or 0,
+				})
 			end
 		end
+		entry.SavedRuns = Runs.clean(list, os.time(), RunConfig.SavedRunDays)
 	end
 	if type(saved.Owned) == "table" then
 		for id, owned in saved.Owned do
@@ -138,6 +161,8 @@ function PlayerData.publish(player: Player)
 	player:SetAttribute("WheelExtra", entry.Wheel.Extra)
 	player:SetAttribute("BoostCash", entry.Boosts.Cash or 0)
 	player:SetAttribute("BoostGrowth", entry.Boosts.Growth or 0)
+	player:SetAttribute("Wins", entry.Wins)
+	player:SetAttribute("SavedRuns", HttpService:JSONEncode(entry.SavedRuns))
 end
 
 local function load(player: Player): Data
@@ -161,7 +186,10 @@ function PlayerData.save(player: Player): boolean
 		return false
 	end
 	local snapshot = table.clone(entry) :: any
+	-- dinheiro, upgrades e pontos são da run (salvos no RunStore)
 	snapshot.Points = nil
+	snapshot.Coins = nil
+	snapshot.Upgrades = nil
 	local ok, err = pcall(function()
 		(store :: DataStore):SetAsync(tostring(player.UserId), snapshot)
 	end)
@@ -211,6 +239,48 @@ function PlayerData.spendGems(player: Player, amount: number): boolean
 	return true
 end
 
+-- Estado da run para este jogador (dinheiro e upgrades vêm da run salva; zera em run nova).
+function PlayerData.setRunState(player: Player, coins: number, upgrades: { [string]: number })
+	local entry = data[player]
+	if entry == nil then
+		return
+	end
+	entry.Coins = coins
+	entry.Upgrades = {}
+	for _, upgrade in UpgradeConfig do
+		local level = tonumber(upgrades[upgrade.Id])
+		if level then
+			entry.Upgrades[upgrade.Id] = math.clamp(math.floor(level), 0, upgrade.MaxLevel)
+		end
+	end
+	PlayerData.publish(player)
+end
+
+function PlayerData.addWin(player: Player)
+	local entry = data[player]
+	if entry then
+		entry.Wins += 1
+		player:SetAttribute("Wins", entry.Wins)
+	end
+end
+
+function PlayerData.upsertRun(player: Player, summary: Runs.Summary)
+	local entry = data[player]
+	if entry then
+		entry.SavedRuns =
+			Runs.upsert(entry.SavedRuns, summary, os.time(), RunConfig.SavedRunDays, RunConfig.MaxSavedRuns)
+		player:SetAttribute("SavedRuns", HttpService:JSONEncode(entry.SavedRuns))
+	end
+end
+
+function PlayerData.removeRun(player: Player, id: string)
+	local entry = data[player]
+	if entry then
+		entry.SavedRuns = Runs.remove(entry.SavedRuns, id)
+		player:SetAttribute("SavedRuns", HttpService:JSONEncode(entry.SavedRuns))
+	end
+end
+
 function PlayerData.setUpgrade(player: Player, id: string, level: number)
 	local entry = data[player]
 	if entry then
@@ -232,6 +302,23 @@ function PlayerData.markReceipt(player: Player, receiptId: string): boolean
 	return true
 end
 
+-- Chamado antes de salvar quem está saindo (ou todo mundo, quando o servidor fecha).
+-- A run usa para guardar o próprio estado e atualizar a lista de runs salvas antes da conta ser salva.
+local beforeSave: (({ Player }) -> ())? = nil
+
+function PlayerData.beforeSave(callback: ({ Player }) -> ())
+	beforeSave = callback
+end
+
+local function runBeforeSave(players: { Player })
+	if beforeSave then
+		local ok, err = pcall(beforeSave, players)
+		if not ok then
+			warn("[PlayerData] beforeSave failed:", err)
+		end
+	end
+end
+
 function PlayerData.init(onReady: (Player) -> ())
 	local function added(player: Player)
 		local entry = load(player)
@@ -247,10 +334,12 @@ function PlayerData.init(onReady: (Player) -> ())
 		task.spawn(added, player)
 	end
 	Players.PlayerRemoving:Connect(function(player)
+		runBeforeSave({ player })
 		PlayerData.save(player)
 		data[player] = nil
 	end)
 	game:BindToClose(function()
+		runBeforeSave(Players:GetPlayers())
 		for _, player in Players:GetPlayers() do
 			PlayerData.save(player)
 		end

@@ -46,16 +46,6 @@ return function(t)
 		t.equal(Growth.highestEdibleTier(1000, TierConfig), #TierConfig)
 	end)
 
-	t.test("comer jogador exige ser 25% maior", function()
-		t.truthy(Growth.canEatPlayer(5, 4, cfg))
-		t.truthy(not Growth.canEatPlayer(4.9, 4, cfg))
-		t.truthy(not Growth.canEatPlayer(4, 4, cfg))
-	end)
-
-	t.test("jogador engolido renasce com 35% do progresso", function()
-		t.near(Growth.respawnPoints(1000, cfg), 350)
-	end)
-
 	t.test("bônus de upgrade aumenta crescimento e moedas", function()
 		local tier = TierConfig[3]
 		t.near(Growth.gainFromTier(tier, 0), tier.Growth)

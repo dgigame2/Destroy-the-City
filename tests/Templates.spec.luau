@@ -5,13 +5,9 @@ local MapConfig = require("../src/shared/Config/MapConfig")
 
 local EPS = 0.01
 
+-- Caixa que envolve o bloco (já considera blocos inclinados; calculada pelo Templates).
 local function bounds(b)
-	local min, max = {}, {}
-	for axis = 1, 3 do
-		min[axis] = b.Pos[axis] - b.Size[axis] / 2
-		max[axis] = b.Pos[axis] + b.Size[axis] / 2
-	end
-	return min, max
+	return b.Min, b.Max
 end
 
 -- Dois blocos se tocam ou se sobrepõem (com tolerância).
@@ -61,6 +57,29 @@ return function(t)
 			local missing = unsupported(template)
 			if #missing > 0 then
 				error(`blocos soltos: {table.concat(missing, ", ")}`)
+			end
+		end)
+
+		t.test(`{name}: nenhum bloco dentro de outro (só encostam)`, function()
+			for i = 1, #template.Boxes do
+				for j = i + 1, #template.Boxes do
+					local a, b = template.Boxes[i], template.Boxes[j]
+					local depth = math.huge
+					for axis = 1, 3 do
+						depth = math.min(depth, math.min(a.Max[axis], b.Max[axis]) - math.max(a.Min[axis], b.Min[axis]))
+					end
+					if depth > EPS then
+						error(`bloco {i} ({a.Role}) entra {depth} no bloco {j} ({b.Role})`)
+					end
+				end
+			end
+		end)
+
+		t.test(`{name}: só blocos alinhados (teste de encaixe exato)`, function()
+			for i, b in template.Boxes do
+				if b.Tilt ~= nil then
+					error(`bloco {i} está inclinado`)
+				end
 			end
 		end)
 

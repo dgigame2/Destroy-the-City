@@ -31,7 +31,7 @@ local items: { Item } = {
 		Kind = "Trail",
 		Rarity = "Rare",
 		Price = 250,
-		Icon = "🫧",
+		Icon = "🔵", -- 🫧 (emoji de 2021) não aparece no Roblox
 		Colors = { { 120, 210, 255 }, { 200, 240, 255 } },
 	},
 	{

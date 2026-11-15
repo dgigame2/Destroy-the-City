@@ -106,9 +106,19 @@ return function(t)
 		t.near(Buffs.multiplier({ Upgrade = 0.2, Class = 0.25, BoostActive = true }), 2.9)
 	end)
 
-	t.test("bônus: classe Survivor aumenta o que sobra ao ser engolido", function()
-		t.near(Buffs.respawnKeep(0.35, nil), 0.35)
-		t.near(Buffs.respawnKeep(0.35, 0.6), 0.6)
+	t.test("bônus: classe Lucky dobra a chance de gema", function()
+		local drop = { Chance = 0.1, Amount = 2 }
+		t.equal(Buffs.gemDrop(drop, 0.15), 0)
+		t.equal(Buffs.gemDrop(drop, 0.15, 2), 2)
+		t.equal(Buffs.gemDrop(drop, 0.25, 2), 0)
+		local lucky = nil
+		for _, class in ClassConfig do
+			if class.Id == "Lucky" then
+				lucky = class
+			end
+		end
+		t.truthy(lucky)
+		t.near(1 + (lucky :: any).Buffs.Gems, 2)
 	end)
 
 	t.test("boost: comprar com outro ativo soma o tempo", function()
@@ -185,6 +195,36 @@ return function(t)
 		for _, class in ClassConfig do
 			t.truthy(class.Price > 0)
 			t.truthy(next(class.Buffs) ~= nil)
+			-- só bônus que algum sistema lê (GrowthService.multiplier / startPoints)
+			local known = { Speed = true, Magnet = true, Growth = true, Coins = true, Gems = true, StartPoints = true }
+			for key in class.Buffs do
+				t.truthy(known[key], class.Id .. " tem bônus desconhecido: " .. key)
+			end
+		end
+	end)
+
+	t.test("ícones usam só emojis que o Roblox mostra (nada do bloco novo U+1FA70 em diante)", function()
+		-- MEDIDO no jogo (14/11/2026): 🫧 (U+1FAE7, Emoji 14) aparece em branco no Roblox.
+		-- Regra conservadora: nenhum emoji a partir de U+1FA70 (blocos adicionados de 2019 em diante).
+		local configs = {
+			require("../src/shared/Config/ShopConfig"),
+			require("../src/shared/Config/ClassConfig"),
+			require("../src/shared/Config/WheelConfig").Segments,
+			require("../src/shared/Config/RewardConfig").Daily,
+			require("../src/shared/Config/ProductConfig"),
+			require("../src/shared/Config/MapConfig"),
+		}
+		for _, list in configs do
+			for _, entry in list do
+				local icon = entry.Icon
+				if icon then
+					for _, code in utf8.codes(icon) do
+						if code >= 0x1FA70 then
+							error(`ícone "{icon}" de {entry.Name or entry.Label or entry.Id} não aparece no Roblox`)
+						end
+					end
+				end
+			end
 		end
 	end)
 end

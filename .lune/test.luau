@@ -40,6 +40,12 @@ local function makeContext()
 		end
 	end
 
+	function t.falsy(value)
+		if value then
+			error("condição deveria ser falsa", 2)
+		end
+	end
+
 	function t.throws(fn: () -> ())
 		if pcall(fn) then
 			error("deveria ter dado erro", 2)

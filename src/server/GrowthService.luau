@@ -13,6 +13,7 @@ local TierConfig = require(Shared.Config.TierConfig)
 local UpgradeConfig = require(Shared.Config.UpgradeConfig)
 local ClassConfig = require(Shared.Config.ClassConfig)
 local MovementConfig = require(Shared.Config.MovementConfig)
+local Place = require(Shared.Place)
 
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -22,6 +23,9 @@ local BOOST_FOR_STAT: { [string]: string } = { Coins = "Cash", Growth = "Growth"
 local GrowthService = {}
 
 local appliedScale: { [Player]: number } = {}
+-- dificuldade da run: alcance da boca e velocidade (modos difíceis são mais lentos de varrer)
+local difficultyReach, difficultySpeed = 1, 1
+local loadingAppearance: { [Player]: boolean } = {}
 
 function GrowthService.equippedClass(player: Player): ClassConfig.ClassInfo?
 	local entry = PlayerData.get(player)
@@ -37,7 +41,7 @@ function GrowthService.equippedClass(player: Player): ClassConfig.ClassInfo?
 	return nil
 end
 
--- Multiplicador final de um atributo: Speed, Magnet, Growth ou Coins.
+-- Multiplicador final de um atributo: Speed, Magnet, Growth, Coins ou Gems.
 function GrowthService.multiplier(player: Player, stat: string): number
 	local entry = PlayerData.get(player)
 	if entry == nil then
@@ -52,11 +56,6 @@ function GrowthService.multiplier(player: Player, stat: string): number
 	return Buffs.multiplier({ Upgrade = upgradeBonus, Class = classBonus, BoostActive = boostActive })
 end
 
-function GrowthService.respawnKeep(player: Player): number
-	local class = GrowthService.equippedClass(player)
-	return Buffs.respawnKeep(GrowthConfig.RespawnKeepFraction, class and class.Buffs.RespawnKeep)
-end
-
 function GrowthService.startPoints(player: Player): number
 	local class = GrowthService.equippedClass(player)
 	return if class then class.Buffs.StartPoints or 0 else 0
@@ -67,6 +66,30 @@ function GrowthService.scale(player: Player): number
 	return Growth.scaleFromPoints(if entry then entry.Points else 0, GrowthConfig)
 end
 
+local function scaledCFrame(cf: CFrame, factor: number): CFrame
+	return cf.Rotation + cf.Position * factor
+end
+
+-- Aumenta/diminui o personagem SEM mexer na posição dele.
+-- Model:ScaleTo no servidor reescreve o CFrame das peças com a posição que o servidor conhece, que chega
+-- atrasada (o personagem é simulado no cliente): o jogador voltava alguns studs a cada mordida.
+-- Aqui só mudam tamanhos, juntas, attachments e a altura do quadril; a peça raiz fica onde está.
+local function rescale(character: Model, humanoid: Humanoid, factor: number)
+	for _, item in character:GetDescendants() do
+		if item:IsA("BasePart") then
+			item.Size *= factor
+		elseif item:IsA("JointInstance") then -- Motor6D das juntas e Welds dos acessórios
+			item.C0 = scaledCFrame(item.C0, factor)
+			item.C1 = scaledCFrame(item.C1, factor)
+		elseif item:IsA("Attachment") then
+			item.Position *= factor
+		elseif item:IsA("SpecialMesh") and item.MeshType == Enum.MeshType.FileMesh then
+			item.Scale *= factor -- malha de acessório antigo: o tamanho dela não segue o da peça
+		end
+	end
+	humanoid.HipHeight *= factor
+end
+
 -- Aplica tamanho e movimento ao personagem atual. force = reescala mesmo com mudança pequena.
 function GrowthService.apply(player: Player, force: boolean?)
 	local character = player.Character
@@ -75,19 +98,37 @@ function GrowthService.apply(player: Player, force: boolean?)
 		return
 	end
 	local scale = GrowthService.scale(player)
-	local last = appliedScale[player]
-	if force or last == nil or math.abs(scale - last) / last >= GrowthConfig.RescaleStep then
-		character:ScaleTo(scale)
+	local current = appliedScale[player] or 1 -- personagem novo nasce na escala 1
+	-- enquanto roupas e acessórios chegam, espera: o onCharacter reescala tudo junto quando terminar
+	local changed = (force and scale ~= current) or math.abs(scale - current) / current >= GrowthConfig.RescaleStep
+	if changed and not loadingAppearance[player] then
+		-- a escala automática do Roblox desfaria os tamanhos novos
+		humanoid.AutomaticScalingEnabled = false
+		rescale(character, humanoid, scale / current)
 		appliedScale[player] = scale
 	end
 	humanoid.WalkSpeed = MovementConfig.WalkSpeed
+		* difficultySpeed
 		* GrowthService.multiplier(player, "Speed")
 		* scale ^ MovementConfig.SpeedScaleExponent
 	humanoid.UseJumpPower = true
-	humanoid.JumpPower = MovementConfig.JumpPower * scale ^ MovementConfig.JumpScaleExponent
+	humanoid.JumpPower = if Place.isRun() then MovementConfig.RunJumpPower else MovementConfig.LobbyJumpPower
 
 	player:SetAttribute("Scale", scale)
 	player:SetAttribute("EdibleTier", Growth.highestEdibleTier(scale, TierConfig))
+	-- alcance da boca (studs), para o círculo no chão do cliente
+	player:SetAttribute("EatRadius", GrowthService.eatRadius(player))
+end
+
+-- Alcance da boca (studs): tamanho, upgrade de ímã e dificuldade.
+function GrowthService.eatRadius(player: Player): number
+	local scale = GrowthService.scale(player)
+	return Growth.eatRadius(scale, GrowthService.multiplier(player, "Magnet") - 1, GrowthConfig) * difficultyReach
+end
+
+-- Dificuldade da run (DifficultyConfig): Reach multiplica o alcance da boca, Speed a velocidade.
+function GrowthService.setDifficulty(reach: number, speed: number)
+	difficultyReach, difficultySpeed = reach, speed
 end
 
 function GrowthService.addPoints(player: Player, amount: number)
@@ -105,14 +146,29 @@ function GrowthService.setPoints(player: Player, points: number)
 	end
 end
 
--- Novo personagem (spawn): escala sai do zero, então força o ScaleTo.
+-- Novo personagem (spawn): nasce na escala 1. Espera a aparência (roupas e acessórios) carregar, para eles
+-- crescerem junto.
 function GrowthService.onCharacter(player: Player)
 	appliedScale[player] = nil
+	if not player:HasAppearanceLoaded() then
+		loadingAppearance[player] = true
+		local loaded = false
+		local connection = player.CharacterAppearanceLoaded:Once(function()
+			loaded = true
+		end)
+		local started = os.clock()
+		while not loaded and os.clock() - started < 5 do
+			task.wait(0.1)
+		end
+		connection:Disconnect()
+		loadingAppearance[player] = nil
+	end
 	GrowthService.apply(player, true)
 end
 
 function GrowthService.forget(player: Player)
 	appliedScale[player] = nil
+	loadingAppearance[player] = nil
 end
 
 return GrowthService

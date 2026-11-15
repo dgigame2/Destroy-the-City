@@ -24,11 +24,11 @@ local upgrades: { Upgrade } = {
 	{
 		Id = "Magnet",
 		DisplayName = "Big Mouth",
-		Description = "+8% eating reach",
+		Description = "+3% eating reach",
 		BaseCost = 20,
-		CostGrowth = 1.4,
-		BonusPerLevel = 0.08,
-		MaxLevel = 20,
+		CostGrowth = 1.45,
+		BonusPerLevel = 0.03,
+		MaxLevel = 10, -- máximo +30% (antes +160%)
 	},
 	{
 		Id = "Growth",
