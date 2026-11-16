@@ -20,6 +20,7 @@ export type Template = {
 	Tier: number,
 	Footprint: { number },
 	Boxes: { Box },
+	Mesh: string?, -- MeshPart do Blender em ReplicatedStorage.Assets (os blocos são a reserva)
 }
 
 local box, add, stepRoof = Voxel.box, Voxel.add, Voxel.stepRoof

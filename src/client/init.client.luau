@@ -25,7 +25,15 @@ MovementController.init()
 
 if Place.isRun() then
 	require(script.Controllers.UpgradesController).init()
-	require(script.Controllers.EatIndicator).init()
+	-- desastres (Fase 3) ou comer antigo (rollback: GameplayConfig.Mode = "Eat")
+	if require(ReplicatedStorage.Shared.Config.GameplayConfig).Mode == "Disasters" then
+		require(script.Controllers.DisasterController).init()
+		require(script.Controllers.DisasterVfx).init()
+		require(script.Controllers.DamageVfx).init() -- barra de vida, blocos caindo e destroços
+		require(script.Controllers.LevelsController).init() -- nível de cada desastre
+	else
+		require(script.Controllers.EatIndicator).init()
+	end
 	require(script.Controllers.ZoneController).init()
 	require(script.Controllers.AmbienceController).init()
 	require(script.Controllers.AreaSignsController).init()

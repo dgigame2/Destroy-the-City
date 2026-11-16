@@ -183,6 +183,71 @@ local function onBuildingEaten(model: Model?, eater: Player, coins: number, gems
 	end
 end
 
+-- Modo desastres: a construção explode para longe de onde veio o golpe. Celular: poucos blocos animados
+-- (os maiores), só tween (sem física), tudo some em < 1 s.
+local DESTROY_PARTS = 14
+local DESTROY_SECONDS = 0.7
+
+local function onBuildingDestroyed(model: Model?, destroyer: Player, coins: number, origin: Vector3?)
+	if model == nil then
+		return
+	end
+	local tier = (model:GetAttribute("Tier") :: number?) or 1
+	local pivot = model:GetPivot()
+	local from = origin or pivot.Position
+	local copy = model:Clone()
+	model.Parent = nil
+	local parts = {}
+	for _, d in copy:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+			d.CanQuery = false
+			d.CanTouch = false
+			d.CastShadow = false
+			table.insert(parts, d)
+		end
+	end
+	table.sort(parts, function(a, b)
+		return a.Size.Magnitude > b.Size.Magnitude
+	end)
+	copy.Parent = effectsFolder
+	for index, part in parts do
+		if index > DESTROY_PARTS then
+			part:Destroy()
+		else
+			local away = part.Position - from
+			away = Vector3.new(away.X, 0, away.Z)
+			local dir = if away.Magnitude > 0.01
+				then away.Unit
+				else Vector3.new(math.random() - 0.5, 0, math.random() - 0.5).Unit
+			local push = dir * (6 + math.random() * 10 + part.Size.Magnitude) + Vector3.new(0, 4 + math.random() * 8, 0)
+			local spin = CFrame.Angles(math.random() * 3, math.random() * 3, math.random() * 3)
+			local info = TweenInfo.new(DESTROY_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			TweenService:Create(part, info, {
+				CFrame = (part.CFrame + push) * spin,
+				Size = part.Size * 0.15,
+				Transparency = 1,
+			}):Play()
+		end
+	end
+	task.delay(DESTROY_SECONDS + 0.2, function()
+		copy:Destroy()
+	end)
+	if destroyer == localPlayer then
+		local now = os.clock()
+		combo = if now - lastBite <= AudioConfig.ComboWindowSeconds then combo + 1 else 1
+		lastBite = now
+		Feedback.play("Eat", { World = pivot.Position + Vector3.new(0, 4, 0), Amount = coins })
+		if tier >= 4 then
+			punchCamera(math.min(1 + tier, 7))
+		end
+		for _, listener in biteListeners do
+			listener({ Coins = coins, Gems = 0, Tier = tier, Position = pivot.Position })
+		end
+	end
+end
+
 function EatEffects.currentCombo(): number
 	if os.clock() - lastBite > AudioConfig.ComboWindowSeconds then
 		return 0
@@ -206,6 +271,7 @@ end
 
 function EatEffects.init()
 	Remotes.event(Remotes.Names.Events.BuildingEaten).OnClientEvent:Connect(onBuildingEaten)
+	Remotes.event(Remotes.Names.Events.BuildingDestroyed).OnClientEvent:Connect(onBuildingDestroyed)
 end
 
 return EatEffects

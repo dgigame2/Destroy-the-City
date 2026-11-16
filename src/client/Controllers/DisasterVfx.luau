@@ -1,0 +1,421 @@
+--!strict
+-- Efeitos visuais dos desastres (só visual; o servidor já decidiu o dano). Todos os jogadores veem.
+-- Celular: peças ancoradas e tweens (sem física), poucas peças por efeito, tudo some sozinho, e no máximo
+-- MAX_EFFECTS efeitos ao mesmo tempo (os mais novos esperam o slot ou são pulados).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local DisasterConfig = require(Shared.Config.DisasterConfig)
+local Disasters = require(Shared.Logic.Disasters)
+local Remotes = require(Shared.Remotes)
+
+local Feedback = require(script.Parent.Parent.Feedback)
+
+local localPlayer = Players.LocalPlayer
+
+local DisasterVfx = {}
+
+local MAX_EFFECTS = 10
+local MAX_FLASHES = 4
+local active = 0
+local flashes = 0
+
+local folder = Instance.new("Folder")
+folder.Name = "DisasterVfx"
+
+local function part(props: { [string]: any }): Part
+	local p = Instance.new("Part")
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Material = Enum.Material.Neon
+	for key, value in props do
+		(p :: any)[key] = value
+	end
+	p.Parent = folder
+	return p
+end
+
+local function tween(
+	instance: Instance,
+	seconds: number,
+	goal: { [string]: any },
+	style: Enum.EasingStyle?,
+	dir: Enum.EasingDirection?
+)
+	local t = TweenService:Create(
+		instance,
+		TweenInfo.new(seconds, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out),
+		goal
+	)
+	t:Play()
+	return t
+end
+
+local function flat(position: Vector3): CFrame
+	return CFrame.new(position) * CFrame.Angles(0, 0, math.rad(90))
+end
+
+-- Tremor proporcional à distância do impacto até a câmera do jogador.
+local function shakeNear(position: Vector3, radius: number, strength: number)
+	local character = localPlayer.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if root == nil then
+		return
+	end
+	local d = (root.Position - position).Magnitude
+	if d < radius * 3 then
+		Feedback.shake(strength * (1 - d / (radius * 3)), 0.35)
+	end
+end
+
+local function meteor(cast: { [string]: any })
+	local d = DisasterConfig.ById.Meteor
+	local p = cast.Power :: number
+	local target = (cast.Target :: Vector3) + Vector3.new(0, 0.2, 0)
+	local r = Disasters.radius(d, p, DisasterConfig) * ((cast.Size :: number?) or 1) -- tamanho do nível
+	local delay = math.max(d.Delay - (Workspace:GetServerTimeNow() - cast.Time), 0.05)
+	-- sombra/aviso no chão crescendo até o tamanho da onda
+	local shadow = part({
+		Shape = Enum.PartType.Cylinder,
+		Material = Enum.Material.SmoothPlastic,
+		Color = Color3.fromRGB(40, 10, 10),
+		Transparency = 0.5,
+		Size = Vector3.new(0.15, r * 0.2, r * 0.2),
+		CFrame = flat(target),
+	})
+	tween(shadow, delay, { Size = Vector3.new(0.15, r * 2, r * 2) })
+	-- a pedra caindo na diagonal, com fogo; para no primeiro telhado no caminho (não atravessa a casa)
+	local size = 2.5 * p ^ 0.7
+	local start = target + Vector3.new(r * 1.5, 80 * p ^ 0.6, r * 0.8)
+	local landing = target
+	local landParams = RaycastParams.new()
+	landParams.FilterType = Enum.RaycastFilterType.Exclude
+	landParams.FilterDescendantsInstances = { folder }
+	local hit = Workspace:Raycast(start, target - start, landParams)
+	if hit then
+		landing = hit.Position
+	end
+	-- pedra de lava do Blender (ReplicatedStorage.Assets.Meteor) ou, se ainda não importou, uma bola neon
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local mesh = assets and assets:FindFirstChild("Meteor", true)
+	local rock: BasePart
+	if mesh and mesh:IsA("MeshPart") then
+		local clone = mesh:Clone()
+		clone.Anchored = true
+		clone.CanCollide = false
+		clone.CanQuery = false
+		clone.CanTouch = false
+		clone.CastShadow = false
+		clone.Size = Vector3.one * size * 1.3
+		clone.CFrame = CFrame.new(start)
+		clone.Parent = folder
+		local glow = Instance.new("PointLight")
+		glow.Color = Color3.fromRGB(255, 120, 40)
+		glow.Range = size * 4
+		glow.Brightness = 3
+		glow.Parent = clone
+		rock = clone
+	else
+		rock = part({
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(255, 120, 40),
+			Size = Vector3.one * size,
+			CFrame = CFrame.new(start),
+		})
+	end
+	local fire = Instance.new("Fire")
+	fire.Size = size * 1.5
+	fire.Heat = 15
+	fire.Parent = rock
+	local spin = CFrame.Angles(math.rad(200), math.rad(120), math.rad(60))
+	tween(rock, delay, { CFrame = CFrame.new(landing) * spin }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	task.wait(delay)
+	rock:Destroy()
+	shadow:Destroy()
+	-- impacto: anel de choque + clarão
+	local ring = part({
+		Shape = Enum.PartType.Cylinder,
+		Color = Color3.fromRGB(255, 200, 120),
+		Transparency = 0.2,
+		Size = Vector3.new(0.4, r * 0.3, r * 0.3),
+		CFrame = flat(target),
+	})
+	-- clarão pequeno e rápido no ponto do impacto (antes era uma bola enorme cobrindo as casas)
+	local flash = part({
+		Shape = Enum.PartType.Ball,
+		Color = Color3.fromRGB(255, 220, 160),
+		Transparency = 0.35,
+		Size = Vector3.one * size * 1.5,
+		CFrame = CFrame.new(landing),
+	})
+	local burst = Instance.new("ParticleEmitter")
+	burst.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	burst.Color = ColorSequence.new(Color3.fromRGB(255, 170, 90), Color3.fromRGB(90, 80, 80))
+	burst.Size = NumberSequence.new(size * 0.8, size * 2)
+	burst.Transparency = NumberSequence.new(0.2, 1)
+	burst.Lifetime = NumberRange.new(0.4, 0.7)
+	burst.Speed = NumberRange.new(r * 0.8, r * 1.4)
+	burst.SpreadAngle = Vector2.new(180, 180)
+	burst.Rate = 0
+	burst.Parent = flash
+	burst:Emit(14)
+	local light = Instance.new("PointLight")
+	light.Range = math.min(r * 2, 60)
+	light.Brightness = 6
+	light.Color = Color3.fromRGB(255, 180, 90)
+	light.Parent = flash
+	tween(ring, 0.4, { Size = Vector3.new(0.2, r * 2.1, r * 2.1), Transparency = 1 })
+	tween(flash, 0.2, { Size = Vector3.one * size * 3, Transparency = 1 })
+	tween(light, 0.35, { Brightness = 0 })
+	shakeNear(target, r, 1.2)
+	task.wait(0.8)
+	ring:Destroy()
+	flash:Destroy()
+end
+
+local function tornado(cast: { [string]: any })
+	local d = DisasterConfig.ById.Tornado
+	local p = cast.Power :: number
+	local r = Disasters.radius(d, p, DisasterConfig) * ((cast.Size :: number?) or 1) -- tamanho do nível
+	local speed = Disasters.speed(d, p, DisasterConfig)
+	local start = cast.Target :: Vector3
+	local dir = cast.Dir :: Vector3
+	-- o servidor corta a duração para o tornado parar na borda do chão liberado (e o nível aumenta)
+	local duration = (cast.Duration :: number?) or d.Duration
+	-- funil: discos empilhados, cada um mais largo, girando
+	local rings = {}
+	local layers = 6
+	for i = 1, layers do
+		local width = r * (0.45 + 0.75 * (i / layers) ^ 1.4) * 2
+		table.insert(
+			rings,
+			part({
+				Shape = Enum.PartType.Cylinder,
+				Material = Enum.Material.SmoothPlastic,
+				Color = Color3.fromRGB(150 + i * 10, 160 + i * 10, 175 + i * 10),
+				Transparency = 0.25 + i * 0.06,
+				Size = Vector3.new(r * 0.9, width, width),
+			})
+		)
+	end
+	local dust = Instance.new("ParticleEmitter")
+	dust.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	dust.Color = ColorSequence.new(Color3.fromRGB(190, 180, 160))
+	dust.Size = NumberSequence.new(r * 0.5, r * 1.2)
+	dust.Transparency = NumberSequence.new(0.4, 1)
+	dust.Lifetime = NumberRange.new(0.6, 1)
+	dust.Rate = 25
+	dust.Speed = NumberRange.new(r * 0.8)
+	dust.SpreadAngle = Vector2.new(80, 10)
+	dust.Parent = rings[1]
+	local began = cast.Time :: number
+	local connection: RBXScriptConnection
+	connection = RunService.RenderStepped:Connect(function()
+		local t = Workspace:GetServerTimeNow() - began
+		if t > duration then
+			connection:Disconnect()
+			for _, ring in rings do
+				tween(ring, 0.4, { Transparency = 1 })
+			end
+			task.delay(0.45, function()
+				for _, ring in rings do
+					ring:Destroy()
+				end
+			end)
+			return
+		end
+		local x, z = Disasters.tornadoAt(start.X, start.Z, dir.X, dir.Z, speed, math.max(t, 0))
+		local spin = t * 8
+		for i, ring in rings do
+			local y = (i - 0.5) * r * 0.9
+			local wobble = math.sin(t * 3 + i) * r * 0.08 * i
+			ring.CFrame = CFrame.new(x + wobble, start.Y + y, z) * CFrame.Angles(0, spin * (1 + i * 0.1), math.rad(90))
+		end
+	end)
+	shakeNear(start, r, 0.4)
+	task.wait(duration + 0.5)
+end
+
+-- Segmento de raio em zigue-zague de a até b.
+local function bolt(a: Vector3, b: Vector3, thickness: number, color: Color3): { Part }
+	local list = {}
+	local pieces = 3
+	local previous = a
+	for i = 1, pieces do
+		local t = i / pieces
+		local point = a:Lerp(b, t)
+		if i < pieces then
+			local jitter = (b - a).Magnitude * 0.12
+			point += Vector3.new(
+				(math.random() - 0.5) * jitter,
+				(math.random() - 0.5) * jitter,
+				(math.random() - 0.5) * jitter
+			)
+		end
+		local length = (point - previous).Magnitude
+		if length > 0.05 then
+			table.insert(
+				list,
+				part({
+					Color = color,
+					Size = Vector3.new(thickness, thickness, length),
+					CFrame = CFrame.lookAt((previous + point) / 2, point),
+				})
+			)
+		end
+		previous = point
+	end
+	return list
+end
+
+local function lightning(cast: { [string]: any })
+	local hops = cast.Hops :: { Vector3 }?
+	local p = cast.Power :: number
+	local target = cast.Target :: Vector3
+	local color = Color3.fromRGB(150, 220, 255)
+	local thickness = 0.5 * p ^ 0.6
+	local pieces = {}
+	local first = if hops and #hops > 0 then hops[1] else target
+	for _, piece in bolt(first + Vector3.new(0, 90 * p ^ 0.5, 0), first, thickness * 1.6, Color3.new(1, 1, 1)) do
+		table.insert(pieces, piece)
+	end
+	if hops then
+		for i = 2, #hops do
+			for _, piece in bolt(hops[i - 1], hops[i], thickness, color) do
+				table.insert(pieces, piece)
+			end
+		end
+	end
+	local flash = part({ Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(first) })
+	local light = Instance.new("PointLight")
+	light.Range = 40
+	light.Brightness = 8
+	light.Color = color
+	light.Parent = flash
+	shakeNear(first, 10 * p, 0.6)
+	-- pisca duas vezes e some
+	for _, on in { false, true, false } do
+		task.wait(0.06)
+		for _, piece in pieces do
+			piece.Transparency = if on then 0 else 0.6
+		end
+	end
+	for _, piece in pieces do
+		tween(piece, 0.2, { Transparency = 1 })
+	end
+	tween(light, 0.2, { Brightness = 0 })
+	task.wait(0.25)
+	for _, piece in pieces do
+		piece:Destroy()
+	end
+	flash:Destroy()
+end
+
+local HANDLERS: { [string]: ({ [string]: any }) -> () } = {
+	Meteor = meteor,
+	Tornado = tornado,
+	Lightning = lightning,
+}
+
+local function onCast(cast: { [string]: any })
+	local handler = HANDLERS[cast.Id]
+	if handler == nil or active >= MAX_EFFECTS then
+		return
+	end
+	active += 1
+	task.spawn(function()
+		local ok, err = pcall(handler, cast)
+		active -= 1
+		if not ok then
+			warn("[DisasterVfx]", cast.Id, err)
+		end
+	end)
+end
+
+-- Elo da cadeia: explosão (laranja, clarão) ou desabamento (poeira cinza). Conta no limite de efeitos.
+local function onChainBlast(blast: { Kind: string, Position: Vector3, Radius: number })
+	if active >= MAX_EFFECTS then
+		return
+	end
+	active += 1
+	task.spawn(function()
+		local explosion = blast.Kind == "Explosion"
+		local r = blast.Radius
+		local ground = blast.Position + Vector3.new(0, 0.3, 0)
+		local ring = part({
+			Shape = Enum.PartType.Cylinder,
+			Material = if explosion then Enum.Material.Neon else Enum.Material.SmoothPlastic,
+			Color = if explosion then Color3.fromRGB(255, 150, 60) else Color3.fromRGB(170, 160, 150),
+			Transparency = 0.3,
+			Size = Vector3.new(0.3, r * 0.3, r * 0.3),
+			CFrame = flat(ground),
+		})
+		tween(ring, 0.35, { Size = Vector3.new(0.2, r * 2, r * 2), Transparency = 1 })
+		local puff = part({ Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(ground + Vector3.new(0, 2, 0)) })
+		local smoke = Instance.new("ParticleEmitter")
+		smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		smoke.Color = if explosion
+			then ColorSequence.new(Color3.fromRGB(255, 170, 80), Color3.fromRGB(80, 70, 70))
+			else ColorSequence.new(Color3.fromRGB(200, 190, 180))
+		smoke.Size = NumberSequence.new(r * 0.25, r * 0.6)
+		smoke.Transparency = NumberSequence.new(0.2, 1)
+		smoke.Lifetime = NumberRange.new(0.5, 0.9)
+		smoke.Speed = NumberRange.new(r * 0.5, r)
+		smoke.SpreadAngle = Vector2.new(180, if explosion then 180 else 20)
+		smoke.Rate = 0
+		smoke.Parent = puff
+		smoke:Emit(if explosion then 12 else 8)
+		if explosion then
+			local light = Instance.new("PointLight")
+			light.Range = math.min(r * 1.5, 50)
+			light.Brightness = 5
+			light.Color = Color3.fromRGB(255, 160, 70)
+			light.Parent = puff
+			tween(light, 0.4, { Brightness = 0 })
+		end
+		shakeNear(ground, r, if explosion then 0.8 else 0.5)
+		task.wait(1)
+		ring:Destroy()
+		puff:Destroy()
+		active -= 1
+	end)
+end
+
+-- Construção que levou dano e continua de pé: pisca branco rapidinho (poucas por vez).
+local function onDamaged(models: { Model }, _origin: Vector3)
+	for _, model in models do
+		if flashes >= MAX_FLASHES or model.Parent == nil then
+			continue
+		end
+		flashes += 1
+		local highlight = Instance.new("Highlight")
+		highlight.FillColor = Color3.new(1, 1, 1)
+		highlight.FillTransparency = 0.4
+		highlight.OutlineTransparency = 1
+		highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+		highlight.Adornee = model
+		highlight.Parent = folder
+		tween(highlight, 0.25, { FillTransparency = 1 })
+		task.delay(0.3, function()
+			highlight:Destroy()
+			flashes -= 1
+		end)
+	end
+end
+
+function DisasterVfx.init()
+	folder.Parent = Workspace
+	Remotes.event(Remotes.Names.Events.DisasterCast).OnClientEvent:Connect(onCast)
+	Remotes.event(Remotes.Names.Events.BuildingDamaged).OnClientEvent:Connect(onDamaged)
+	Remotes.event(Remotes.Names.Events.ChainBlast).OnClientEvent:Connect(onChainBlast)
+end
+
+return DisasterVfx

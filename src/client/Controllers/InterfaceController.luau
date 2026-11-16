@@ -19,6 +19,7 @@ local Remotes = require(Shared.Remotes)
 
 local Screens = require(script.Parent.Parent.Ui.Screens)
 local EatEffects = require(script.Parent.EatEffects)
+local GameplayConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.GameplayConfig)
 local Feedback = require(script.Parent.Parent.Feedback)
 
 local localPlayer = Players.LocalPlayer
@@ -230,6 +231,23 @@ local function showCombo(count: number)
 	end)
 end
 
+-- Aviso grande no lugar do combo (reação em cadeia: "CHAIN REACTION x8!").
+function InterfaceController.bigCombo(text: string, color: Color3?)
+	comboToken += 1
+	local token = comboToken
+	refs.Combo.Text = text
+	refs.Combo.TextColor3 = color or Color3.fromRGB(255, 160, 60)
+	refs.Combo.Visible = true
+	refs.Combo.Rotation = math.random(-6, 6)
+	InterfaceController.bump(refs.Combo)
+	task.delay(1.8, function()
+		if comboToken == token then
+			refs.Combo.Visible = false
+			refs.Combo.TextColor3 = Color3.new(1, 1, 1)
+		end
+	end)
+end
+
 local function setupCurrencies()
 	-- nil = ainda não leu (não mostra "+tudo" ao entrar)
 	local shownCash: number?, shownGems: number? = nil, nil
@@ -399,7 +417,9 @@ local function setupTierToasts()
 		local tier = (localPlayer:GetAttribute("EdibleTier") :: number?) or 1
 		if tier > lastTier and isRun then
 			InterfaceController.toast(
-				"YOU CAN NOW EAT " .. EatEffects.tierName(tier) .. "!",
+				(if GameplayConfig.Mode == "Disasters" then "YOU CAN NOW DESTROY " else "YOU CAN NOW EAT ")
+					.. EatEffects.tierName(tier)
+					.. "!",
 				Color3.fromRGB(255, 227, 107)
 			)
 			EatEffects.playTierUp()

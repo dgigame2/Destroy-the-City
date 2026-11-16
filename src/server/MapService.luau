@@ -236,6 +236,7 @@ local function buildCity(
 		model:SetAttribute("BuildingId", index)
 		model:SetAttribute("Zone", placement.Zone)
 		model:SetAttribute("Step", placement.Step)
+		model:SetAttribute("Template", placement.Template) -- desastres: condutores do raio etc.
 		model.Parent = chunk
 		if index % BUILD_CHUNK == 0 then
 			for _, child in chunk:GetChildren() do
@@ -350,6 +351,22 @@ function MapService.zoneGate(zone: number): Vector3?
 		end
 	end
 	return if count > 0 then sum / count else nil
+end
+
+-- Zona e altura do chão numa posição do mundo (zona 0 = mar / fora da terra; nil = fora da grade).
+function MapService.groundAt(x: number, z: number): (number?, number)
+	local layout = currentLayout
+	if layout == nil then
+		return nil, 0
+	end
+	local grid = layout.Grid
+	local cx = math.floor(x / CityConfig.CellSize + grid.Width / 2)
+	local cz = math.floor(z / CityConfig.CellSize + grid.Depth / 2)
+	if cx < 0 or cz < 0 or cx >= grid.Width or cz >= grid.Depth then
+		return nil, 0
+	end
+	local i = cz * grid.Width + cx + 1
+	return grid.Zone[i], grid.Height[i] or 0
 end
 
 -- Abre a zona: as barreiras dela somem (o cliente faz o efeito de quebrar).

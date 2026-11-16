@@ -84,16 +84,19 @@ local function common(nature: Mix, yard: Mix, small: Mix, market: Mix): { [strin
 			TwinTowers = 0.3,
 		}, { Bush = 2, FlowerPot = 2, Bench = 1, Tree = 1, Fountain = 0.6, Gazebo = 0.4, Playground = 0.3 }, 0.12),
 		-- indústria e porto (no asfalto)
-		Industrial = spec(
-			"Asphalt",
-			{ Warehouse = 3, FactoryHall = 2, WaterTower = 1, ContainerStack = 2, Truck = 1 },
-			{ ContainerStack = 2, Truck = 1, Cone = 2 },
-			0.04,
-			0.3
-		),
+		Industrial = spec("Asphalt", {
+			Warehouse = 3,
+			FactoryHall = 2,
+			WaterTower = 1,
+			ContainerStack = 2,
+			Truck = 1,
+			OilTank = 2,
+			SmokeStack = 1,
+			PowerPylon = 1,
+		}, { ContainerStack = 2, Truck = 1, Cone = 2 }, 0.04, 0.3),
 		Harbor = spec(
 			"Asphalt",
-			{ Warehouse = 2, ContainerStack = 4, Truck = 1 },
+			{ Warehouse = 2, ContainerStack = 4, Truck = 1, OilTank = 1.5 },
 			{ ContainerStack = 2, Truck = 1, Cone = 1 },
 			0.05,
 			0.4

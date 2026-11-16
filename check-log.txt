@@ -1,0 +1,1008 @@
+
+[1/4] Rojo build
+Building project 'jogo2'
+Built project to build.rbxl
+
+[2/4] Testes
+Chain.spec.luau
+  ok    cadeia: todo explosivo existe nos modelos da cidade
+  ok    cadeia: carro explode, prédio grande desaba, casa não faz nada
+  ok    cadeia: dano cheio no centro, cai até a borda, zero fora
+  ok    cadeia: limites de profundidade e de reações (nada de cadeia infinita)
+  ok    cadeia: bônus cresce com a profundidade, com teto
+  ok    cadeia: aviso só ao cruzar um degrau, sem repetir
+Cities.spec.luau
+  ok    GardenVillage EASY: planta sem problemas (marcos cabem, zonas limitam o tamanho)
+  ok    GardenVillage EASY: geração é determinística
+  ok    GardenVillage EASY: nenhuma peça dentro de outra (cidade montada inteira)
+  ok    GardenVillage EASY: toda construção apoiada no chão (nada flutuando, nada afundado)
+  ok    GardenVillage EASY: sem pulo dá para andar por tudo (degraus menores que 1)
+  ok    GardenVillage EASY: cada zona tem lugar para nascer na rua e encosta na próxima
+  ok    GardenVillage EASY: nenhuma faixa da rua embaixo de uma barreira (não pisca)
+  ok    GardenVillage EASY: a placa de cada área fica dentro da própria área
+  ok    GardenVillage EASY: nenhuma peça passa de 2048 studs (limite do Roblox) e o mar vai até o horizonte
+  ok    GardenVillage EASY: a terra nunca encosta na borda da grade (mar em volta)
+  ok    GardenVillage EASY: paredes invisíveis em toda a costa, mais altas que o maior jogador (SHOULDN'T REACH)
+  ok    GardenVillage EASY: etapa por etapa, ao entrar tudo da etapa já cabe (sem caçar)
+  ok    GardenVillage EASY: as etapas vão do pequeno ao grande e cada uma tem o tamanho máximo dela
+  ok    GardenVillage EASY: ao chegar em cada área, os maiores marcos dela ainda não dá para comer
+  ok    GardenVillage EASY: tempo total perto de 10 min, áreas parecidas, a 1ª a mais curta
+  ok    GardenVillage MEDIUM: planta sem problemas (marcos cabem, zonas limitam o tamanho)
+  ok    GardenVillage MEDIUM: geração é determinística
+  ok    GardenVillage MEDIUM: nenhuma peça dentro de outra (cidade montada inteira)
+  ok    GardenVillage MEDIUM: toda construção apoiada no chão (nada flutuando, nada afundado)
+  ok    GardenVillage MEDIUM: sem pulo dá para andar por tudo (degraus menores que 1)
+  ok    GardenVillage MEDIUM: cada zona tem lugar para nascer na rua e encosta na próxima
+  ok    GardenVillage MEDIUM: nenhuma faixa da rua embaixo de uma barreira (não pisca)
+  ok    GardenVillage MEDIUM: a placa de cada área fica dentro da própria área
+  ok    GardenVillage MEDIUM: nenhuma peça passa de 2048 studs (limite do Roblox) e o mar vai até o horizonte
+  ok    GardenVillage MEDIUM: a terra nunca encosta na borda da grade (mar em volta)
+  ok    GardenVillage MEDIUM: paredes invisíveis em toda a costa, mais altas que o maior jogador (SHOULDN'T REACH)
+  ok    GardenVillage MEDIUM: etapa por etapa, ao entrar tudo da etapa já cabe (sem caçar)
+  ok    GardenVillage MEDIUM: as etapas vão do pequeno ao grande e cada uma tem o tamanho máximo dela
+  ok    GardenVillage MEDIUM: ao chegar em cada área, os maiores marcos dela ainda não dá para comer
+  ok    GardenVillage MEDIUM: tempo total perto de 30 min, áreas parecidas, a 1ª a mais curta
+  ok    GardenVillage HARD: planta sem problemas (marcos cabem, zonas limitam o tamanho)
+  ok    GardenVillage HARD: geração é determinística
+  ok    GardenVillage HARD: nenhuma peça dentro de outra (cidade montada inteira)
+  ok    GardenVillage HARD: toda construção apoiada no chão (nada flutuando, nada afundado)
+  ok    GardenVillage HARD: sem pulo dá para andar por tudo (degraus menores que 1)
+  ok    GardenVillage HARD: cada zona tem lugar para nascer na rua e encosta na próxima
+  ok    GardenVillage HARD: nenhuma faixa da rua embaixo de uma barreira (não pisca)
+  ok    GardenVillage HARD: a placa de cada área fica dentro da própria área
+  ok    GardenVillage HARD: nenhuma peça passa de 2048 studs (limite do Roblox) e o mar vai até o horizonte
+  ok    GardenVillage HARD: a terra nunca encosta na borda da grade (mar em volta)
+  ok    GardenVillage HARD: paredes invisíveis em toda a costa, mais altas que o maior jogador (SHOULDN'T REACH)
+  ok    GardenVillage HARD: etapa por etapa, ao entrar tudo da etapa já cabe (sem caçar)
+  ok    GardenVillage HARD: as etapas vão do pequeno ao grande e cada uma tem o tamanho máximo dela
+  ok    GardenVillage HARD: ao chegar em cada área, os maiores marcos dela ainda não dá para comer
+  ok    GardenVillage HARD: tempo total perto de 60 min, áreas parecidas, a 1ª a mais curta
+  ok    Harbor EASY: planta sem problemas (marcos cabem, zonas limitam o tamanho)
+  ok    Harbor EASY: geração é determinística
+  ok    Harbor EASY: nenhuma peça dentro de outra (cidade montada inteira)
+  ok    Harbor EASY: toda construção apoiada no chão (nada flutuando, nada afundado)
+  ok    Harbor EASY: sem pulo dá para andar por tudo (degraus menores que 1)
+  ok    Harbor EASY: cada zona tem lugar para nascer na rua e encosta na próxima
+  ok    Harbor EASY: nenhuma faixa da rua embaixo de uma barreira (não pisca)
+  ok    Harbor EASY: a placa de cada área fica dentro da própria área
+  ok    Harbor EASY: nenhuma peça passa de 2048 studs (limite do Roblox) e o mar vai até o horizonte
+  ok    Harbor EASY: a terra nunca encosta na borda da grade (mar em volta)
+  ok    Harbor EASY: paredes invisíveis em toda a costa, mais altas que o maior jogador (SHOULDN'T REACH)
+  ok    Harbor EASY: etapa por etapa, ao entrar tudo da etapa já cabe (sem caçar)
+  ok    Harbor EASY: as etapas vão do pequeno ao grande e cada uma tem o tamanho máximo dela
+  ok    Harbor EASY: ao chegar em cada área, os maiores marcos dela ainda não dá para comer
+  ok    Harbor EASY: tempo total perto de 10 min, áreas parecidas, a 1ª a mais curta
+  ok    Harbor MEDIUM: planta sem problemas (marcos cabem, zonas limitam o tamanho)
+  ok    Harbor MEDIUM: geração é determinística
+  ok    Harbor MEDIUM: nenhuma peça dentro de outra (cidade montada inteira)
+  ok    Harbor MEDIUM: toda construção apoiada no chão (nada flutuando, nada afundado)
+  ok    Harbor MEDIUM: sem pulo dá para andar por tudo (degraus menores que 1)
+  ok    Harbor MEDIUM: cada zona tem lugar para nascer na rua e encosta na próxima
+  ok    Harbor MEDIUM: nenhuma faixa da rua embaixo de uma barreira (não pisca)
+  ok    Harbor MEDIUM: a placa de cada área fica dentro da própria área
+  ok    Harbor MEDIUM: nenhuma peça passa de 2048 studs (limite do Roblox) e o mar vai até o horizonte
+  ok    Harbor MEDIUM: a terra nunca encosta na borda da grade (mar em volta)
+  ok    Harbor MEDIUM: paredes invisíveis em toda a costa, mais altas que o maior jogador (SHOULDN'T REACH)
+  ok    Harbor MEDIUM: etapa por etapa, ao entrar tudo da etapa já cabe (sem caçar)
+  ok    Harbor MEDIUM: as etapas vão do pequeno ao grande e cada uma tem o tamanho máximo dela
+  ok    Harbor MEDIUM: ao chegar em cada área, os maiores marcos dela ainda não dá para comer
+  ok    Harbor MEDIUM: tempo total perto de 30 min, áreas parecidas, a 1ª a mais curta
+  ok    Harbor HARD: planta sem problemas (marcos cabem, zonas limitam o tamanho)
+  ok    Harbor HARD: geração é determinística
+  ok    Harbor HARD: nenhuma peça dentro de outra (cidade montada inteira)
+  ok    Harbor HARD: toda construção apoiada no chão (nada flutuando, nada afundado)
+  ok    Harbor HARD: sem pulo dá para andar por tudo (degraus menores que 1)
+  ok    Harbor HARD: cada zona tem lugar para nascer na rua e encosta na próxima
+  ok    Harbor HARD: nenhuma faixa da rua embaixo de uma barreira (não pisca)
+  ok    Harbor HARD: a placa de cada área fica dentro da própria área
+  ok    Harbor HARD: nenhuma peça passa de 2048 studs (limite do Roblox) e o mar vai até o horizonte
+  ok    Harbor HARD: a terra nunca encosta na borda da grade (mar em volta)
+  ok    Harbor HARD: paredes invisíveis em toda a costa, mais altas que o maior jogador (SHOULDN'T REACH)
+  ok    Harbor HARD: etapa por etapa, ao entrar tudo da etapa já cabe (sem caçar)
+  ok    Harbor HARD: as etapas vão do pequeno ao grande e cada uma tem o tamanho máximo dela
+  ok    Harbor HARD: ao chegar em cada área, os maiores marcos dela ainda não dá para comer
+  ok    Harbor HARD: tempo total perto de 60 min, áreas parecidas, a 1ª a mais curta
+  ok    Metropolis EASY: planta sem problemas (marcos cabem, zonas limitam o tamanho)
+  ok    Metropolis EASY: geração é determinística
+  ok    Metropolis EASY: nenhuma peça dentro de outra (cidade montada inteira)
+  ok    Metropolis EASY: toda construção apoiada no chão (nada flutuando, nada afundado)
+  ok    Metropolis EASY: sem pulo dá para andar por tudo (degraus menores que 1)
+  ok    Metropolis EASY: cada zona tem lugar para nascer na rua e encosta na próxima
+  ok    Metropolis EASY: nenhuma faixa da rua embaixo de uma barreira (não pisca)
+  ok    Metropolis EASY: a placa de cada área fica dentro da própria área
+  ok    Metropolis EASY: nenhuma peça passa de 2048 studs (limite do Roblox) e o mar vai até o horizonte
+  ok    Metropolis EASY: a terra nunca encosta na borda da grade (mar em volta)
+  ok    Metropolis EASY: paredes invisíveis em toda a costa, mais altas que o maior jogador (SHOULDN'T REACH)
+  ok    Metropolis EASY: etapa por etapa, ao entrar tudo da etapa já cabe (sem caçar)
+  ok    Metropolis EASY: as etapas vão do pequeno ao grande e cada uma tem o tamanho máximo dela
+  ok    Metropolis EASY: ao chegar em cada área, os maiores marcos dela ainda não dá para comer
+  ok    Metropolis EASY: tempo total perto de 10 min, áreas parecidas, a 1ª a mais curta
+  ok    Metropolis MEDIUM: planta sem problemas (marcos cabem, zonas limitam o tamanho)
+  ok    Metropolis MEDIUM: geração é determinística
+  ok    Metropolis MEDIUM: nenhuma peça dentro de outra (cidade montada inteira)
+  ok    Metropolis MEDIUM: toda construção apoiada no chão (nada flutuando, nada afundado)
+  ok    Metropolis MEDIUM: sem pulo dá para andar por tudo (degraus menores que 1)
+  ok    Metropolis MEDIUM: cada zona tem lugar para nascer na rua e encosta na próxima
+  ok    Metropolis MEDIUM: nenhuma faixa da rua embaixo de uma barreira (não pisca)
+  ok    Metropolis MEDIUM: a placa de cada área fica dentro da própria área
+  ok    Metropolis MEDIUM: nenhuma peça passa de 2048 studs (limite do Roblox) e o mar vai até o horizonte
+  ok    Metropolis MEDIUM: a terra nunca encosta na borda da grade (mar em volta)
+  ok    Metropolis MEDIUM: paredes invisíveis em toda a costa, mais altas que o maior jogador (SHOULDN'T REACH)
+  ok    Metropolis MEDIUM: etapa por etapa, ao entrar tudo da etapa já cabe (sem caçar)
+  ok    Metropolis MEDIUM: as etapas vão do pequeno ao grande e cada uma tem o tamanho máximo dela
+  ok    Metropolis MEDIUM: ao chegar em cada área, os maiores marcos dela ainda não dá para comer
+  ok    Metropolis MEDIUM: tempo total perto de 30 min, áreas parecidas, a 1ª a mais curta
+  ok    Metropolis HARD: planta sem problemas (marcos cabem, zonas limitam o tamanho)
+  ok    Metropolis HARD: geração é determinística
+  ok    Metropolis HARD: nenhuma peça dentro de outra (cidade montada inteira)
+  ok    Metropolis HARD: toda construção apoiada no chão (nada flutuando, nada afundado)
+  ok    Metropolis HARD: sem pulo dá para andar por tudo (degraus menores que 1)
+  ok    Metropolis HARD: cada zona tem lugar para nascer na rua e encosta na próxima
+  ok    Metropolis HARD: nenhuma faixa da rua embaixo de uma barreira (não pisca)
+  ok    Metropolis HARD: a placa de cada área fica dentro da própria área
+  ok    Metropolis HARD: nenhuma peça passa de 2048 studs (limite do Roblox) e o mar vai até o horizonte
+  ok    Metropolis HARD: a terra nunca encosta na borda da grade (mar em volta)
+  ok    Metropolis HARD: paredes invisíveis em toda a costa, mais altas que o maior jogador (SHOULDN'T REACH)
+  ok    Metropolis HARD: etapa por etapa, ao entrar tudo da etapa já cabe (sem caçar)
+  ok    Metropolis HARD: as etapas vão do pequeno ao grande e cada uma tem o tamanho máximo dela
+  ok    Metropolis HARD: ao chegar em cada área, os maiores marcos dela ainda não dá para comer
+  ok    Metropolis HARD: tempo total perto de 60 min, áreas parecidas, a 1ª a mais curta
+DamageStages.spec.luau
+  ok    estágios: inteira = 0, cada degrau de vida abre um estágio
+  ok    config: degraus de vida decrescentes e blocos caídos crescentes
+  ok    quantos blocos caem: zero inteira, cresce com o estágio
+  ok    barra de vida publicada em degraus de 5%
+  ok    mesma construção quebra sempre igual; outra semente quebra diferente
+  ok    Lifeguard: blocos caem sem deixar nada flutuando
+  ok    IceCreamStand: blocos caem sem deixar nada flutuando
+  ok    Snowman: blocos caem sem deixar nada flutuando
+  ok    Pier: blocos caem sem deixar nada flutuando
+  ok    SnowPine: blocos caem sem deixar nada flutuando
+  ok    Igloo: blocos caem sem deixar nada flutuando
+  ok    GlassTower: blocos caem sem deixar nada flutuando
+  ok    OfficeTower: blocos caem sem deixar nada flutuando
+  ok    RedTower: blocos caem sem deixar nada flutuando
+  ok    Playground: blocos caem sem deixar nada flutuando
+  ok    GasStation: blocos caem sem deixar nada flutuando
+  ok    FerrisWheel: blocos caem sem deixar nada flutuando
+  ok    Hydrant: blocos caem sem deixar nada flutuando
+  ok    House: blocos caem sem deixar nada flutuando
+  ok    ClockTower: blocos caem sem deixar nada flutuando
+  ok    FactoryHall: blocos caem sem deixar nada flutuando
+  ok    Stadium: blocos caem sem deixar nada flutuando
+  ok    CoolingTower: blocos caem sem deixar nada flutuando
+  ok    Flowers: blocos caem sem deixar nada flutuando
+  ok    Church: blocos caem sem deixar nada flutuando
+  ok    TwinTowers: blocos caem sem deixar nada flutuando
+  ok    SoccerField: blocos caem sem deixar nada flutuando
+  ok    Shop: blocos caem sem deixar nada flutuando
+  ok    Bungalow: blocos caem sem deixar nada flutuando
+  ok    BigHouse: blocos caem sem deixar nada flutuando
+  ok    Office: blocos caem sem deixar nada flutuando
+  ok    RockPillar: blocos caem sem deixar nada flutuando
+  ok    Cone: blocos caem sem deixar nada flutuando
+  ok    Tree: blocos caem sem deixar nada flutuando
+  ok    Plane: blocos caem sem deixar nada flutuando
+  ok    Car: blocos caem sem deixar nada flutuando
+  ok    Cafe: blocos caem sem deixar nada flutuando
+  ok    Boat: blocos caem sem deixar nada flutuando
+  ok    SnowCabin: blocos caem sem deixar nada flutuando
+  ok    FlowerPot: blocos caem sem deixar nada flutuando
+  ok    Warehouse: blocos caem sem deixar nada flutuando
+  ok    ContainerStack: blocos caem sem deixar nada flutuando
+  ok    Acacia: blocos caem sem deixar nada flutuando
+  ok    Cottage: blocos caem sem deixar nada flutuando
+  ok    Gazebo: blocos caem sem deixar nada flutuando
+  ok    Truck: blocos caem sem deixar nada flutuando
+  ok    Villa: blocos caem sem deixar nada flutuando
+  ok    Fence: blocos caem sem deixar nada flutuando
+  ok    Bus: blocos caem sem deixar nada flutuando
+  ok    BeachHouse: blocos caem sem deixar nada flutuando
+  ok    Townhouse: blocos caem sem deixar nada flutuando
+  ok    SurfShop: blocos caem sem deixar nada flutuando
+  ok    Fountain: blocos caem sem deixar nada flutuando
+  ok    Tower: blocos caem sem deixar nada flutuando
+  ok    IceCrystal: blocos caem sem deixar nada flutuando
+  ok    WaterTower: blocos caem sem deixar nada flutuando
+  ok    SpireTower: blocos caem sem deixar nada flutuando
+  ok    FoodCart: blocos caem sem deixar nada flutuando
+  ok    School: blocos caem sem deixar nada flutuando
+  ok    Terminal: blocos caem sem deixar nada flutuando
+  ok    Iceberg: blocos caem sem deixar nada flutuando
+  ok    BusStop: blocos caem sem deixar nada flutuando
+  ok    Umbrella: blocos caem sem deixar nada flutuando
+  ok    Yacht: blocos caem sem deixar nada flutuando
+  ok    Hotel: blocos caem sem deixar nada flutuando
+  ok    Bench: blocos caem sem deixar nada flutuando
+  ok    Mushroom: blocos caem sem deixar nada flutuando
+  ok    Pine: blocos caem sem deixar nada flutuando
+  ok    Museum: blocos caem sem deixar nada flutuando
+  ok    Skyscraper: blocos caem sem deixar nada flutuando
+  ok    Lighthouse: blocos caem sem deixar nada flutuando
+  ok    CargoShip: blocos caem sem deixar nada flutuando
+  ok    ControlTower: blocos caem sem deixar nada flutuando
+  ok    TVTower: blocos caem sem deixar nada flutuando
+  ok    Bank: blocos caem sem deixar nada flutuando
+  ok    Lamp: blocos caem sem deixar nada flutuando
+  ok    Palm: blocos caem sem deixar nada flutuando
+  ok    Supermarket: blocos caem sem deixar nada flutuando
+  ok    SkiLodge: blocos caem sem deixar nada flutuando
+  ok    CornerStore: blocos caem sem deixar nada flutuando
+  ok    Hangar: blocos caem sem deixar nada flutuando
+  ok    Crane: blocos caem sem deixar nada flutuando
+  ok    Hospital: blocos caem sem deixar nada flutuando
+  ok    DeadTree: blocos caem sem deixar nada flutuando
+  ok    Cactus: blocos caem sem deixar nada flutuando
+  ok    ApartmentTall: blocos caem sem deixar nada flutuando
+  ok    PicnicTable: blocos caem sem deixar nada flutuando
+  ok    Apartment: blocos caem sem deixar nada flutuando
+  ok    FireStation: blocos caem sem deixar nada flutuando
+  ok    escombros: tiers pequenos não deixam pilha
+  ok    escombros tier 3 em 8x8: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 3 em 14x10: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 3 em 30x22: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 3 em 3x40: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 4 em 8x8: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 4 em 14x10: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 4 em 30x22: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 4 em 3x40: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 5 em 8x8: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 5 em 14x10: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 5 em 30x22: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 5 em 3x40: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 6 em 8x8: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 6 em 14x10: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 6 em 30x22: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 6 em 3x40: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 7 em 8x8: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 7 em 14x10: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 7 em 30x22: dentro do terreno, baixos, sem sobrepor
+  ok    escombros tier 7 em 3x40: dentro do terreno, baixos, sem sobrepor
+Disasters.spec.luau
+  ok    três desastres iniciais, todos no degrau 1 da curva de poder
+  ok    mecânicas diferentes: ponto (meteoro), linha (tornado), rede (raio)
+  ok    construção travada: poder abaixo do tier não causa dano
+  ok    meteoro no centro derruba um tier do seu tamanho em 1 acerto
+  ok    tornado moe o que é pequeno e quase não arranha o do seu tamanho
+  ok    onda de choque do meteoro: cheia no miolo, cai até a borda, zero fora
+  ok    mira longe demais é puxada para o alcance (servidor não confia no cliente)
+  ok    alcance, raio e velocidade crescem com o poder
+  ok    tornado anda em linha reta na direção da mira
+  ok    raio: começa no mais perto da mira e pula vizinho a vizinho perdendo força
+  ok    raio: condutor não perde força e pula mais longe
+  ok    raio: nada perto da mira = nada atingido; nunca acerta o mesmo duas vezes
+  ok    cooldown
+  ok    4 jogadores acertando as mesmas construções ao mesmo tempo: cada uma cai e pontua UMA vez
+  ok    vida parcial: fração cai com o dano e zera ao destruir
+  ok    placar: ordem do maior para o menor
+  ok    pontos sobem com o tier
+  ok    lançar desastre tem feedback triplo
+Eat.spec.luau
+  ok    alcance: peça encostando na borda do círculo (no chão) é comida
+  ok    alcance: peça logo fora do círculo não é comida
+  ok    alcance: altura da peça não importa (topo de torre conta pela posição no chão)
+  ok    alcance: jogador em cima/dentro da peça tem distância 0
+  ok    alcance: peça girada 45° usa o canto mais perto
+  ok    comer: teto por tick alto o bastante para não deixar nada para trás
+  ok    coleta automática: começa em 98% e não antes
+  ok    coleta automática: zona pequena (menos de 50) só coleta a última peça
+  ok    tela: 98% real aparece como 95%
+  ok    tela: porcentagem nunca desce e termina em 100
+  ok    destaque das últimas peças: 25 + avisos de 'BIGGER' cabem no limite de 31 Highlights do Roblox
+Feedback.spec.luau
+  ok    feedback "Cast": tem som, shake e número
+  ok    feedback "Chain": tem som, shake e número
+  ok    feedback "Level": tem som, shake e número
+  ok    feedback "Eat": tem som, shake e número
+  ok    feedback "Click": tem som, shake e número
+  ok    feedback "Buy": tem som, shake e número
+  ok    feedback "Fail": tem som, shake e número
+  ok    feedback "Coins": tem som, shake e número
+  ok    feedback "Gems": tem som, shake e número
+  ok    feedback "Reward": tem som, shake e número
+  ok    feedback "Spin": tem som, shake e número
+  ok    feedback "TierUp": tem som, shake e número
+  ok    feedback "ZoneClear": tem som, shake e número
+  ok    todo tipo do FeedbackConfig está na lista de ações testadas
+  ok    número some em menos de 1 segundo
+  ok    ações frequentes: som baixo e com intervalo mínimo (comer e dinheiro)
+  ok    shake: tremores seguidos não passam do teto
+  ok    shake: decai até zero no tempo certo
+  ok    balanço da UI começa e termina parado
+  ok    números seguidos se somam dentro da janela
+Growth.spec.luau
+  ok    0 pontos = escala base
+  ok    escala nunca passa do máximo
+  ok    pointsForScale é o inverso de scaleFromPoints
+  ok    escala cresce sempre que os pontos crescem
+  ok    tiers: maior construção = mais crescimento, moedas e tamanho exigido
+  ok    jogador novo consegue comer o tier 1 (sem ficar travado no início)
+  ok    highestEdibleTier respeita o tamanho exigido
+  ok    bônus de upgrade aumenta crescimento e moedas
+  ok    raio de comer escala com o tamanho e com o ímã
+GuidePath.spec.luau
+  ok    passagem: ponto mais perto da barreira mais perto
+  ok    setas: espaçadas igual, na direção do caminho
+  ok    setas andam para frente com a fase e viram na curva
+Mastery.spec.luau
+  ok    nível: todo desastre começa no 1, igual ao DisasterConfig (sem bônus)
+  ok    nível: XP necessária cresce a cada nível e é 0 no máximo
+  ok    nível: usar o desastre sobe o nível (pode subir vários de uma vez) e para no máximo
+  ok    nível: XP maior para construções maiores; cadeia dá só uma parte
+  ok    nível: mais forte e maior a cada nível; raio ganha pulos e tornado dura mais
+  ok    buff do raio: mais dano, mais pulos e perde menos força por pulo
+  ok    mira: ponto no chão liberado não muda
+  ok    mira: atrás da barreira volta para o último chão liberado na linha
+  ok    mira: jogador fora do chão liberado não lança nada
+  ok    tornado: para na borda do chão liberado; dentro dele anda a duração toda
+Meta.spec.luau
+  ok    diária: primeira vez dá o dia 1
+  ok    diária: dias seguidos avançam a sequência e o dia 7 volta ao 1
+  ok    diária: não resgata duas vezes no mesmo dia
+  ok    diária: pular um dia volta ao dia 1
+  ok    semana vira na segunda-feira (UTC)
+  ok    recompensas configuradas: 7 diárias e semanal com prêmio
+  ok    roleta: probabilidades somam 100%
+  ok    roleta: item lendário é raro (< 3%)
+  ok    roleta: sorteio respeita os pesos (10000 giros)
+  ok    roleta: ângulo final para na fatia sorteada
+  ok    roleta: giro grátis a cada 24h
+  ok    bônus: upgrade + classe somam; boost dobra
+  ok    bônus: classe Lucky dobra a chance de gema
+  ok    boost: comprar com outro ativo soma o tempo
+  ok    gemas: só construções grandes dão gemas
+  ok    ids únicos entre itens, classes e produtos
+  ok    prêmios da roleta e das recompensas apontam para itens que existem
+  ok    itens raros da roleta valem gemas quando repetidos
+  ok    preço sobe com a raridade dentro de cada tipo
+  ok    classes custam gemas e têm algum bônus
+  ok    ícones usam só emojis que o Roblox mostra (nada do bloco novo U+1FA70 em diante)
+Physics.spec.luau
+  ok    velocidade de decolagem atinge a altura configurada
+  ok    queda de 0 studs dura 0s
+  ok    pulo no mesmo nível dura 2 * v / g
+  ok    plataforma no topo exato do pulo é alcançável
+  ok    plataforma acima da altura do pulo é inalcançável
+  ok    vão alcançável cresce quando o destino é mais baixo
+  ok    valores negativos são rejeitados
+  ok    pulo só no lobby
+  ok    os arquivos do Rojo usam o mesmo pulo do MovementConfig em cada lugar
+  ok    lobby fora do alcance de qualquer jogador na cidade (pulo + altura do corpo)
+Rng.spec.luau
+  ok    mesma semente gera a mesma sequência
+  ok    next fica em [0, 1)
+  ok    int fica dentro do intervalo e cobre os extremos
+  ok    weighted respeita pesos (peso 0 nunca sai)
+RunArea.spec.luau
+  ok    área START A RUN: nenhuma peça entra em outra
+  ok    área START A RUN: não encosta para dentro do caminho, das placas, do vidro nem das pedras
+  ok    tudo fica dentro da grama da ilha
+  ok    quadrados simétricos e separados por grama (ninguém fica em dois ao mesmo tempo)
+  ok    sem pulo: o piso do quadrado é um degrau que dá para subir andando
+  ok    em cima do quadrado: dentro da área e até a altura de detecção
+  ok    quem é tirado do quadrado cai na grama, fora de todos os quadrados
+Runs.spec.luau
+  ok    opções válidas passam e voltam limpas
+  ok    capítulo e dificuldade travados exigem vitórias
+  ok    tamanho da party só de 1 a 4 (inteiro)
+  ok    primeiro capítulo e Normal sempre liberados; capítulos pedem vitórias crescentes
+  ok    membros: dono primeiro, depois quem chegou, até o tamanho
+  ok    party sai no tempo aberto ou logo depois de lotar
+  ok    textos das placas
+  ok    lista de runs salvas: mais recente primeiro, sem repetir, sem expiradas, com limite
+  ok    expiração e texto do tempo
+  ok    carregar run salva exige todos os membros
+  ok    construções comidas: salvar e carregar sem lixo
+  ok    progresso, vitória e gemas
+Stride.spec.luau
+  ok    tamanho normal na velocidade padrão: ritmo 1 (só correr, velocidade 1)
+  ok    gigante: o ritmo cai na mesma proporção do tamanho (passo maior, perna mais lenta)
+  ok    mistura andar/correr sem pesos zerados e contínua
+  ok    parado ou escala inválida: ritmo 0
+Templates.spec.luau
+  ok    Lifeguard: nenhum bloco flutuando
+  ok    Lifeguard: nenhum bloco dentro de outro (só encostam)
+  ok    Lifeguard: só blocos alinhados (teste de encaixe exato)
+  ok    Lifeguard: nada abaixo do chão e tudo dentro do footprint
+  ok    Lifeguard: tier válido e cores existentes em todas as paletas
+  ok    IceCreamStand: nenhum bloco flutuando
+  ok    IceCreamStand: nenhum bloco dentro de outro (só encostam)
+  ok    IceCreamStand: só blocos alinhados (teste de encaixe exato)
+  ok    IceCreamStand: nada abaixo do chão e tudo dentro do footprint
+  ok    IceCreamStand: tier válido e cores existentes em todas as paletas
+  ok    Hedge: nenhum bloco flutuando
+  ok    Hedge: nenhum bloco dentro de outro (só encostam)
+  ok    Hedge: só blocos alinhados (teste de encaixe exato)
+  ok    Hedge: nada abaixo do chão e tudo dentro do footprint
+  ok    Hedge: tier válido e cores existentes em todas as paletas
+  ok    Snowman: nenhum bloco flutuando
+  ok    Snowman: nenhum bloco dentro de outro (só encostam)
+  ok    Snowman: só blocos alinhados (teste de encaixe exato)
+  ok    Snowman: nada abaixo do chão e tudo dentro do footprint
+  ok    Snowman: tier válido e cores existentes em todas as paletas
+  ok    Pier: nenhum bloco flutuando
+  ok    Pier: nenhum bloco dentro de outro (só encostam)
+  ok    Pier: só blocos alinhados (teste de encaixe exato)
+  ok    Pier: nada abaixo do chão e tudo dentro do footprint
+  ok    Pier: tier válido e cores existentes em todas as paletas
+  ok    SnowPine: nenhum bloco flutuando
+  ok    SnowPine: nenhum bloco dentro de outro (só encostam)
+  ok    SnowPine: só blocos alinhados (teste de encaixe exato)
+  ok    SnowPine: nada abaixo do chão e tudo dentro do footprint
+  ok    SnowPine: tier válido e cores existentes em todas as paletas
+  ok    Igloo: nenhum bloco flutuando
+  ok    Igloo: nenhum bloco dentro de outro (só encostam)
+  ok    Igloo: só blocos alinhados (teste de encaixe exato)
+  ok    Igloo: nada abaixo do chão e tudo dentro do footprint
+  ok    Igloo: tier válido e cores existentes em todas as paletas
+  ok    GlassTower: nenhum bloco flutuando
+  ok    GlassTower: nenhum bloco dentro de outro (só encostam)
+  ok    GlassTower: só blocos alinhados (teste de encaixe exato)
+  ok    GlassTower: nada abaixo do chão e tudo dentro do footprint
+  ok    GlassTower: tier válido e cores existentes em todas as paletas
+  ok    OfficeTower: nenhum bloco flutuando
+  ok    OfficeTower: nenhum bloco dentro de outro (só encostam)
+  ok    OfficeTower: só blocos alinhados (teste de encaixe exato)
+  ok    OfficeTower: nada abaixo do chão e tudo dentro do footprint
+  ok    OfficeTower: tier válido e cores existentes em todas as paletas
+  ok    RedTower: nenhum bloco flutuando
+  ok    RedTower: nenhum bloco dentro de outro (só encostam)
+  ok    RedTower: só blocos alinhados (teste de encaixe exato)
+  ok    RedTower: nada abaixo do chão e tudo dentro do footprint
+  ok    RedTower: tier válido e cores existentes em todas as paletas
+  ok    Playground: nenhum bloco flutuando
+  ok    Playground: nenhum bloco dentro de outro (só encostam)
+  ok    Playground: só blocos alinhados (teste de encaixe exato)
+  ok    Playground: nada abaixo do chão e tudo dentro do footprint
+  ok    Playground: tier válido e cores existentes em todas as paletas
+  ok    GasStation: nenhum bloco flutuando
+  ok    GasStation: nenhum bloco dentro de outro (só encostam)
+  ok    GasStation: só blocos alinhados (teste de encaixe exato)
+  ok    GasStation: nada abaixo do chão e tudo dentro do footprint
+  ok    GasStation: tier válido e cores existentes em todas as paletas
+  ok    FerrisWheel: nenhum bloco flutuando
+  ok    FerrisWheel: nenhum bloco dentro de outro (só encostam)
+  ok    FerrisWheel: só blocos alinhados (teste de encaixe exato)
+  ok    FerrisWheel: nada abaixo do chão e tudo dentro do footprint
+  ok    FerrisWheel: tier válido e cores existentes em todas as paletas
+  ok    Towel: nenhum bloco flutuando
+  ok    Towel: nenhum bloco dentro de outro (só encostam)
+  ok    Towel: só blocos alinhados (teste de encaixe exato)
+  ok    Towel: nada abaixo do chão e tudo dentro do footprint
+  ok    Towel: tier válido e cores existentes em todas as paletas
+  ok    Hydrant: nenhum bloco flutuando
+  ok    Hydrant: nenhum bloco dentro de outro (só encostam)
+  ok    Hydrant: só blocos alinhados (teste de encaixe exato)
+  ok    Hydrant: nada abaixo do chão e tudo dentro do footprint
+  ok    Hydrant: tier válido e cores existentes em todas as paletas
+  ok    House: nenhum bloco flutuando
+  ok    House: nenhum bloco dentro de outro (só encostam)
+  ok    House: só blocos alinhados (teste de encaixe exato)
+  ok    House: nada abaixo do chão e tudo dentro do footprint
+  ok    House: tier válido e cores existentes em todas as paletas
+  ok    ClockTower: nenhum bloco flutuando
+  ok    ClockTower: nenhum bloco dentro de outro (só encostam)
+  ok    ClockTower: só blocos alinhados (teste de encaixe exato)
+  ok    ClockTower: nada abaixo do chão e tudo dentro do footprint
+  ok    ClockTower: tier válido e cores existentes em todas as paletas
+  ok    FactoryHall: nenhum bloco flutuando
+  ok    FactoryHall: nenhum bloco dentro de outro (só encostam)
+  ok    FactoryHall: só blocos alinhados (teste de encaixe exato)
+  ok    FactoryHall: nada abaixo do chão e tudo dentro do footprint
+  ok    FactoryHall: tier válido e cores existentes em todas as paletas
+  ok    Stadium: nenhum bloco flutuando
+  ok    Stadium: nenhum bloco dentro de outro (só encostam)
+  ok    Stadium: só blocos alinhados (teste de encaixe exato)
+  ok    Stadium: nada abaixo do chão e tudo dentro do footprint
+  ok    Stadium: tier válido e cores existentes em todas as paletas
+  ok    CoolingTower: nenhum bloco flutuando
+  ok    CoolingTower: nenhum bloco dentro de outro (só encostam)
+  ok    CoolingTower: só blocos alinhados (teste de encaixe exato)
+  ok    CoolingTower: nada abaixo do chão e tudo dentro do footprint
+  ok    CoolingTower: tier válido e cores existentes em todas as paletas
+  ok    Rock: nenhum bloco flutuando
+  ok    Rock: nenhum bloco dentro de outro (só encostam)
+  ok    Rock: só blocos alinhados (teste de encaixe exato)
+  ok    Rock: nada abaixo do chão e tudo dentro do footprint
+  ok    Rock: tier válido e cores existentes em todas as paletas
+  ok    Flowers: nenhum bloco flutuando
+  ok    Flowers: nenhum bloco dentro de outro (só encostam)
+  ok    Flowers: só blocos alinhados (teste de encaixe exato)
+  ok    Flowers: nada abaixo do chão e tudo dentro do footprint
+  ok    Flowers: tier válido e cores existentes em todas as paletas
+  ok    Church: nenhum bloco flutuando
+  ok    Church: nenhum bloco dentro de outro (só encostam)
+  ok    Church: só blocos alinhados (teste de encaixe exato)
+  ok    Church: nada abaixo do chão e tudo dentro do footprint
+  ok    Church: tier válido e cores existentes em todas as paletas
+  ok    TwinTowers: nenhum bloco flutuando
+  ok    TwinTowers: nenhum bloco dentro de outro (só encostam)
+  ok    TwinTowers: só blocos alinhados (teste de encaixe exato)
+  ok    TwinTowers: nada abaixo do chão e tudo dentro do footprint
+  ok    TwinTowers: tier válido e cores existentes em todas as paletas
+  ok    SoccerField: nenhum bloco flutuando
+  ok    SoccerField: nenhum bloco dentro de outro (só encostam)
+  ok    SoccerField: só blocos alinhados (teste de encaixe exato)
+  ok    SoccerField: nada abaixo do chão e tudo dentro do footprint
+  ok    SoccerField: tier válido e cores existentes em todas as paletas
+  ok    Shop: nenhum bloco flutuando
+  ok    Shop: nenhum bloco dentro de outro (só encostam)
+  ok    Shop: só blocos alinhados (teste de encaixe exato)
+  ok    Shop: nada abaixo do chão e tudo dentro do footprint
+  ok    Shop: tier válido e cores existentes em todas as paletas
+  ok    Bungalow: nenhum bloco flutuando
+  ok    Bungalow: nenhum bloco dentro de outro (só encostam)
+  ok    Bungalow: só blocos alinhados (teste de encaixe exato)
+  ok    Bungalow: nada abaixo do chão e tudo dentro do footprint
+  ok    Bungalow: tier válido e cores existentes em todas as paletas
+  ok    BigHouse: nenhum bloco flutuando
+  ok    BigHouse: nenhum bloco dentro de outro (só encostam)
+  ok    BigHouse: só blocos alinhados (teste de encaixe exato)
+  ok    BigHouse: nada abaixo do chão e tudo dentro do footprint
+  ok    BigHouse: tier válido e cores existentes em todas as paletas
+  ok    Office: nenhum bloco flutuando
+  ok    Office: nenhum bloco dentro de outro (só encostam)
+  ok    Office: só blocos alinhados (teste de encaixe exato)
+  ok    Office: nada abaixo do chão e tudo dentro do footprint
+  ok    Office: tier válido e cores existentes em todas as paletas
+  ok    RockPillar: nenhum bloco flutuando
+  ok    RockPillar: nenhum bloco dentro de outro (só encostam)
+  ok    RockPillar: só blocos alinhados (teste de encaixe exato)
+  ok    RockPillar: nada abaixo do chão e tudo dentro do footprint
+  ok    RockPillar: tier válido e cores existentes em todas as paletas
+  ok    Cone: nenhum bloco flutuando
+  ok    Cone: nenhum bloco dentro de outro (só encostam)
+  ok    Cone: só blocos alinhados (teste de encaixe exato)
+  ok    Cone: nada abaixo do chão e tudo dentro do footprint
+  ok    Cone: tier válido e cores existentes em todas as paletas
+  ok    Tree: nenhum bloco flutuando
+  ok    Tree: nenhum bloco dentro de outro (só encostam)
+  ok    Tree: só blocos alinhados (teste de encaixe exato)
+  ok    Tree: nada abaixo do chão e tudo dentro do footprint
+  ok    Tree: tier válido e cores existentes em todas as paletas
+  ok    Plane: nenhum bloco flutuando
+  ok    Plane: nenhum bloco dentro de outro (só encostam)
+  ok    Plane: só blocos alinhados (teste de encaixe exato)
+  ok    Plane: nada abaixo do chão e tudo dentro do footprint
+  ok    Plane: tier válido e cores existentes em todas as paletas
+  ok    Car: nenhum bloco flutuando
+  ok    Car: nenhum bloco dentro de outro (só encostam)
+  ok    Car: só blocos alinhados (teste de encaixe exato)
+  ok    Car: nada abaixo do chão e tudo dentro do footprint
+  ok    Car: tier válido e cores existentes em todas as paletas
+  ok    Cafe: nenhum bloco flutuando
+  ok    Cafe: nenhum bloco dentro de outro (só encostam)
+  ok    Cafe: só blocos alinhados (teste de encaixe exato)
+  ok    Cafe: nada abaixo do chão e tudo dentro do footprint
+  ok    Cafe: tier válido e cores existentes em todas as paletas
+  ok    Boat: nenhum bloco flutuando
+  ok    Boat: nenhum bloco dentro de outro (só encostam)
+  ok    Boat: só blocos alinhados (teste de encaixe exato)
+  ok    Boat: nada abaixo do chão e tudo dentro do footprint
+  ok    Boat: tier válido e cores existentes em todas as paletas
+  ok    SnowCabin: nenhum bloco flutuando
+  ok    SnowCabin: nenhum bloco dentro de outro (só encostam)
+  ok    SnowCabin: só blocos alinhados (teste de encaixe exato)
+  ok    SnowCabin: nada abaixo do chão e tudo dentro do footprint
+  ok    SnowCabin: tier válido e cores existentes em todas as paletas
+  ok    OilTank: nenhum bloco flutuando
+  ok    OilTank: nenhum bloco dentro de outro (só encostam)
+  ok    OilTank: só blocos alinhados (teste de encaixe exato)
+  ok    OilTank: nada abaixo do chão e tudo dentro do footprint
+  ok    OilTank: tier válido e cores existentes em todas as paletas
+  ok    FlowerPot: nenhum bloco flutuando
+  ok    FlowerPot: nenhum bloco dentro de outro (só encostam)
+  ok    FlowerPot: só blocos alinhados (teste de encaixe exato)
+  ok    FlowerPot: nada abaixo do chão e tudo dentro do footprint
+  ok    FlowerPot: tier válido e cores existentes em todas as paletas
+  ok    Warehouse: nenhum bloco flutuando
+  ok    Warehouse: nenhum bloco dentro de outro (só encostam)
+  ok    Warehouse: só blocos alinhados (teste de encaixe exato)
+  ok    Warehouse: nada abaixo do chão e tudo dentro do footprint
+  ok    Warehouse: tier válido e cores existentes em todas as paletas
+  ok    ContainerStack: nenhum bloco flutuando
+  ok    ContainerStack: nenhum bloco dentro de outro (só encostam)
+  ok    ContainerStack: só blocos alinhados (teste de encaixe exato)
+  ok    ContainerStack: nada abaixo do chão e tudo dentro do footprint
+  ok    ContainerStack: tier válido e cores existentes em todas as paletas
+  ok    Acacia: nenhum bloco flutuando
+  ok    Acacia: nenhum bloco dentro de outro (só encostam)
+  ok    Acacia: só blocos alinhados (teste de encaixe exato)
+  ok    Acacia: nada abaixo do chão e tudo dentro do footprint
+  ok    Acacia: tier válido e cores existentes em todas as paletas
+  ok    Cottage: nenhum bloco flutuando
+  ok    Cottage: nenhum bloco dentro de outro (só encostam)
+  ok    Cottage: só blocos alinhados (teste de encaixe exato)
+  ok    Cottage: nada abaixo do chão e tudo dentro do footprint
+  ok    Cottage: tier válido e cores existentes em todas as paletas
+  ok    Gazebo: nenhum bloco flutuando
+  ok    Gazebo: nenhum bloco dentro de outro (só encostam)
+  ok    Gazebo: só blocos alinhados (teste de encaixe exato)
+  ok    Gazebo: nada abaixo do chão e tudo dentro do footprint
+  ok    Gazebo: tier válido e cores existentes em todas as paletas
+  ok    Truck: nenhum bloco flutuando
+  ok    Truck: nenhum bloco dentro de outro (só encostam)
+  ok    Truck: só blocos alinhados (teste de encaixe exato)
+  ok    Truck: nada abaixo do chão e tudo dentro do footprint
+  ok    Truck: tier válido e cores existentes em todas as paletas
+  ok    Villa: nenhum bloco flutuando
+  ok    Villa: nenhum bloco dentro de outro (só encostam)
+  ok    Villa: só blocos alinhados (teste de encaixe exato)
+  ok    Villa: nada abaixo do chão e tudo dentro do footprint
+  ok    Villa: tier válido e cores existentes em todas as paletas
+  ok    Fence: nenhum bloco flutuando
+  ok    Fence: nenhum bloco dentro de outro (só encostam)
+  ok    Fence: só blocos alinhados (teste de encaixe exato)
+  ok    Fence: nada abaixo do chão e tudo dentro do footprint
+  ok    Fence: tier válido e cores existentes em todas as paletas
+  ok    Bus: nenhum bloco flutuando
+  ok    Bus: nenhum bloco dentro de outro (só encostam)
+  ok    Bus: só blocos alinhados (teste de encaixe exato)
+  ok    Bus: nada abaixo do chão e tudo dentro do footprint
+  ok    Bus: tier válido e cores existentes em todas as paletas
+  ok    BeachHouse: nenhum bloco flutuando
+  ok    BeachHouse: nenhum bloco dentro de outro (só encostam)
+  ok    BeachHouse: só blocos alinhados (teste de encaixe exato)
+  ok    BeachHouse: nada abaixo do chão e tudo dentro do footprint
+  ok    BeachHouse: tier válido e cores existentes em todas as paletas
+  ok    Townhouse: nenhum bloco flutuando
+  ok    Townhouse: nenhum bloco dentro de outro (só encostam)
+  ok    Townhouse: só blocos alinhados (teste de encaixe exato)
+  ok    Townhouse: nada abaixo do chão e tudo dentro do footprint
+  ok    Townhouse: tier válido e cores existentes em todas as paletas
+  ok    SurfShop: nenhum bloco flutuando
+  ok    SurfShop: nenhum bloco dentro de outro (só encostam)
+  ok    SurfShop: só blocos alinhados (teste de encaixe exato)
+  ok    SurfShop: nada abaixo do chão e tudo dentro do footprint
+  ok    SurfShop: tier válido e cores existentes em todas as paletas
+  ok    Fountain: nenhum bloco flutuando
+  ok    Fountain: nenhum bloco dentro de outro (só encostam)
+  ok    Fountain: só blocos alinhados (teste de encaixe exato)
+  ok    Fountain: nada abaixo do chão e tudo dentro do footprint
+  ok    Fountain: tier válido e cores existentes em todas as paletas
+  ok    Tower: nenhum bloco flutuando
+  ok    Tower: nenhum bloco dentro de outro (só encostam)
+  ok    Tower: só blocos alinhados (teste de encaixe exato)
+  ok    Tower: nada abaixo do chão e tudo dentro do footprint
+  ok    Tower: tier válido e cores existentes em todas as paletas
+  ok    IceCrystal: nenhum bloco flutuando
+  ok    IceCrystal: nenhum bloco dentro de outro (só encostam)
+  ok    IceCrystal: só blocos alinhados (teste de encaixe exato)
+  ok    IceCrystal: nada abaixo do chão e tudo dentro do footprint
+  ok    IceCrystal: tier válido e cores existentes em todas as paletas
+  ok    WaterTower: nenhum bloco flutuando
+  ok    WaterTower: nenhum bloco dentro de outro (só encostam)
+  ok    WaterTower: só blocos alinhados (teste de encaixe exato)
+  ok    WaterTower: nada abaixo do chão e tudo dentro do footprint
+  ok    WaterTower: tier válido e cores existentes em todas as paletas
+  ok    SpireTower: nenhum bloco flutuando
+  ok    SpireTower: nenhum bloco dentro de outro (só encostam)
+  ok    SpireTower: só blocos alinhados (teste de encaixe exato)
+  ok    SpireTower: nada abaixo do chão e tudo dentro do footprint
+  ok    SpireTower: tier válido e cores existentes em todas as paletas
+  ok    FoodCart: nenhum bloco flutuando
+  ok    FoodCart: nenhum bloco dentro de outro (só encostam)
+  ok    FoodCart: só blocos alinhados (teste de encaixe exato)
+  ok    FoodCart: nada abaixo do chão e tudo dentro do footprint
+  ok    FoodCart: tier válido e cores existentes em todas as paletas
+  ok    School: nenhum bloco flutuando
+  ok    School: nenhum bloco dentro de outro (só encostam)
+  ok    School: só blocos alinhados (teste de encaixe exato)
+  ok    School: nada abaixo do chão e tudo dentro do footprint
+  ok    School: tier válido e cores existentes em todas as paletas
+  ok    Terminal: nenhum bloco flutuando
+  ok    Terminal: nenhum bloco dentro de outro (só encostam)
+  ok    Terminal: só blocos alinhados (teste de encaixe exato)
+  ok    Terminal: nada abaixo do chão e tudo dentro do footprint
+  ok    Terminal: tier válido e cores existentes em todas as paletas
+  ok    Iceberg: nenhum bloco flutuando
+  ok    Iceberg: nenhum bloco dentro de outro (só encostam)
+  ok    Iceberg: só blocos alinhados (teste de encaixe exato)
+  ok    Iceberg: nada abaixo do chão e tudo dentro do footprint
+  ok    Iceberg: tier válido e cores existentes em todas as paletas
+  ok    BusStop: nenhum bloco flutuando
+  ok    BusStop: nenhum bloco dentro de outro (só encostam)
+  ok    BusStop: só blocos alinhados (teste de encaixe exato)
+  ok    BusStop: nada abaixo do chão e tudo dentro do footprint
+  ok    BusStop: tier válido e cores existentes em todas as paletas
+  ok    Umbrella: nenhum bloco flutuando
+  ok    Umbrella: nenhum bloco dentro de outro (só encostam)
+  ok    Umbrella: só blocos alinhados (teste de encaixe exato)
+  ok    Umbrella: nada abaixo do chão e tudo dentro do footprint
+  ok    Umbrella: tier válido e cores existentes em todas as paletas
+  ok    Yacht: nenhum bloco flutuando
+  ok    Yacht: nenhum bloco dentro de outro (só encostam)
+  ok    Yacht: só blocos alinhados (teste de encaixe exato)
+  ok    Yacht: nada abaixo do chão e tudo dentro do footprint
+  ok    Yacht: tier válido e cores existentes em todas as paletas
+  ok    Hotel: nenhum bloco flutuando
+  ok    Hotel: nenhum bloco dentro de outro (só encostam)
+  ok    Hotel: só blocos alinhados (teste de encaixe exato)
+  ok    Hotel: nada abaixo do chão e tudo dentro do footprint
+  ok    Hotel: tier válido e cores existentes em todas as paletas
+  ok    Bench: nenhum bloco flutuando
+  ok    Bench: nenhum bloco dentro de outro (só encostam)
+  ok    Bench: só blocos alinhados (teste de encaixe exato)
+  ok    Bench: nada abaixo do chão e tudo dentro do footprint
+  ok    Bench: tier válido e cores existentes em todas as paletas
+  ok    Mushroom: nenhum bloco flutuando
+  ok    Mushroom: nenhum bloco dentro de outro (só encostam)
+  ok    Mushroom: só blocos alinhados (teste de encaixe exato)
+  ok    Mushroom: nada abaixo do chão e tudo dentro do footprint
+  ok    Mushroom: tier válido e cores existentes em todas as paletas
+  ok    Pine: nenhum bloco flutuando
+  ok    Pine: nenhum bloco dentro de outro (só encostam)
+  ok    Pine: só blocos alinhados (teste de encaixe exato)
+  ok    Pine: nada abaixo do chão e tudo dentro do footprint
+  ok    Pine: tier válido e cores existentes em todas as paletas
+  ok    Museum: nenhum bloco flutuando
+  ok    Museum: nenhum bloco dentro de outro (só encostam)
+  ok    Museum: só blocos alinhados (teste de encaixe exato)
+  ok    Museum: nada abaixo do chão e tudo dentro do footprint
+  ok    Museum: tier válido e cores existentes em todas as paletas
+  ok    Bush: nenhum bloco flutuando
+  ok    Bush: nenhum bloco dentro de outro (só encostam)
+  ok    Bush: só blocos alinhados (teste de encaixe exato)
+  ok    Bush: nada abaixo do chão e tudo dentro do footprint
+  ok    Bush: tier válido e cores existentes em todas as paletas
+  ok    Skyscraper: nenhum bloco flutuando
+  ok    Skyscraper: nenhum bloco dentro de outro (só encostam)
+  ok    Skyscraper: só blocos alinhados (teste de encaixe exato)
+  ok    Skyscraper: nada abaixo do chão e tudo dentro do footprint
+  ok    Skyscraper: tier válido e cores existentes em todas as paletas
+  ok    Lighthouse: nenhum bloco flutuando
+  ok    Lighthouse: nenhum bloco dentro de outro (só encostam)
+  ok    Lighthouse: só blocos alinhados (teste de encaixe exato)
+  ok    Lighthouse: nada abaixo do chão e tudo dentro do footprint
+  ok    Lighthouse: tier válido e cores existentes em todas as paletas
+  ok    CargoShip: nenhum bloco flutuando
+  ok    CargoShip: nenhum bloco dentro de outro (só encostam)
+  ok    CargoShip: só blocos alinhados (teste de encaixe exato)
+  ok    CargoShip: nada abaixo do chão e tudo dentro do footprint
+  ok    CargoShip: tier válido e cores existentes em todas as paletas
+  ok    ControlTower: nenhum bloco flutuando
+  ok    ControlTower: nenhum bloco dentro de outro (só encostam)
+  ok    ControlTower: só blocos alinhados (teste de encaixe exato)
+  ok    ControlTower: nada abaixo do chão e tudo dentro do footprint
+  ok    ControlTower: tier válido e cores existentes em todas as paletas
+  ok    PowerPylon: nenhum bloco flutuando
+  ok    PowerPylon: nenhum bloco dentro de outro (só encostam)
+  ok    PowerPylon: só blocos alinhados (teste de encaixe exato)
+  ok    PowerPylon: nada abaixo do chão e tudo dentro do footprint
+  ok    PowerPylon: tier válido e cores existentes em todas as paletas
+  ok    TVTower: nenhum bloco flutuando
+  ok    TVTower: nenhum bloco dentro de outro (só encostam)
+  ok    TVTower: só blocos alinhados (teste de encaixe exato)
+  ok    TVTower: nada abaixo do chão e tudo dentro do footprint
+  ok    TVTower: tier válido e cores existentes em todas as paletas
+  ok    SmokeStack: nenhum bloco flutuando
+  ok    SmokeStack: nenhum bloco dentro de outro (só encostam)
+  ok    SmokeStack: só blocos alinhados (teste de encaixe exato)
+  ok    SmokeStack: nada abaixo do chão e tudo dentro do footprint
+  ok    SmokeStack: tier válido e cores existentes em todas as paletas
+  ok    Bank: nenhum bloco flutuando
+  ok    Bank: nenhum bloco dentro de outro (só encostam)
+  ok    Bank: só blocos alinhados (teste de encaixe exato)
+  ok    Bank: nada abaixo do chão e tudo dentro do footprint
+  ok    Bank: tier válido e cores existentes em todas as paletas
+  ok    Bin: nenhum bloco flutuando
+  ok    Bin: nenhum bloco dentro de outro (só encostam)
+  ok    Bin: só blocos alinhados (teste de encaixe exato)
+  ok    Bin: nada abaixo do chão e tudo dentro do footprint
+  ok    Bin: tier válido e cores existentes em todas as paletas
+  ok    Lamp: nenhum bloco flutuando
+  ok    Lamp: nenhum bloco dentro de outro (só encostam)
+  ok    Lamp: só blocos alinhados (teste de encaixe exato)
+  ok    Lamp: nada abaixo do chão e tudo dentro do footprint
+  ok    Lamp: tier válido e cores existentes em todas as paletas
+  ok    Palm: nenhum bloco flutuando
+  ok    Palm: nenhum bloco dentro de outro (só encostam)
+  ok    Palm: só blocos alinhados (teste de encaixe exato)
+  ok    Palm: nada abaixo do chão e tudo dentro do footprint
+  ok    Palm: tier válido e cores existentes em todas as paletas
+  ok    Supermarket: nenhum bloco flutuando
+  ok    Supermarket: nenhum bloco dentro de outro (só encostam)
+  ok    Supermarket: só blocos alinhados (teste de encaixe exato)
+  ok    Supermarket: nada abaixo do chão e tudo dentro do footprint
+  ok    Supermarket: tier válido e cores existentes em todas as paletas
+  ok    SkiLodge: nenhum bloco flutuando
+  ok    SkiLodge: nenhum bloco dentro de outro (só encostam)
+  ok    SkiLodge: só blocos alinhados (teste de encaixe exato)
+  ok    SkiLodge: nada abaixo do chão e tudo dentro do footprint
+  ok    SkiLodge: tier válido e cores existentes em todas as paletas
+  ok    CornerStore: nenhum bloco flutuando
+  ok    CornerStore: nenhum bloco dentro de outro (só encostam)
+  ok    CornerStore: só blocos alinhados (teste de encaixe exato)
+  ok    CornerStore: nada abaixo do chão e tudo dentro do footprint
+  ok    CornerStore: tier válido e cores existentes em todas as paletas
+  ok    Hangar: nenhum bloco flutuando
+  ok    Hangar: nenhum bloco dentro de outro (só encostam)
+  ok    Hangar: só blocos alinhados (teste de encaixe exato)
+  ok    Hangar: nada abaixo do chão e tudo dentro do footprint
+  ok    Hangar: tier válido e cores existentes em todas as paletas
+  ok    Crane: nenhum bloco flutuando
+  ok    Crane: nenhum bloco dentro de outro (só encostam)
+  ok    Crane: só blocos alinhados (teste de encaixe exato)
+  ok    Crane: nada abaixo do chão e tudo dentro do footprint
+  ok    Crane: tier válido e cores existentes em todas as paletas
+  ok    Hospital: nenhum bloco flutuando
+  ok    Hospital: nenhum bloco dentro de outro (só encostam)
+  ok    Hospital: só blocos alinhados (teste de encaixe exato)
+  ok    Hospital: nada abaixo do chão e tudo dentro do footprint
+  ok    Hospital: tier válido e cores existentes em todas as paletas
+  ok    DeadTree: nenhum bloco flutuando
+  ok    DeadTree: nenhum bloco dentro de outro (só encostam)
+  ok    DeadTree: só blocos alinhados (teste de encaixe exato)
+  ok    DeadTree: nada abaixo do chão e tudo dentro do footprint
+  ok    DeadTree: tier válido e cores existentes em todas as paletas
+  ok    Cactus: nenhum bloco flutuando
+  ok    Cactus: nenhum bloco dentro de outro (só encostam)
+  ok    Cactus: só blocos alinhados (teste de encaixe exato)
+  ok    Cactus: nada abaixo do chão e tudo dentro do footprint
+  ok    Cactus: tier válido e cores existentes em todas as paletas
+  ok    ApartmentTall: nenhum bloco flutuando
+  ok    ApartmentTall: nenhum bloco dentro de outro (só encostam)
+  ok    ApartmentTall: só blocos alinhados (teste de encaixe exato)
+  ok    ApartmentTall: nada abaixo do chão e tudo dentro do footprint
+  ok    ApartmentTall: tier válido e cores existentes em todas as paletas
+  ok    PicnicTable: nenhum bloco flutuando
+  ok    PicnicTable: nenhum bloco dentro de outro (só encostam)
+  ok    PicnicTable: só blocos alinhados (teste de encaixe exato)
+  ok    PicnicTable: nada abaixo do chão e tudo dentro do footprint
+  ok    PicnicTable: tier válido e cores existentes em todas as paletas
+  ok    Apartment: nenhum bloco flutuando
+  ok    Apartment: nenhum bloco dentro de outro (só encostam)
+  ok    Apartment: só blocos alinhados (teste de encaixe exato)
+  ok    Apartment: nada abaixo do chão e tudo dentro do footprint
+  ok    Apartment: tier válido e cores existentes em todas as paletas
+  ok    FireStation: nenhum bloco flutuando
+  ok    FireStation: nenhum bloco dentro de outro (só encostam)
+  ok    FireStation: só blocos alinhados (teste de encaixe exato)
+  ok    FireStation: nada abaixo do chão e tudo dentro do footprint
+  ok    FireStation: tier válido e cores existentes em todas as paletas
+  ok    Mailbox: nenhum bloco flutuando
+  ok    Mailbox: nenhum bloco dentro de outro (só encostam)
+  ok    Mailbox: só blocos alinhados (teste de encaixe exato)
+  ok    Mailbox: nada abaixo do chão e tudo dentro do footprint
+  ok    Mailbox: tier válido e cores existentes em todas as paletas
+  ok    todo tier tem pelo menos um modelo
+  ok    modelo maior = tier maior (pela área do footprint, em média)
+UiLayout.spec.luau
+  ok    todos os botões têm >= 88 de altura/largura no layout de referência
+  ok    celulares deitados usam 2 colunas de atalhos; tablet e PC usam 1
+  ok    Android pequeno 640x360: menor botão >= 44px
+  ok    Android pequeno 640x360: HUD inteiro dentro da área segura (nada cortado)
+  ok    Android pequeno 640x360: relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    Android pequeno 640x360: nada encosta (HUD, atalhos e barra da run)
+  ok    Android pequeno 640x360: botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    Android pequeno 640x360: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    Android pequeno 640x360: janelas cabem na tela (com o ajuste automático)
+  ok    Android pequeno 640x360: textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    Android pequeno 640x360: áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    Android pequeno 640x360: CREATE PARTY: textos cabem na escala da janela
+  ok    Android pequeno 640x360: nenhum botão na área do pulo
+  ok    iPhone SE 667x375: menor botão >= 44px
+  ok    iPhone SE 667x375: HUD inteiro dentro da área segura (nada cortado)
+  ok    iPhone SE 667x375: relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    iPhone SE 667x375: nada encosta (HUD, atalhos e barra da run)
+  ok    iPhone SE 667x375: botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    iPhone SE 667x375: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    iPhone SE 667x375: janelas cabem na tela (com o ajuste automático)
+  ok    iPhone SE 667x375: textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    iPhone SE 667x375: áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    iPhone SE 667x375: CREATE PARTY: textos cabem na escala da janela
+  ok    iPhone SE 667x375: nenhum botão na área do pulo
+  ok    Galaxy S8/A curto 740x360: menor botão >= 44px
+  ok    Galaxy S8/A curto 740x360: HUD inteiro dentro da área segura (nada cortado)
+  ok    Galaxy S8/A curto 740x360: relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    Galaxy S8/A curto 740x360: nada encosta (HUD, atalhos e barra da run)
+  ok    Galaxy S8/A curto 740x360: botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    Galaxy S8/A curto 740x360: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    Galaxy S8/A curto 740x360: janelas cabem na tela (com o ajuste automático)
+  ok    Galaxy S8/A curto 740x360: textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    Galaxy S8/A curto 740x360: áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    Galaxy S8/A curto 740x360: CREATE PARTY: textos cabem na escala da janela
+  ok    Galaxy S8/A curto 740x360: nenhum botão na área do pulo
+  ok    Android 800x360 (tela 20:9): menor botão >= 44px
+  ok    Android 800x360 (tela 20:9): HUD inteiro dentro da área segura (nada cortado)
+  ok    Android 800x360 (tela 20:9): relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    Android 800x360 (tela 20:9): nada encosta (HUD, atalhos e barra da run)
+  ok    Android 800x360 (tela 20:9): botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    Android 800x360 (tela 20:9): painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    Android 800x360 (tela 20:9): janelas cabem na tela (com o ajuste automático)
+  ok    Android 800x360 (tela 20:9): textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    Android 800x360 (tela 20:9): áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    Android 800x360 (tela 20:9): CREATE PARTY: textos cabem na escala da janela
+  ok    Android 800x360 (tela 20:9): nenhum botão na área do pulo
+  ok    iPhone 14 844x390 (entalhe): menor botão >= 44px
+  ok    iPhone 14 844x390 (entalhe): HUD inteiro dentro da área segura (nada cortado)
+  ok    iPhone 14 844x390 (entalhe): relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    iPhone 14 844x390 (entalhe): nada encosta (HUD, atalhos e barra da run)
+  ok    iPhone 14 844x390 (entalhe): botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    iPhone 14 844x390 (entalhe): painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    iPhone 14 844x390 (entalhe): janelas cabem na tela (com o ajuste automático)
+  ok    iPhone 14 844x390 (entalhe): textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    iPhone 14 844x390 (entalhe): áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    iPhone 14 844x390 (entalhe): CREATE PARTY: textos cabem na escala da janela
+  ok    iPhone 14 844x390 (entalhe): nenhum botão na área do pulo
+  ok    iPhone 15 Pro Max 932x430: menor botão >= 44px
+  ok    iPhone 15 Pro Max 932x430: HUD inteiro dentro da área segura (nada cortado)
+  ok    iPhone 15 Pro Max 932x430: relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    iPhone 15 Pro Max 932x430: nada encosta (HUD, atalhos e barra da run)
+  ok    iPhone 15 Pro Max 932x430: botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    iPhone 15 Pro Max 932x430: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    iPhone 15 Pro Max 932x430: janelas cabem na tela (com o ajuste automático)
+  ok    iPhone 15 Pro Max 932x430: textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    iPhone 15 Pro Max 932x430: áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    iPhone 15 Pro Max 932x430: CREATE PARTY: textos cabem na escala da janela
+  ok    iPhone 15 Pro Max 932x430: nenhum botão na área do pulo
+  ok    iPad mini 1133x744: menor botão >= 44px
+  ok    iPad mini 1133x744: HUD inteiro dentro da área segura (nada cortado)
+  ok    iPad mini 1133x744: relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    iPad mini 1133x744: nada encosta (HUD, atalhos e barra da run)
+  ok    iPad mini 1133x744: botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    iPad mini 1133x744: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    iPad mini 1133x744: janelas cabem na tela (com o ajuste automático)
+  ok    iPad mini 1133x744: textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    iPad mini 1133x744: áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    iPad mini 1133x744: CREATE PARTY: textos cabem na escala da janela
+  ok    iPad mini 1133x744: nenhum botão na área do pulo
+  ok    Notebook HD 1366x768: menor botão >= 44px
+  ok    Notebook HD 1366x768: HUD inteiro dentro da área segura (nada cortado)
+  ok    Notebook HD 1366x768: relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    Notebook HD 1366x768: nada encosta (HUD, atalhos e barra da run)
+  ok    Notebook HD 1366x768: botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    Notebook HD 1366x768: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    Notebook HD 1366x768: janelas cabem na tela (com o ajuste automático)
+  ok    Notebook HD 1366x768: textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    Notebook HD 1366x768: áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    Notebook HD 1366x768: CREATE PARTY: textos cabem na escala da janela
+  ok    Full HD 1920x1080: menor botão >= 44px
+  ok    Full HD 1920x1080: HUD inteiro dentro da área segura (nada cortado)
+  ok    Full HD 1920x1080: relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    Full HD 1920x1080: nada encosta (HUD, atalhos e barra da run)
+  ok    Full HD 1920x1080: botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    Full HD 1920x1080: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    Full HD 1920x1080: janelas cabem na tela (com o ajuste automático)
+  ok    Full HD 1920x1080: textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    Full HD 1920x1080: áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    Full HD 1920x1080: CREATE PARTY: textos cabem na escala da janela
+  ok    4K 3840x2160: menor botão >= 44px
+  ok    4K 3840x2160: HUD inteiro dentro da área segura (nada cortado)
+  ok    4K 3840x2160: relógio no centro da faixa da barra do Roblox, dentro da tela
+  ok    4K 3840x2160: nada encosta (HUD, atalhos e barra da run)
+  ok    4K 3840x2160: botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada
+  ok    4K 3840x2160: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem
+  ok    4K 3840x2160: janelas cabem na tela (com o ajuste automático)
+  ok    4K 3840x2160: textos dos botões cabem sem cortar (fonte >= 14px)
+  ok    4K 3840x2160: áreas da cidade: nome da área, FRENZY e comemoração cabem sem cortar
+  ok    4K 3840x2160: CREATE PARTY: textos cabem na escala da janela
+  ok    janela: cabeçalho comporta o botão X; abas cabem na largura
+  ok    janela: área de cards comporta um card inteiro
+  ok    card: legenda acima do botão de preço (nada encosta dentro do card)
+  ok    upgrades: 4 cards numa fileira abaixo do cabeçalho
+  ok    roleta: ícones e textos dos prêmios cabem na fatia, até no menor celular
+  ok    roleta: roda + 4 botões cabem lado a lado
+  ok    CREATE PARTY: tudo dentro da janela, abaixo do cabeçalho, e nenhum botão encosta
+  ok    CREATE PARTY: card de run salva sem nada encostando e com linhas >= TextRow
+  ok    recompensas: 7 dias numa fileira e o resgate abaixo
+Upgrades.spec.luau
+  ok    ids de upgrade são únicos
+  ok    find acha por id e retorna nil para id inexistente
+  ok    custo nunca diminui e é sempre >= 1
+  ok    não compra sem moedas suficientes
+  ok    não compra além do nível máximo
+  ok    bônus é proporcional ao nível e limitado ao máximo
+  ok    nível fracionário ou negativo é rejeitado
+
+972 passaram, 0 falharam
+
+[3/4] Linter (Selene)
+Results:
+0 errors
+0 warnings
+0 parse errors
+
+[4/4] Formatter (StyLua)
+
+Pipeline completo: tudo OK

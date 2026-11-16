@@ -797,4 +797,53 @@ function CityBuildings.CargoShip(V)
 	return { Name = "CargoShip", Tier = 6, Boxes = boxes }
 end
 
+-- Infraestrutura com modelo do Blender (assets/blender, ref. 3 do usuário). `Mesh` = nome da MeshPart em
+-- ReplicatedStorage.Assets: se existir, o Builder usa a mesh no tamanho da caixa destes blocos; se não, monta
+-- estes blocos (reserva com stud). Os blocos têm o mesmo contorno da mesh (testes de sobreposição valem igual).
+
+function CityBuildings.OilTank(V)
+	local boxes = {}
+	V.stack(
+		boxes,
+		0,
+		0,
+		0,
+		{ { 20, 0.6 }, { 18, 3 }, { 18, 2.2 }, { 18, 4.2 }, { 18, 2.2 }, { 18, 2.2 }, { 14.4, 1.2 }, { 4, 0.9 } },
+		{ "Concrete", "Wall", "Red", "Wall", "Red", "Wall", "Concrete", "Metal" }
+	)
+	return { Name = "OilTank", Tier = 5, Boxes = boxes, Mesh = "OilTank" }
+end
+
+function CityBuildings.PowerPylon(V)
+	local box = V.box
+	local boxes = {}
+	for _, x in { -4.2, 4.2 } do
+		for _, z in { -4.2, 4.2 } do
+			V.add(boxes, box(1.6, 0.8, 1.6, x, 0, z, "Concrete"), box(0.6, 19.2, 0.6, x, 0.8, z, "Metal"))
+		end
+	end
+	-- braços (em cima das pernas) e topo
+	V.add(
+		boxes,
+		box(15, 0.6, 10, 0, 20, 0, "Metal"),
+		box(1.6, 5, 1.6, 0, 20.6, 0, "Metal"),
+		box(11, 0.6, 1.6, 0, 25.6, 0, "Metal"),
+		box(1.2, 4.6, 1.2, 0, 26.2, 0, "Metal")
+	)
+	return { Name = "PowerPylon", Tier = 5, Boxes = boxes, Mesh = "PowerPylon" }
+end
+
+function CityBuildings.SmokeStack(V)
+	local boxes = {}
+	V.stack(
+		boxes,
+		0,
+		0,
+		0,
+		{ { 9.4, 5.5 }, { 5.8, 12 }, { 8, 0.5 }, { 5.8, 2 }, { 5.8, 2.2 }, { 5.8, 1.8 }, { 5.8, 2 }, { 6.2, 0.6 } },
+		{ "Concrete", "Wall", "Metal", "Wall", "Brick", "Wall", "Brick", "Stone" }
+	)
+	return { Name = "SmokeStack", Tier = 5, Boxes = boxes, Mesh = "SmokeStack" }
+end
+
 return CityBuildings

@@ -68,7 +68,13 @@ return table.freeze({
 	Frenzy = { W = 300, H = 56 },
 	Celebration = { W = 820, H = 290 },
 	RewardChip = { W = 240, H = 66 },
-	ContinueButton = { W = 300, H = 88, Gap = 16 }, -- embaixo da comemoração: fecha antes do tempo
+	ContinueButton = { W = 300, H = 88, Gap = 16 },
+	-- barra de desastres (client/Controllers/DisasterController): coluna no canto direito, de baixo para cima
+	DisasterButton = { W = 150, H = 96 },
+	DisasterCount = 3,
+	-- painel de níveis dos desastres (client/Controllers/LevelsController): canto direito, 1 linha por desastre
+	-- (texto, não é botão). Em telas baixas (celular) fica no topo; nas altas, mais abaixo (lista de jogadores).
+	Levels = { W = 340, RowH = 46, Pad = 8, Rows = 3 }, -- embaixo da comemoração: fecha antes do tempo
 	ConfettiPieces = 60,
 	Popup = { W = 520, H = 140 },
 	-- placa flutuante de cada área da cidade (client/Controllers/AreaSignsController), em studs
@@ -85,9 +91,8 @@ return table.freeze({
 	-- borda da área atual (client/Controllers/AreaSignsController): só a barreira da PRÓXIMA área brilha,
 	-- numa altura que acompanha o seu tamanho (não vira um paredão)
 	BarrierGlow = table.freeze({
-		HeightPerScale = 3, -- altura = isso x escala do jogador (no mínimo a altura da barreira)
-		Transparency = 0.5,
-		TopLine = 0.4, -- linha forte no topo (x escala)
+		HeightPerScale = 3, -- altura da linha = isso x escala do jogador (sempre acima da barreira)
+		TopLine = 0.4, -- grossura da linha (x escala)
 		Color = { 255, 60, 90 },
 	}),
 })

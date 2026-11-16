@@ -163,6 +163,11 @@ local function showNumber(kind: string, spec: FeedbackConfig.Number, target: Tar
 	end)
 end
 
+-- Tremor de câmera avulso (impacto de desastre perto de você), com o mesmo teto dos outros tremores.
+function Feedback.shake(amount: number, seconds: number)
+	shakeCamera(amount, seconds)
+end
+
 -- Toca os três feedbacks de uma ação.
 function Feedback.play(kind: string, target: Target)
 	local spec = FeedbackConfig.Kinds[kind]

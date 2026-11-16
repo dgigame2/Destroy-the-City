@@ -28,6 +28,24 @@ local kinds: { [string]: Kind } = {
 		Shake = { Camera = 0.06, Seconds = 0.12 },
 		Number = { Color = { 125, 255, 138 }, Format = "+%d 💵", Merge = 0 },
 	},
+	-- lançou um desastre (número = nome curto do desastre, vindo do Text)
+	Cast = {
+		Sound = sound("rbxasset://sounds/swoosh.wav", 0.3, 1.2, 0.08, 0.1),
+		Shake = { Camera = 0.25, Seconds = 0.2 },
+		Number = { Color = { 255, 227, 107 }, Format = "%d", Merge = 0 },
+	},
+	-- reação em cadeia passou de um degrau (número = tamanho da cadeia)
+	Chain = {
+		Sound = sound("rbxasset://sounds/electronicpingshort.wav", 0.4, 0.8, 0.05, 0.3),
+		Shake = { Camera = 0.7, Seconds = 0.35 },
+		Number = { Color = { 255, 160, 60 }, Format = "x%d", Merge = 0 },
+	},
+	-- desastre subiu de nível (número = nível novo, no painel de níveis)
+	Level = {
+		Sound = sound(TIER_UP, 0.45, 1.2, 0, 0.2),
+		Shake = { Ui = 10, Seconds = 0.3 },
+		Number = { Color = { 255, 227, 107 }, Format = "LV %d", Merge = 0 },
+	},
 	-- qualquer botão (número = "+1" pequeno no botão: confirma o toque)
 	Click = {
 		Sound = sound("rbxasset://sounds/switch.wav", 0.25, 1.1, 0.05, 0.05),

@@ -14,6 +14,10 @@ local UpgradeConfig = require(Shared.Config.UpgradeConfig)
 local ClassConfig = require(Shared.Config.ClassConfig)
 local MovementConfig = require(Shared.Config.MovementConfig)
 local Place = require(Shared.Place)
+local GameplayConfig = require(Shared.Config.GameplayConfig)
+
+-- Modo desastres: o crescimento vira PODER (não muda o tamanho do personagem).
+local DISASTERS = GameplayConfig.Mode == "Disasters"
 
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -101,7 +105,7 @@ function GrowthService.apply(player: Player, force: boolean?)
 	local current = appliedScale[player] or 1 -- personagem novo nasce na escala 1
 	-- enquanto roupas e acessórios chegam, espera: o onCharacter reescala tudo junto quando terminar
 	local changed = (force and scale ~= current) or math.abs(scale - current) / current >= GrowthConfig.RescaleStep
-	if changed and not loadingAppearance[player] then
+	if changed and not loadingAppearance[player] and not DISASTERS then
 		-- a escala automática do Roblox desfaria os tamanhos novos
 		humanoid.AutomaticScalingEnabled = false
 		rescale(character, humanoid, scale / current)
@@ -114,7 +118,9 @@ function GrowthService.apply(player: Player, force: boolean?)
 	humanoid.UseJumpPower = true
 	humanoid.JumpPower = if Place.isRun() then MovementConfig.RunJumpPower else MovementConfig.LobbyJumpPower
 
-	player:SetAttribute("Scale", scale)
+	-- Scale = tamanho do corpo (câmera, placas, efeitos); Power = força dos desastres
+	player:SetAttribute("Scale", if DISASTERS then 1 else scale)
+	player:SetAttribute("Power", scale)
 	player:SetAttribute("EdibleTier", Growth.highestEdibleTier(scale, TierConfig))
 	-- alcance da boca (studs), para o círculo no chão do cliente
 	player:SetAttribute("EatRadius", GrowthService.eatRadius(player))

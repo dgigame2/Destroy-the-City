@@ -18,6 +18,12 @@ local RunConfig = require(Shared.Config.RunConfig)
 local Zones = require(Shared.Logic.Zones)
 local Remotes = require(Shared.Remotes)
 local EatQuery = require(Shared.EatQuery)
+local GameplayConfig = require(Shared.Config.GameplayConfig)
+local ScoreConfig = require(Shared.Config.ScoreConfig)
+local Score = require(Shared.Logic.Score)
+
+-- Modo desastres: o loop de comer fica parado; a destruição vem do DisasterService (que usa EatService.destroy).
+local DISASTERS = GameplayConfig.Mode == "Disasters"
 
 local PlayerData = require(script.Parent.PlayerData)
 local GrowthService = require(script.Parent.GrowthService)
@@ -66,18 +72,43 @@ local function rootOf(player: Player): BasePart?
 	return character:FindFirstChild("HumanoidRootPart") :: BasePart?
 end
 
--- Come uma construção: efeito para todos, dinheiro/gemas para quem comeu e crescimento para a party inteira.
-local function eatModel(player: Player, model: Model, tierIndex: number)
+-- Placar da party (leaderstats "Score", aparece na lista de jogadores do Roblox).
+local function addScore(player: Player, points: number)
+	local stats = player:FindFirstChild("leaderstats")
+	if stats == nil then
+		local folder = Instance.new("Folder")
+		folder.Name = "leaderstats"
+		local value = Instance.new("IntValue")
+		value.Name = "Score"
+		value.Parent = folder
+		folder.Parent = player
+		stats = folder
+	end
+	local value = (stats :: Instance):FindFirstChild("Score") :: IntValue?
+	if value then
+		value.Value += math.floor(points + 0.5)
+	end
+end
+
+-- Come (ou destrói) uma construção: efeito para todos, dinheiro/gemas/pontos para quem deu o golpe e
+-- crescimento (poder, no modo desastres) para a party inteira. `origin` = de onde veio o golpe (efeito).
+local function eatModel(player: Player, model: Model, tierIndex: number, origin: Vector3?, bonus: number?)
 	local tier = TierConfig[tierIndex]
 	local step = (model:GetAttribute("Step") :: number?) or 1
 	local coinBonus = GrowthService.multiplier(player, "Coins") - 1
 	local frenzy = if Zones.frenzyActive(frenzyUntil, Workspace:GetServerTimeNow())
 		then RunConfig.FrenzyMultiplier
 		else 1
-	local coins = Growth.coinsFromTier(tier, coinBonus) * frenzy
+	-- bonus = cadeia (Logic/Chain): mais dinheiro e pontos, o crescimento continua o mesmo (balanceamento)
+	local coins = math.floor(Growth.coinsFromTier(tier, coinBonus) * frenzy * (bonus or 1) + 0.5)
 	local gems =
 		Buffs.gemDrop(GemConfig.DropByTier[tierIndex], random:NextNumber(), GrowthService.multiplier(player, "Gems"))
-	Remotes.event(Remotes.Names.Events.BuildingEaten):FireAllClients(model, player, coins, gems)
+	if DISASTERS then
+		Remotes.event(Remotes.Names.Events.BuildingDestroyed):FireAllClients(model, player, coins, origin)
+	else
+		Remotes.event(Remotes.Names.Events.BuildingEaten):FireAllClients(model, player, coins, gems)
+	end
+	addScore(player, Score.forDestroy(tierIndex, ScoreConfig.PointsByTier) * (bonus or 1))
 	MapService.consume(model)
 	PlayerData.addCoins(player, coins)
 	if gems > 0 then
@@ -123,6 +154,24 @@ local function eatBuildings(player: Player, root: BasePart, buildings: Folder, p
 	end
 end
 
+-- Destrói uma construção por um desastre (DisasterService). Quem chama garante que é a primeira vez.
+function EatService.destroy(player: Player, model: Model, origin: Vector3, bonus: number?): boolean
+	if MapService.isEaten(model) then
+		return false
+	end
+	local tierIndex = model:GetAttribute("Tier") :: number
+	if TierConfig[tierIndex] == nil then
+		return false
+	end
+	eatModel(player, model, tierIndex, origin, bonus)
+	return true
+end
+
+-- Zona mais alta aberta (o DisasterService não atinge construções além dela).
+function EatService.openZone(): number
+	return openZone
+end
+
 -- Coleta automática do fim da área: tudo que sobrou na zona é sugado pela party
 -- (cada construção vai para um jogador, em rodízio), com os mesmos prêmios de comer.
 -- Devolve false se ninguém da party está em jogo (nada foi coletado).
@@ -156,7 +205,7 @@ function EatService.start()
 		while true do
 			task.wait(EatConfig.EatTickSeconds)
 			local buildings = MapService.buildingsFolder()
-			if not enabled or buildings == nil then
+			if DISASTERS or not enabled or buildings == nil then
 				continue
 			end
 			params.FilterDescendantsInstances = { buildings }

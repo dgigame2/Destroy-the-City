@@ -47,6 +47,9 @@ export type Layout = {
 	Celebration: Rect,
 	Chips: { Rect }, -- prêmios dentro da comemoração (coordenadas da tela)
 	Continue: Rect, -- botão CONTINUE embaixo da comemoração
+	Disasters: { Rect }, -- botões dos desastres (coluna no canto direito, o 1º embaixo)
+	Levels: Rect, -- painel de níveis dos desastres (canto direito)
+	LevelRows: { Rect },
 }
 
 -- Fila de botões lado a lado, alinhados por baixo, a partir de (x, y) com altura total h.
@@ -150,8 +153,30 @@ function UiLayout.place(w: number, h: number, c: UiConfig): Layout
 	local continue =
 		rect(celebration.X0 + (celebW - continueW) / 2, celebration.Y1 + cb.Gap * celebScale, continueW, continueH)
 
+	-- desastres: coluna no canto direito, de baixo para cima (na run não tem pulo; o canto fica livre)
+	local disasters = {}
+	local db = c.DisasterButton
+	local dw, dh = math.max(db.W * s, c.MinTouch), math.max(db.H * s, c.MinTouch)
+	for i = 0, c.DisasterCount - 1 do
+		table.insert(disasters, rect(w - m - dw, h - m - dh - i * (dh + gap), dw, dh))
+	end
+
+	-- níveis dos desastres: canto direito; em telas altas desce (a lista de jogadores do Roblox fica no topo direito)
+	local cc = c.Levels
+	local panelW, rowH, pad = cc.W * s, cc.RowH * s, cc.Pad * s
+	local panelH = cc.Rows * rowH + pad * 2
+	local panelY = if h < c.CompactHeight then m else math.min(h * 0.3, disasters[c.DisasterCount].Y0 - gap - panelH)
+	local levels = rect(w - m - panelW, panelY, panelW, panelH)
+	local levelRows = {}
+	for i = 0, cc.Rows - 1 do
+		table.insert(levelRows, rect(levels.X0 + pad, levels.Y0 + pad + i * rowH, panelW - pad * 2, rowH))
+	end
+
 	return {
 		Scale = s,
+		Disasters = disasters,
+		Levels = levels,
+		LevelRows = levelRows,
 		Frenzy = frenzy,
 		Celebration = celebration,
 		Chips = chips,

@@ -54,6 +54,11 @@ if Place.isRun() then
 
 	UpgradeService.init()
 	EatService.start()
+	-- desastres (Fase 3); com GameplayConfig.Mode = "Eat" fica desligado e o comer antigo volta
+	if require(ReplicatedStorage.Shared.Config.GameplayConfig).Mode == "Disasters" then
+		require(script.DisasterService).start()
+		require(script.MasteryService).start() -- nível de cada desastre
+	end
 	RunSession.init()
 	PlayerData.init(function(player)
 		player.CharacterAdded:Connect(function(character)

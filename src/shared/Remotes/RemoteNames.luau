@@ -10,6 +10,14 @@ return table.freeze({
 		PartyPrompt = "PartyPrompt", -- servidor -> dono do quadrado: (padIndex) abrir CREATE PARTY
 		PartyClosed = "PartyClosed", -- servidor -> dono: () fechar CREATE PARTY (saiu do quadrado / tempo)
 		Notice = "Notice", -- servidor -> cliente: (texto) aviso na tela
+		UseDisaster = "UseDisaster", -- cliente -> servidor: (disasterId, mira: Vector3)
+		DisasterCast = "DisasterCast", -- servidor -> todos: ({Id, Caster, Origin, Target, Power, Dir, Hops})
+		BuildingDestroyed = "BuildingDestroyed", -- servidor -> todos: (model, quem, coins, origem do golpe)
+		ChainBlast = "ChainBlast", -- servidor -> todos: ({Kind, Position, Radius}) explosão/desabamento da cadeia
+		ChainReaction = "ChainReaction", -- servidor -> quem começou: (texto, quantidade, posição) aviso de combo
+		DisasterLevelUp = "DisasterLevelUp", -- servidor -> dono: (disasterId, nível) desastre subiu de nível
+		BuildingCracked = "BuildingCracked", -- servidor -> todos: (model, {peças}) blocos que caíram (estágio de dano)
+		BuildingDamaged = "BuildingDamaged", -- servidor -> todos: ({model}, origem) construções que levaram dano
 		ZoneCleared = "ZoneCleared", -- servidor -> todos: ({Zone, Name, Next, NextIndex, Gems, Cash, Frenzy, Gate})
 	}),
 	Functions = table.freeze({

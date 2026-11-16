@@ -3,7 +3,21 @@ local FeedbackConfig = require("../src/shared/Config/FeedbackConfig")
 local Shake = require("../src/shared/Logic/Shake")
 
 -- ações do jogo que precisam de feedback (cada uma tem que existir no FeedbackConfig)
-local ACTIONS = { "Eat", "Click", "Buy", "Fail", "Coins", "Gems", "Reward", "Spin", "TierUp", "ZoneClear" }
+local ACTIONS = {
+	"Cast",
+	"Chain",
+	"Level",
+	"Eat",
+	"Click",
+	"Buy",
+	"Fail",
+	"Coins",
+	"Gems",
+	"Reward",
+	"Spin",
+	"TierUp",
+	"ZoneClear",
+}
 
 return function(t)
 	for _, name in ACTIONS do

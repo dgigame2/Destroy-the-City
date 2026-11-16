@@ -16,7 +16,7 @@ type Box = {
 	Rot: number?,
 	Tilt: { number }?,
 }
-type Template = { Name: string, Tier: number, Footprint: { number }, Boxes: { Box } }
+type Template = { Name: string, Tier: number, Footprint: { number }, Boxes: { Box }, Mesh: string? }
 type Palette = { [string]: { { number } } }
 
 local SPECIAL_MATERIALS: { [string]: Enum.Material } = {
@@ -109,11 +109,45 @@ function Builder.shapedPart(b: Box, cframe: CFrame): BasePart
 	return part
 end
 
+-- Mesh do Blender importada pelo usuário em ReplicatedStorage.Assets (nil = ainda não importou: usa os blocos).
+local function meshFor(name: string?): MeshPart?
+	if name == nil then
+		return nil
+	end
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local found = assets and assets:FindFirstChild(name, true)
+	return if found and found:IsA("MeshPart") then found else nil
+end
+
+-- Contorno dos blocos (a mesh ocupa exatamente esta caixa).
+local function hull(template: Template): (Vector3, Vector3)
+	local min, max = Vector3.one * math.huge, -Vector3.one * math.huge
+	for _, b in template.Boxes do
+		local half = Vector3.new(b.Size[1], b.Size[2], b.Size[3]) / 2
+		local center = Vector3.new(b.Pos[1], b.Pos[2], b.Pos[3])
+		min, max = min:Min(center - half), max:Max(center + half)
+	end
+	return min, max
+end
+
 -- Cria o Model de uma construção já posicionado. Cada papel de cor usa uma variação da semente,
 -- assim paredes e telhados não mudam juntos.
 function Builder.build(template: Template, palette: Palette, variant: number, cframe: CFrame): Model
 	local model = Instance.new("Model")
 	model.Name = template.Name
+	local mesh = meshFor(template.Mesh)
+	if mesh then
+		local min, max = hull(template)
+		local part = mesh:Clone()
+		part.Name = template.Name
+		part.Anchored = true
+		part.Size = max - min
+		part.CFrame = cframe * CFrame.new((min + max) / 2)
+		part.Parent = model
+		model.PrimaryPart = part
+		model.WorldPivot = cframe
+		return model
+	end
 	local roleVariant: { [string]: number } = {}
 	local salt = 0
 	local function variantFor(role: string): number
@@ -138,6 +172,8 @@ function Builder.build(template: Template, palette: Palette, variant: number, cf
 		part.Transparency = TRANSPARENT[b.Role] or 0
 		part.CanCollide = b.Role ~= "Window" and b.Role ~= "Light"
 		part.CastShadow = b.Size[1] * b.Size[2] * b.Size[3] > 4
+		-- índice do bloco no modelo: servidor e cliente usam para saber quais blocos caem em cada estágio
+		part:SetAttribute("Box", index)
 		part.Parent = model
 		if index == 1 then
 			model.PrimaryPart = part

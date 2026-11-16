@@ -3,6 +3,10 @@
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameplayConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.GameplayConfig)
+local Place = require(ReplicatedStorage:WaitForChild("Shared").Place)
 
 local localPlayer = Players.LocalPlayer
 
@@ -47,7 +51,33 @@ local function apply()
 	end
 end
 
+-- Modo desastres: o personagem não cresce, mas os desastres sim. A câmera começa afastada (dá para ver o
+-- impacto) e o zoom máximo acompanha o poder (alcance dos desastres).
+local DISASTER_START = 38 -- distância inicial da câmera
+local DISASTER_MAX = 70 -- zoom máximo = isso x poder ^ 0.9 (no mínimo 160)
+
+local function applyDisasters()
+	local power = (localPlayer:GetAttribute("Power") :: number?) or 1
+	localPlayer.CameraMaxZoomDistance = math.max(DISASTER_MAX * power ^ 0.9, 160)
+end
+
 function CameraController.init()
+	if GameplayConfig.Mode == "Disasters" and Place.isRun() then
+		localPlayer:GetAttributeChangedSignal("Power"):Connect(applyDisasters)
+		applyDisasters()
+		-- empurra a câmera para longe a cada nascimento e depois libera o zoom
+		local function pushBack()
+			task.wait(0.5)
+			localPlayer.CameraMinZoomDistance = DISASTER_START
+			task.wait(0.2)
+			localPlayer.CameraMinZoomDistance = 8
+		end
+		localPlayer.CharacterAdded:Connect(pushBack)
+		if localPlayer.Character then
+			task.spawn(pushBack)
+		end
+		return
+	end
 	localPlayer:GetAttributeChangedSignal("Scale"):Connect(apply)
 	apply()
 end

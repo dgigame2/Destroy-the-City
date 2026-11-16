@@ -14,6 +14,9 @@ local WheelConfig = require("../src/shared/Config/WheelConfig")
 local MapConfig = require("../src/shared/Config/MapConfig")
 local DifficultyConfig = require("../src/shared/Config/DifficultyConfig")
 local CityPlans = require("../src/shared/Config/CityPlans")
+local DisasterConfig = require("../src/shared/Config/DisasterConfig")
+local MasteryConfig = require("../src/shared/Config/MasteryConfig")
+local ChainConfig = require("../src/shared/Config/ChainConfig")
 
 -- Tamanhos em pontos (como o Roblox enxerga), deitado. Insets: L, R, B (pontos).
 -- MEDIDOS das especificações públicas dos aparelhos; bordas seguras = ESTIMATIVA dos valores do iOS/Android.
@@ -150,6 +153,75 @@ return function(t)
 			end
 		end)
 
+		t.test(`{name}: botões dos desastres: na tela, do tamanho do polegar, sem encostar em nada`, function()
+			local others = { layout.Cash, layout.Gems, layout.Timer, layout.MatchBar }
+			for _, r in buttons do
+				table.insert(others, r)
+			end
+			for i, r in layout.Disasters do
+				t.truthy(inside(r, w, h))
+				t.truthy(r.X1 - r.X0 >= c.MinTouch and r.Y1 - r.Y0 >= c.MinTouch)
+				for _, o in others do
+					if UiLayout.intersects(r, o, gap - 0.01) then
+						error(`desastre {i} encosta em outro elemento`)
+					end
+				end
+				for j, other in layout.Disasters do
+					if i ~= j and UiLayout.intersects(r, other, gap - 0.01) then
+						error(`desastres {i} e {j} encostam`)
+					end
+				end
+				-- ícone em cima (50%) e nome embaixo (34%), como os atalhos
+				for _, d in DisasterConfig.List do
+					if not textFits(d.Name, (r.X1 - r.X0) - 6, (r.Y1 - r.Y0) * 0.34) then
+						error(`nome "{d.Name}" não cabe no botão`)
+					end
+				end
+			end
+			-- na tela inteira do toque: longe do analógico
+			if device.Touch then
+				local stick = UiLayout.touchZones(device.W, device.H, 8)[1]
+				for _, r in layout.Disasters do
+					t.falsy(UiLayout.intersects(shifted(r, device.L, top), stick))
+				end
+			end
+		end)
+
+		t.test(`{name}: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem`, function()
+			local panel = layout.Levels
+			t.truthy(inside(panel, w, h))
+			for label, r in
+				{
+					Timer = layout.Timer,
+					Frenzy = layout.Frenzy,
+					MatchBar = layout.MatchBar,
+					Cash = layout.Cash,
+					Gems = layout.Gems,
+					Icons = layout.Icons,
+				}
+			do
+				if UiLayout.intersects(panel, r, 0) then
+					error(`painel de níveis encosta em {label}`)
+				end
+			end
+			for i, r in layout.Disasters do
+				if UiLayout.intersects(panel, r, gap - 0.01) then
+					error(`painel de níveis encosta no desastre {i}`)
+				end
+			end
+			-- uma linha por desastre; rótulo (60% da linha) e "LV 30" (40%), 62% da altura (o resto é a barrinha)
+			t.equal(#layout.LevelRows, #DisasterConfig.List)
+			local row = layout.LevelRows[1]
+			local rw, rh = row.X1 - row.X0, (row.Y1 - row.Y0) * 0.62
+			for _, d in DisasterConfig.List do
+				if not textFits(`{d.Icon} {d.Name}`, rw * 0.6, rh) then
+					error(`desastre "{d.Name}" não cabe no painel de níveis`)
+				end
+			end
+			t.truthy(textFits(`LV {MasteryConfig.MaxLevel}`, rw * 0.4, rh))
+			t.truthy(textFits("MAX", rw * 0.4, rh))
+		end)
+
 		t.test(`{name}: janelas cabem na tela (com o ajuste automático)`, function()
 			for _, size in { c.Window, c.UpgradeWindow, c.PartyWindow } do
 				local scale = UiLayout.windowScale(w, h, size, c)
@@ -223,6 +295,23 @@ return function(t)
 				end
 			end
 			t.truthy(textFits("AREA 5/5 • 100%", (c.Timer.W - 24) * s, c.TextRow * s))
+			-- avisos dos desastres
+			local toastW, toastH = layout.Toast.X1 - layout.Toast.X0, layout.Toast.Y1 - layout.Toast.Y0
+			if not textFits("TOO STRONG! DESTROY SMALLER THINGS FIRST", toastW, toastH) then
+				error("aviso de construção forte demais não cabe")
+			end
+			if not textFits("YOU CAN NOW DESTROY SHOPS & BIG HOUSES!", toastW, toastH) then
+				error("aviso de novo tier não cabe")
+			end
+			for _, d in DisasterConfig.List do
+				if not textFits(`{d.Icon} {d.Name} LV {MasteryConfig.MaxLevel}!`, toastW, toastH) then
+					error(`aviso de nível do "{d.Name}" não cabe`)
+				end
+			end
+			-- aviso da cadeia no rótulo do combo
+			for _, label in ChainConfig.Labels do
+				t.truthy(textFits(string.format(label.Text, 40), c.Combo.W * s, c.Combo.H * s))
+			end
 			local fr = layout.Frenzy
 			t.truthy(textFits("⚡ FRENZY 20s", (fr.X1 - fr.X0) * 0.86, (fr.Y1 - fr.Y0) * 0.6))
 			local cel = layout.Celebration
