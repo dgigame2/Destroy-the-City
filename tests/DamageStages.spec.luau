@@ -94,7 +94,7 @@ return function(t)
 		end
 	end
 
-	t.test("desabar e sumir: animações curtas (menos de 1 s, regra das explosões) e desaba no último estágio", function()
+	t.test("desabar e sumir: animações < 1 s e desaba no último estágio", function()
 		t.truthy(cfg.Collapse.Seconds + 0.15 < 1)
 		t.truthy(cfg.Collapse.RubbleSeconds < 1)
 		t.truthy(cfg.Vanish.Seconds < 1)

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vibe Diorama</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink-old:#0b1230; --shadow-old:#0a1440;
+  --ink:#2b3a67; --shadow:#4a6aa8;
+  --paper-t:#fffdf6; --paper-b:#f1e8d3;
+  --sky-t:#8fd3ff; --sky-b:#3e9bea;
+  --grass-t:#a8ea6f; --grass-b:#4db43a;
+  --sand-t:#ffe590; --sand-b:#f0ae3e;
+  --roof-t:#ff9282; --roof-b:#df4650;
+  --sea-t:#86ecef; --sea-b:#22a3d4;
+  --dirt:#b97a4a; --dirt2:#a26a40;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#e9f2fb;font-family:Fredoka,system-ui,sans-serif;color:#2b3a67;padding:16px}
+h1{font-size:22px;margin:0 0 4px}
+p.sub{margin:0 0 16px;font-family:system-ui,sans-serif;font-size:14px;color:#55627f}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,560px),1fr));gap:16px;margin-bottom:24px}
+.tag{font-size:15px;margin:0 0 6px}
+.screen{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;
+  background:linear-gradient(#bfe4ff 0 38%,transparent 38%),
+  repeating-linear-gradient(90deg,var(--dirt) 0 18px,var(--dirt2) 18px 36px);
+}
+.screen .island{position:absolute;left:4%;right:4%;top:30%;bottom:-6%;border-radius:6px;
+  background:
+   radial-gradient(circle at 70% 60%,#7fd0ff 0 9%,transparent 9.5%),
+   linear-gradient(90deg,transparent 0 30%,#c9c3b6 30% 33%,transparent 33% 62%,#c9c3b6 62% 65%,transparent 65%),
+   linear-gradient(transparent 0 45%,#c9c3b6 45% 50%,transparent 50%),
+   #8fdc5a;}
+.house{position:absolute;width:3.2%;height:7%;border-radius:2px}
+.hud{position:absolute;inset:0;font-size:clamp(9px,1.6vw,16px)}
+.d{position:absolute;border-radius:.9em;border:.22em solid var(--ink);box-shadow:0 .35em 0 rgba(74,106,168,.55)}
+.d::after{content:"";position:absolute;left:6%;right:6%;top:6%;height:30%;border-radius:.6em;background:rgba(255,255,255,.28)}
+.old .d{border-color:var(--ink-old);box-shadow:0 .35em 0 rgba(10,20,64,.55)}
+.t{color:#fff;-webkit-text-stroke:.16em var(--ink);paint-order:stroke fill;font-weight:700;letter-spacing:.02em}
+.old .t{-webkit-text-stroke-color:var(--ink-old)}
+.cur{left:2%;width:17%;height:8%;display:flex;align-items:center;gap:.4em;padding-left:.5em}
+.ico{left:2%;width:8%;height:14%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.9em}
+.ico i{font-style:normal;font-size:1.7em;line-height:1.1}
+.win{left:22%;top:14%;width:56%;height:72%;border-radius:1.4em;overflow:hidden}
+.win .hd{position:absolute;left:0;right:0;top:0;height:17%;display:flex;align-items:center;padding-left:4%;font-size:1.4em}
+.win .x{position:absolute;right:1.5%;top:2%;width:8%;height:13%;border-radius:.7em;display:grid;place-items:center;font-size:1.1em}
+.lip{position:absolute;left:0;right:0;top:17%;height:3.2%;
+  background:repeating-linear-gradient(90deg,var(--grass-b) 0 4%,#3f9a30 4% 8%)}
+.card{position:absolute;top:27%;width:20%;height:64%;border-radius:1em;overflow:hidden}
+.card .stripes{position:absolute;inset:0;background:repeating-linear-gradient(60deg,rgba(255,255,255,.14) 0 10px,transparent 10px 26px)}
+.card .nm{position:absolute;left:0;right:0;top:6%;text-align:center;font-size:.85em}
+.card .it{position:absolute;left:0;right:0;top:24%;text-align:center;font-size:2.2em}
+.card .bt{left:8%;right:8%;width:auto;bottom:7%;height:24%;display:grid;place-items:center;font-size:.85em}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-family:system-ui,sans-serif;font-size:13px}
+.sw{display:flex;align-items:center;gap:6px;background:#fff;border-radius:8px;padding:6px 10px}
+.sw b{display:inline-block;width:28px;height:18px;border-radius:5px;border:2px solid var(--ink)}
+</style>
+</head>
+<body>
+<h1>Destroy the City — vibe "Diorama"</h1>
+<p class="sub">Esquerda: estilo atual. Direita: proposta com cores tiradas dos mapas Garden Village, Palm Beach e Frost City. Mesma estrutura de UI aprovada (janela clara, cabeçalho colorido, X vermelho, cards com listras, atalhos 2x2 à esquerda).</p>
+
+<div class="row" id="rows"></div>
+
+<p class="tag">Paleta proposta (vem do MapConfig)</p>
+<div class="legend">
+  <span class="sw"><b style="background:#2b3a67"></b>Contorno e texto: azul-ardósia (era quase preto)</span>
+  <span class="sw"><b style="background:linear-gradient(#fffdf6,#f1e8d3)"></b>Papel: creme das paredes/areia (era azulado)</span>
+  <span class="sw"><b style="background:linear-gradient(#8fd3ff,#3e9bea)"></b>Céu</span>
+  <span class="sw"><b style="background:linear-gradient(#a8ea6f,#4db43a)"></b>Grama</span>
+  <span class="sw"><b style="background:linear-gradient(#ffe590,#f0ae3e)"></b>Areia/ouro</span>
+  <span class="sw"><b style="background:linear-gradient(#ff9282,#df4650)"></b>Telhado</span>
+  <span class="sw"><b style="background:linear-gradient(#86ecef,#22a3d4)"></b>Mar</span>
+  <span class="sw"><b style="background:repeating-linear-gradient(90deg,#4db43a 0 6px,#3f9a30 6px 12px)"></b>Borda de grama em blocos (o "chão" da ilha)</span>
+</div>
+
+<script>
+const OLD={paper:["#f6f8ff","#dce4ff"],head:["#3a6fe0","#1d3c9a"],green:["#62e37a","#2fae4a"],yellow:["#ffd84d","#f2a51e"],red:["#ff6b6b","#c92a2a"],blue:["#6fb4ff","#2d6ad6"],purple:["#c27bff","#7b35d6"],gray:["#ced2dc","#969cac"],pink:["#ff7ac8","#d6339a"]};
+const NEW={paper:["#fffdf6","#f1e8d3"],head:["#8fd3ff","#3e9bea"],green:["#a8ea6f","#4db43a"],yellow:["#ffe590","#f0ae3e"],red:["#ff9282","#df4650"],blue:["#8fd3ff","#3e9bea"],purple:["#cfa6ff","#8a5ae0"],gray:["#dfe4ee","#a7b0c6"],pink:["#ff9fd0","#e05aa6"]};
+const g=c=>`background:linear-gradient(${c[0]},${c[1]})`;
+const houses=[[12,40,"#ffdea0","#d63642"],[20,52,"#a0ceff","#306edc"],[34,38,"#ffaaaa","#20a08c"],[46,58,"#b4ec96","#d63642"],[58,44,"#fafaf0","#306edc"],[74,40,"#ffea78","#8246c8"],[84,56,"#a0e2ff","#ff783c"],[28,70,"#fafaf0","#d63642"],[66,72,"#ffdea0","#306edc"]];
+function screen(P,isNew,label){
+  const hs=houses.map(([x,y,w,r])=>`<div class="house" style="left:${x}%;top:${y}%;background:${w};box-shadow:inset 0 .45em 0 ${r}"></div>`).join("");
+  const icons=[["SHOP","🛒",P.yellow],["SPIN","🎡",P.purple],["GIFT","🎁",P.pink],["CLASS","⭐",P.blue]];
+  const ic=icons.map(([n,e,c],i)=>`<div class="d ico" style="${g(c)};left:${2+(i%2)*9}%;top:${30+Math.floor(i/2)*16}%"><i>${e}</i><span class="t">${n}</span></div>`).join("");
+  const cards=[["COMMON","✨",P.gray,"BUY 💵 500",P.green],["RARE","🫧",P.blue,"EQUIP",P.yellow],["EPIC","🔥",P.purple,"EQUIPPED",P.gray],["LEGENDARY","🌈",P.yellow,"BUY 💎 40",P.green]];
+  const cd=cards.map(([n,e,c,b,bc],i)=>`<div class="d card" style="${g(c)};left:${4+i*24}%"><div class="stripes"></div><div class="t nm">${n}</div><div class="it">${e}</div><div class="d bt t" style="${g(bc)}">${b}</div></div>`).join("");
+  return `<div><p class="tag">${label}</p><div class="screen ${isNew?"":"old"}"><div class="island">${hs}</div>
+  <div class="hud">
+    <div class="d cur" style="${g(P.green)};top:3%"><span>💵</span><span class="t">12.4K</span></div>
+    <div class="d cur" style="${g(P.blue)};top:14%"><span>💎</span><span class="t">350</span></div>
+    ${ic}
+    <div class="d win" style="${g(P.paper)}">
+      <div class="hd t" style="${g(P.head)}">SHOP</div>
+      ${isNew?'<div class="lip"></div>':''}
+      <div class="d x t" style="${g(P.red)}">X</div>
+      ${cd}
+    </div>
+  </div></div></div>`;
+}
+document.getElementById("rows").innerHTML=screen(OLD,false,"Atual")+screen(NEW,true,"Proposta: Diorama");
+</script>
+</body>
+</html>

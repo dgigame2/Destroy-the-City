@@ -32,6 +32,11 @@
 					"$path": "src/overrides/RbxCharacterSounds.client.luau"
 				}
 			}
+		},
+		"Workspace": {
+			"$properties": {
+				"StreamingEnabled": false
+			}
 		}
 	}
 }

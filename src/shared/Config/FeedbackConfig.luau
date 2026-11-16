@@ -10,7 +10,9 @@
 
 export type Sound = { Id: string, Volume: number, Pitch: number, Jitter: number, MinGap: number }
 export type Shake = { Camera: number?, Ui: number?, Seconds: number }
-export type Number = { Color: { number }, Format: string, Merge: number }
+-- Hidden = true: esse tipo NÃO mostra número (decisão do usuário, 16/11/2026: "+1" a cada clique e no prêmio
+-- poluía a tela). O som e o balanço continuam.
+export type Number = { Color: { number }, Format: string, Merge: number, Hidden: boolean? }
 export type Kind = { Sound: Sound, Shake: Shake, Number: Number }
 
 local POP = "rbxassetid://109359226723492"
@@ -49,8 +51,8 @@ local kinds: { [string]: Kind } = {
 	-- qualquer botão (número = "+1" pequeno no botão: confirma o toque)
 	Click = {
 		Sound = sound("rbxasset://sounds/switch.wav", 0.25, 1.1, 0.05, 0.05),
-		Shake = { Ui = 6, Seconds = 0.18 },
-		Number = { Color = { 255, 255, 255 }, Format = "+%d", Merge = 0.3 },
+		Shake = { Ui = 4, Seconds = 0.15 },
+		Number = { Color = { 255, 255, 255 }, Format = "+%d", Merge = 0.3, Hidden = true },
 	},
 	-- compra feita (loja, upgrade, roleta paga): número = quanto gastou
 	Buy = {
@@ -78,8 +80,8 @@ local kinds: { [string]: Kind } = {
 	-- prêmio resgatado (diário/semanal) ou prêmio especial
 	Reward = {
 		Sound = sound("rbxasset://sounds/electronicpingshort.wav", 0.45, 1, 0, 0.2),
-		Shake = { Ui = 12, Seconds = 0.3 },
-		Number = { Color = { 255, 227, 107 }, Format = "+%d", Merge = 0 },
+		Shake = { Ui = 4, Seconds = 0.25 }, -- o cartão do prêmio é grande: balanço leve (antes 12 "tremia a tela")
+		Number = { Color = { 255, 227, 107 }, Format = "+%d", Merge = 0, Hidden = true }, -- o cartão já mostra o prêmio
 	},
 	-- roleta girando
 	Spin = {

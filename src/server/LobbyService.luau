@@ -325,6 +325,9 @@ local function buildWheel(parent: Instance)
 	local facing = CFrame.lookAt(center, Vector3.new(0, 22, -10))
 	local wheelModel = Instance.new("Model")
 	wheelModel.Name = "LuckyWheel"
+	-- a roda chega inteira no cliente e nunca sai da memória: o cliente gira o Rotor em volta do cubo
+	-- central (PrimaryPart). Com streaming, uma roda pela metade girava em volta do ponto errado e "sumia".
+	wheelModel.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
 
 	local rotor = Instance.new("Model")
 	rotor.Name = "Rotor"

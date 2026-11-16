@@ -78,6 +78,14 @@ local function findWorldWheel(): Spinner?
 	if rotor == nil then
 		return nil
 	end
+	-- o giro é em volta do cubo central: espera ele chegar (sem ele o pivô fica no lugar errado e a roda some)
+	local deadline = os.clock() + 30
+	while rotor.PrimaryPart == nil and os.clock() < deadline do
+		task.wait(0.1)
+	end
+	if rotor.PrimaryPart == nil then
+		return nil
+	end
 	return { Rotor = rotor, Rest = rotor:GetPivot(), Angle = 0, Token = 0 }
 end
 

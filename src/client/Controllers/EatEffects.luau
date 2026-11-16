@@ -227,7 +227,8 @@ local function onBuildingDestroyed(model: Model?, destroyer: Player, coins: numb
 				local dir = if away.Magnitude > 0.01
 					then away.Unit
 					else Vector3.new(math.random() - 0.5, 0, math.random() - 0.5).Unit
-				local push = dir * (6 + math.random() * 10 + part.Size.Magnitude) + Vector3.new(0, 4 + math.random() * 8, 0)
+				local push = dir * (6 + math.random() * 10 + part.Size.Magnitude)
+					+ Vector3.new(0, 4 + math.random() * 8, 0)
 				local spin = CFrame.Angles(math.random() * 3, math.random() * 3, math.random() * 3)
 				local info = TweenInfo.new(DESTROY_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 				TweenService:Create(part, info, {

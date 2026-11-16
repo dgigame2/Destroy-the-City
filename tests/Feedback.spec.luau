@@ -29,6 +29,10 @@ return function(t)
 			t.truthy((kind.Shake.Camera or 0) > 0 or (kind.Shake.Ui or 0) > 0)
 			t.truthy(kind.Shake.Seconds > 0 and kind.Shake.Seconds <= 1)
 			t.truthy(type(kind.Number.Format) == "string" and #kind.Number.Format > 0)
+			-- número escondido só onde o usuário pediu (clique e prêmio)
+			if kind.Number.Hidden then
+				t.truthy(name == "Click" or name == "Reward")
+			end
 			-- o formato aceita um número inteiro
 			t.truthy(type(string.format(kind.Number.Format, 12)) == "string")
 		end)
@@ -42,6 +46,12 @@ return function(t)
 		for name in FeedbackConfig.Kinds do
 			t.truthy(listed[name])
 		end
+	end)
+
+	t.test("clique e prêmio não mostram número (pedido do usuário: poluía a tela)", function()
+		t.truthy(FeedbackConfig.Kinds.Click.Number.Hidden)
+		t.truthy(FeedbackConfig.Kinds.Reward.Number.Hidden)
+		t.truthy((FeedbackConfig.Kinds.Reward.Shake.Ui :: number) <= 5)
 	end)
 
 	t.test("número some em menos de 1 segundo", function()

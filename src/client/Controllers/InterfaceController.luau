@@ -205,7 +205,7 @@ function InterfaceController.popup(text: string, icon: string)
 	refs.PopupIcon.Text = icon
 	refs.Popup.Visible = true
 	InterfaceController.bump(refs.Popup)
-	EatEffects.playTierUp()
+	-- só o cartão + som e balanço leve (sem brilho no personagem nem número extra: poluía a tela)
 	Feedback.play("Reward", { Gui = refs.Popup, Text = "+1 " .. icon })
 	task.delay(2.6, function()
 		if popupToken == token then

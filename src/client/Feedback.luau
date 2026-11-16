@@ -115,7 +115,22 @@ local function screenPoint(target: Target): Vector2?
 	return nil
 end
 
+-- O elemento está aparecendo de verdade? (ele e todos os pais visíveis; HUD escondido atrás de janela não conta)
+local function onScreen(gui: GuiObject): boolean
+	local node: Instance? = gui
+	while node and node:IsA("GuiObject") do
+		if not node.Visible then
+			return false
+		end
+		node = node.Parent
+	end
+	return true
+end
+
 local function showNumber(kind: string, spec: FeedbackConfig.Number, target: Target)
+	if spec.Hidden or (target.Gui and not onScreen(target.Gui)) then
+		return
+	end
 	local key = kind .. (if target.Gui then target.Gui:GetFullName() else "")
 	local amount = target.Amount or 1
 	local now = os.clock()
@@ -180,7 +195,9 @@ function Feedback.play(kind: string, target: Target)
 		shakeCamera(spec.Shake.Camera, spec.Shake.Seconds)
 	end
 	if spec.Shake.Ui and target.Gui then
-		wobble(target.Gui, spec.Shake.Ui, spec.Shake.Seconds)
+		if onScreen(target.Gui) then
+			wobble(target.Gui, spec.Shake.Ui, spec.Shake.Seconds)
+		end
 	elseif spec.Shake.Ui then
 		-- ação sem elemento na tela: treme a câmera de leve no lugar
 		shakeCamera(spec.Shake.Ui * 0.02, spec.Shake.Seconds)
