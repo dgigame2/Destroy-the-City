@@ -10,3 +10,7 @@ sourcemap.json
 Packages/
 ServerPackages/
 DevPackages/
+
+# Logs dos .bat (pipeline e envio)
+check-log.txt
+envio-log.txt
