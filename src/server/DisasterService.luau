@@ -228,6 +228,10 @@ local function tornado(
 		local damaged = {}
 		for _, hit in inCircle(x, z, r) do
 			local hurt = strike(cast, hit.Model, center, 0, function(tier)
+				-- objeto leve (poste, banco...): o funil arrasta e derruba na hora
+				if Disasters.sweeps(d, p, tier) then
+					return Disasters.structureHp(tier, StructureConfig.HpPerScale)
+				end
 				return Disasters.hitDamage(d, p, tier, m.Damage, StructureConfig.UnderPower)
 			end)
 			if hurt then

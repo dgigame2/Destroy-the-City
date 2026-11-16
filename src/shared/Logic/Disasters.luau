@@ -126,6 +126,18 @@ function Disasters.tornadoAt(
 	return sx + dirX * speed * t, sz + dirZ * speed * t
 end
 
+-- O desastre arrasta e derruba na hora esse tier (objetos leves no caminho do tornado)? Só se o seu poder
+-- já alcança o tier (o leve demais para você).
+function Disasters.sweeps(disaster: Disaster, power: number, tier: Tier & { Name: string }): boolean
+	local list = disaster.Sweeps
+	return list ~= nil and list[tier.Name] == true and power + 1e-9 >= tier.RequiredScale
+end
+
+-- Quantos tiques, no pior caso, um ponto bem no caminho do tornado fica dentro do funil numa passada.
+function Disasters.contactTicks(radius: number, speed: number, tick: number): number
+	return math.max(1, math.floor(2 * radius / math.max(speed * tick, 1e-6)))
+end
+
 -- Direção unitária de (ox, oz) para (tx, tz); se forem o mesmo ponto, usa a direção padrão.
 function Disasters.direction(ox: number, oz: number, tx: number, tz: number, fx: number, fz: number): (number, number)
 	local dx, dz = tx - ox, tz - oz

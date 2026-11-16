@@ -46,6 +46,9 @@ local disasters: { Disaster } = {
 		Cooldown = 7,
 		Range = 25, -- nasce até essa distância na direção da mira
 		Damage = 16, -- por tique
+		-- objetos leves (tiers por nome) que o funil arrasta e derruba na hora ao passar por cima: postes,
+		-- bancos, lixeiras... (antes sobravam: ficavam só ~2 tiques dentro do funil, Disasters.contactTicks)
+		Sweeps = table.freeze({ Prop = true }),
 		TierExponent = 1.6, -- moe o que é pequeno, quase não arranha o que é grande
 		Radius = 5,
 		Speed = 22, -- studs/s

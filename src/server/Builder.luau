@@ -162,6 +162,18 @@ local function hull(template: Template): (Vector3, Vector3)
 	return min, max
 end
 
+-- Ponto de apoio do modelo no chão (centro da base). Com PrimaryPart, o GetPivot() usa o PivotOffset dela:
+-- sem isso o pivô ficava no meio da 1ª peça e os escombros nasciam flutuando (bug de 16/11/2026).
+-- Também guarda o chão no atributo "Ground" (quem precisar do chão não depende do pivô).
+local function setGroundPivot(model: Model, cframe: CFrame)
+	local primary = model.PrimaryPart
+	if primary then
+		primary.PivotOffset = primary.CFrame:ToObjectSpace(cframe)
+	end
+	model.WorldPivot = cframe
+	model:SetAttribute("Ground", cframe.Position.Y)
+end
+
 -- Cria o Model de uma construção já posicionado. Cada papel de cor usa uma variação da semente,
 -- assim paredes e telhados não mudam juntos.
 function Builder.build(template: Template, palette: Palette, variant: number, cframe: CFrame): Model
@@ -177,7 +189,7 @@ function Builder.build(template: Template, palette: Palette, variant: number, cf
 		part.CFrame = cframe * CFrame.new((min + max) / 2)
 		part.Parent = model
 		model.PrimaryPart = part
-		model.WorldPivot = cframe
+		setGroundPivot(model, cframe)
 		return model
 	end
 	local roleVariant: { [string]: number } = {}
@@ -212,7 +224,7 @@ function Builder.build(template: Template, palette: Palette, variant: number, cf
 		end
 	end
 	-- ponto de apoio = centro da base no chão
-	model.WorldPivot = cframe
+	setGroundPivot(model, cframe)
 	return model
 end
 

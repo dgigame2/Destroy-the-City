@@ -84,6 +84,15 @@ return function(t)
 		t.truthy(Disasters.speed(tornado, 4, cfg) > Disasters.speed(tornado, 1, cfg))
 	end)
 
+	t.test("tornado arrasta objetos leves (postes, bancos) já no poder inicial; o resto continua no dano", function()
+		t.truthy(Disasters.sweeps(tornado, 1, TierConfig[1]))
+		t.falsy(Disasters.sweeps(tornado, 10, TierConfig[3])) -- casas não são arrastadas, levam dano
+		t.falsy(Disasters.sweeps(meteor, 10, TierConfig[1])) -- só o tornado arrasta
+		-- sem arrastar, uma passada não derrubaria um poste no poder inicial (era o bug)
+		local ticks = Disasters.contactTicks(tornado.Radius, tornado.Speed, tornado.Tick)
+		t.truthy(ticks * Disasters.hitDamage(tornado, 1, TierConfig[1]) < Disasters.structureHp(TierConfig[1], 120))
+	end)
+
 	t.test("tornado anda em linha reta na direção da mira", function()
 		local dx, dz = Disasters.direction(0, 0, 0, 10, 1, 0)
 		local x, z = Disasters.tornadoAt(0, 0, dx, dz, 20, 2)
