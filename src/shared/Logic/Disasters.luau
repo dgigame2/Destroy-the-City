@@ -26,14 +26,21 @@ function Disasters.structureHp(tier: Tier, hpPerScale: number): number
 	return hpPerScale * tier.RequiredScale
 end
 
--- Dano de um acerto antes da distância: 0 se o poder ainda não chega no tier (construção travada).
--- Coisas menores que o seu poder levam mais (TierExponent alto = ótimo contra pequenos).
-function Disasters.hitDamage(disaster: Disaster, power: number, tier: Tier, bonus: number?): number
-	if power + 1e-9 < tier.RequiredScale then
-		return 0
+-- Construção mais forte que o seu poder: o dano cai para `under` x (poder / exigido). Nada fica travado, mas
+-- as fortes (avião, hangar...) levam MUITO mais acertos até você ficar mais forte. 1 = poder suficiente.
+function Disasters.underPower(power: number, tier: Tier, under: number): number
+	if power + 1e-9 >= tier.RequiredScale then
+		return 1
 	end
+	return under * power / tier.RequiredScale
+end
+
+-- Dano de um acerto antes da distância. Coisas menores que o seu poder levam mais (TierExponent alto =
+-- ótimo contra pequenos); as maiores levam pouco (underPower). `under` = StructureConfig.UnderPower.
+function Disasters.hitDamage(disaster: Disaster, power: number, tier: Tier, bonus: number?, under: number?): number
 	local size = (power / tier.RequiredScale) ^ disaster.TierExponent
-	return disaster.Damage * power * size * (bonus or 1)
+	local weak = Disasters.underPower(power, tier, under or 0)
+	return disaster.Damage * power * size * weak * (bonus or 1)
 end
 
 -- Fração do dano do meteoro a `distance` do centro (dano cheio no miolo, cai até EdgeDamage na borda).

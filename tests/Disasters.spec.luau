@@ -26,9 +26,21 @@ return function(t)
 		t.truthy(lightning.Hops ~= nil and lightning.Radius == nil)
 	end)
 
-	t.test("construção travada: poder abaixo do tier não causa dano", function()
-		t.equal(Disasters.hitDamage(meteor, 1.9, TierConfig[3]), 0)
-		t.truthy(Disasters.hitDamage(meteor, 2, TierConfig[3]) > 0)
+	t.test("construção forte: abaixo do poder leva dano, mas bem menos (nada fica travado)", function()
+		local under = StructureConfig.UnderPower
+		local weak = Disasters.hitDamage(meteor, 1.9, TierConfig[3], nil, under)
+		local ok = Disasters.hitDamage(meteor, 2, TierConfig[3], nil, under)
+		t.truthy(weak > 0)
+		t.truthy(weak < ok * 0.5)
+		t.equal(Disasters.underPower(5, TierConfig[5], under), 1)
+	end)
+
+	t.test("avião/hangar (tier 5) no começo: muitos meteoros; com o poder certo, 1 acerto", function()
+		local under = StructureConfig.UnderPower
+		local tier = TierConfig[5]
+		local hp = Disasters.structureHp(tier, StructureConfig.HpPerScale)
+		t.truthy(hp / Disasters.hitDamage(meteor, 1, tier, nil, under) >= 15)
+		t.truthy(hp / Disasters.hitDamage(meteor, tier.RequiredScale, tier, nil, under) <= 1)
 	end)
 
 	t.test("meteoro no centro derruba um tier do seu tamanho em 1 acerto", function()

@@ -1,11 +1,13 @@
 --!strict
 -- Vida visível das construções no cliente (DamageConfig). Só visual: o servidor já decidiu a vida, quais
--- blocos caíram (já invisíveis e sem colisão) e onde ficam os escombros.
+-- blocos caíram (já invisíveis e sem colisão) e quando a construção desaba em escombros.
 --   * Destroços: cada bloco que caiu (BuildingCracked) vira uma cópia que cai até o chão girando e some.
 --     Celular: peças ancoradas e tween (sem física), no máximo DamageConfig.MaxDebris ao mesmo tempo.
 --   * Barra de vida: em cima da construção atingida (BuildingDamaged), lê o atributo "Hp" do modelo e some
 --     depois de HpBar.Seconds sem dano. No máximo HpBar.Max barras (as mais antigas saem).
 --     Visual Depth Stack: sombra azulada, contorno uniforme, gradiente e leve elevação.
+--   * Desabar (BuildingCollapsed): os blocos afundam girando, os escombros sobem do chão, poeira.
+--   * Sumir (DamageVfx.vanish, chamado pelo EatEffects): os escombros afundam no chão com poeira.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -86,6 +88,147 @@ local function onCracked(model: Model?, parts: { BasePart }?)
 			debris -= 1
 		end)
 	end
+end
+
+-- Poeira, desabar e sumir -----------------------------------------------------------------------------
+
+local function ensureFolder()
+	if folder.Parent == nil then
+		folder.Parent = Workspace
+	end
+end
+
+local function quiet(part: BasePart)
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+end
+
+-- Nuvens de poeira em volta de `center` (bolas que crescem, sobem e somem em menos de 1 s).
+local function dust(center: Vector3, width: number)
+	ensureFolder()
+	local d = cfg.Dust
+	for i = 1, d.Puffs do
+		local angle = (i / d.Puffs) * math.pi * 2 + random:NextNumber(0, 0.6)
+		local r = width * 0.35 * random:NextNumber(0.3, 1)
+		local size = math.max(width * d.Size * random:NextNumber(0.4, 0.8), 2)
+		local puff = Instance.new("Part")
+		puff.Shape = Enum.PartType.Ball
+		quiet(puff)
+		puff.Material = Enum.Material.SmoothPlastic
+		puff.Color = rgb(d.Color)
+		puff.Transparency = 0.35
+		puff.Size = Vector3.one * size * 0.4
+		puff.CFrame = CFrame.new(center + Vector3.new(math.cos(angle) * r, size * 0.2, math.sin(angle) * r))
+		puff.Parent = folder
+		local drift = Vector3.new(math.cos(angle) * r * 0.6, size * 0.5, math.sin(angle) * r * 0.6)
+		TweenService:Create(puff, TweenInfo.new(d.Seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = Vector3.one * size,
+			Transparency = 1,
+			CFrame = puff.CFrame + drift,
+		}):Play()
+		task.delay(d.Seconds, function()
+			puff:Destroy()
+		end)
+	end
+end
+
+-- Centro no chão e maior lado da construção (para o tamanho da poeira).
+local function groundCenter(model: Model): (Vector3, number)
+	local box, size = model:GetBoundingBox()
+	local ground = model:GetPivot().Position.Y
+	return Vector3.new(box.Position.X, ground, box.Position.Z), math.max(size.X, size.Z)
+end
+
+-- Desabou (BuildingCollapsed): os blocos afundam girando e somem, os escombros sobem do chão, poeira.
+local function onCollapsed(model: Model?, parts: { BasePart }?)
+	if model == nil or parts == nil or model.Parent == nil then
+		return
+	end
+	ensureFolder()
+	local c = cfg.Collapse
+	local center, width = groundCenter(model)
+	local ground = center.Y
+	local list = {}
+	local top = ground
+	for _, part in parts do
+		if typeof(part) == "Instance" and part:IsA("BasePart") then
+			table.insert(list, part)
+			top = math.max(top, part.Position.Y)
+		end
+	end
+	table.sort(list, function(a, b)
+		return a.Size.Magnitude > b.Size.Magnitude
+	end)
+	local spin = math.rad(c.Spin)
+	for index = 1, math.min(#list, c.MaxParts) do
+		local source = list[index]
+		local copy = source:Clone()
+		copy:ClearAllChildren()
+		copy.Transparency = (source:GetAttribute("Alpha") :: number?) or 0
+		quiet(copy)
+		copy.Parent = folder
+		local height = math.max(source.Position.Y - ground, 0)
+		local drop = height + source.Size.Y * 0.5
+		local goal = (source.CFrame - Vector3.new(0, drop, 0))
+			* CFrame.Angles(random:NextNumber(-spin, spin), 0, random:NextNumber(-spin, spin))
+		-- a base cede primeiro e o resto vem atrás (os de cima um pouco depois)
+		local wait = 0.15 * height / math.max(top - ground, 1)
+		task.delay(wait, function()
+			TweenService:Create(copy, TweenInfo.new(c.Seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				CFrame = goal,
+				Size = copy.Size * 0.7,
+				Transparency = 1,
+			}):Play()
+		end)
+		task.delay(wait + c.Seconds + 0.05, function()
+			copy:Destroy()
+		end)
+	end
+	-- escombros (do servidor, dentro do modelo) nascem achatados no chão e sobem até o tamanho certo
+	for _, child in model:GetChildren() do
+		if child:IsA("BasePart") and child:GetAttribute("Rubble") then
+			local final, size = child.CFrame, child.Size
+			child.Size = Vector3.new(size.X, 0.05, size.Z)
+			child.CFrame = final - Vector3.new(0, size.Y / 2 - 0.025, 0)
+			TweenService:Create(
+				child,
+				TweenInfo.new(c.RubbleSeconds, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+				{ Size = size, CFrame = final }
+			):Play()
+		end
+	end
+	dust(center, width)
+end
+
+-- A construção caiu de vez. Se ela tinha desabado, os escombros afundam no chão com poeira e somem.
+-- Devolve false se ela não tinha escombros (o EatEffects faz a explosão normal).
+function DamageVfx.vanish(model: Model): boolean
+	if not model:GetAttribute("Collapsed") then
+		return false
+	end
+	ensureFolder()
+	local center, width = groundCenter(model)
+	local seconds = cfg.Vanish.Seconds
+	for _, child in model:GetChildren() do
+		if child:IsA("BasePart") and child:GetAttribute("Rubble") then
+			local copy = child:Clone()
+			quiet(copy)
+			copy.Parent = folder
+			TweenService:Create(copy, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				CFrame = copy.CFrame - Vector3.new(0, copy.Size.Y, 0),
+				Size = Vector3.new(copy.Size.X * 0.8, 0.05, copy.Size.Z * 0.8),
+				Transparency = 1,
+			}):Play()
+			task.delay(seconds + 0.05, function()
+				copy:Destroy()
+			end)
+		end
+	end
+	dust(center, width)
+	return true
 end
 
 -- Barra de vida ---------------------------------------------------------------------------------------
@@ -228,6 +371,7 @@ end
 function DamageVfx.init()
 	folder.Parent = Workspace
 	Remotes.event(Remotes.Names.Events.BuildingCracked).OnClientEvent:Connect(onCracked)
+	Remotes.event(Remotes.Names.Events.BuildingCollapsed).OnClientEvent:Connect(onCollapsed)
 	Remotes.event(Remotes.Names.Events.BuildingDamaged).OnClientEvent:Connect(onDamaged)
 	task.spawn(sweep)
 end

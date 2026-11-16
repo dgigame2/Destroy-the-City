@@ -101,14 +101,16 @@ local function strike(
 		return false
 	end
 	local damage = damageOf(tier)
-	if damage <= 0 then
-		if depth == 0 and cast.Power < tier.RequiredScale then
-			lockedHits[player] = (lockedHits[player] or 0) + 1
-		end
-		return false
-	end
 	if depth == 0 then
-		usefulHits[player] = (usefulHits[player] or 0) + 1
+		-- forte demais para o seu poder: leva pouco dano (aviso "TOO STRONG" se só acertou essas)
+		if cast.Power + 1e-9 < tier.RequiredScale then
+			lockedHits[player] = (lockedHits[player] or 0) + 1
+		else
+			usefulHits[player] = (usefulHits[player] or 0) + 1
+		end
+	end
+	if damage <= 0 then
+		return false
 	end
 	local hp = Disasters.structureHp(tier, StructureConfig.HpPerScale)
 	if not StructureHealth.hit(health, id, damage, hp) then
@@ -122,7 +124,6 @@ local function strike(
 	local info = Templates[template]
 	local footprint = if info then math.max(info.Footprint[1], info.Footprint[2]) else 10
 	local reaction = Chain.reaction(template, tierIndex, footprint, ChainConfig)
-	DamageService.ruins(model) -- escombros no terreno (antes de a construção sumir)
 	EatService.destroy(player, model, origin, Chain.bonus(depth, ChainConfig))
 	-- XP para o desastre que derrubou (ou que começou a cadeia): ele sobe de nível
 	MasteryService.record(player, cast.Cause, tierIndex, depth > 0)
@@ -155,7 +156,7 @@ react = function(cast: Cast, position: Vector3, reaction: Chain.Reaction, source
 	for _, hit in inCircle(position.X, position.Z, reaction.Radius) do
 		local damage = Chain.damageAt(sourceHp, reaction, hit.Distance, ChainConfig)
 		local hurt = strike(cast, hit.Model, position, depth, function(tier)
-			return if cast.Power + 1e-9 >= tier.RequiredScale then damage else 0
+			return damage * Disasters.underPower(cast.Power, tier, StructureConfig.UnderPower)
 		end)
 		if hurt then
 			table.insert(damaged, hit.Model)
@@ -196,7 +197,7 @@ local function meteor(cast: Cast, d: Disaster, p: number, m: Mods, tx: number, t
 	for _, hit in inCircle(tx, tz, r) do
 		local factor = Disasters.meteorFalloff(hit.Distance, r, d.Core, d.EdgeDamage)
 		local hurt = strike(cast, hit.Model, center, 0, function(tier)
-			return Disasters.hitDamage(d, p, tier, m.Damage) * factor
+			return Disasters.hitDamage(d, p, tier, m.Damage, StructureConfig.UnderPower) * factor
 		end)
 		if hurt then
 			table.insert(damaged, hit.Model)
@@ -227,7 +228,7 @@ local function tornado(
 		local damaged = {}
 		for _, hit in inCircle(x, z, r) do
 			local hurt = strike(cast, hit.Model, center, 0, function(tier)
-				return Disasters.hitDamage(d, p, tier, m.Damage)
+				return Disasters.hitDamage(d, p, tier, m.Damage, StructureConfig.UnderPower)
 			end)
 			if hurt then
 				table.insert(damaged, hit.Model)
@@ -339,7 +340,7 @@ local function onUse(player: Player, id: unknown, target: unknown)
 					local model = models[hop.Id]
 					local hurt = model.Parent ~= nil
 						and strike(run, model, points[index], 0, function(tier)
-							return Disasters.hitDamage(d, p, tier, m.Damage) * hop.Strength
+							return Disasters.hitDamage(d, p, tier, m.Damage, StructureConfig.UnderPower) * hop.Strength
 						end)
 					if hurt then
 						table.insert(damaged, model)

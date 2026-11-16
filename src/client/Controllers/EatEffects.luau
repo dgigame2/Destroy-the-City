@@ -13,6 +13,7 @@ local TierConfig = require(Shared.Config.TierConfig)
 local Remotes = require(Shared.Remotes)
 
 local Feedback = require(script.Parent.Parent.Feedback)
+local DamageVfx = require(script.Parent.DamageVfx)
 
 local localPlayer = Players.LocalPlayer
 
@@ -195,45 +196,51 @@ local function onBuildingDestroyed(model: Model?, destroyer: Player, coins: numb
 	local tier = (model:GetAttribute("Tier") :: number?) or 1
 	local pivot = model:GetPivot()
 	local from = origin or pivot.Position
-	local copy = model:Clone()
-	model.Parent = nil
-	local parts = {}
-	for _, d in copy:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.Anchored = true
-			d.CanCollide = false
-			d.CanQuery = false
-			d.CanTouch = false
-			d.CastShadow = false
-			table.insert(parts, d)
+	-- desabou antes (escombros): os escombros afundam e somem; senão, a construção explode para longe
+	if DamageVfx.vanish(model) then
+		model.Parent = nil
+	else
+		local copy = model:Clone()
+		model.Parent = nil
+		local parts = {}
+		for _, d in copy:GetDescendants() do
+			-- blocos que já tinham caído (invisíveis) não ocupam lugar na animação
+			if d:IsA("BasePart") and d.Transparency < 1 then
+				d.Anchored = true
+				d.CanCollide = false
+				d.CanQuery = false
+				d.CanTouch = false
+				d.CastShadow = false
+				table.insert(parts, d)
+			end
 		end
-	end
-	table.sort(parts, function(a, b)
-		return a.Size.Magnitude > b.Size.Magnitude
-	end)
-	copy.Parent = effectsFolder
-	for index, part in parts do
-		if index > DESTROY_PARTS then
-			part:Destroy()
-		else
-			local away = part.Position - from
-			away = Vector3.new(away.X, 0, away.Z)
-			local dir = if away.Magnitude > 0.01
-				then away.Unit
-				else Vector3.new(math.random() - 0.5, 0, math.random() - 0.5).Unit
-			local push = dir * (6 + math.random() * 10 + part.Size.Magnitude) + Vector3.new(0, 4 + math.random() * 8, 0)
-			local spin = CFrame.Angles(math.random() * 3, math.random() * 3, math.random() * 3)
-			local info = TweenInfo.new(DESTROY_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			TweenService:Create(part, info, {
-				CFrame = (part.CFrame + push) * spin,
-				Size = part.Size * 0.15,
-				Transparency = 1,
-			}):Play()
+		table.sort(parts, function(a, b)
+			return a.Size.Magnitude > b.Size.Magnitude
+		end)
+		copy.Parent = effectsFolder
+		for index, part in parts do
+			if index > DESTROY_PARTS then
+				part:Destroy()
+			else
+				local away = part.Position - from
+				away = Vector3.new(away.X, 0, away.Z)
+				local dir = if away.Magnitude > 0.01
+					then away.Unit
+					else Vector3.new(math.random() - 0.5, 0, math.random() - 0.5).Unit
+				local push = dir * (6 + math.random() * 10 + part.Size.Magnitude) + Vector3.new(0, 4 + math.random() * 8, 0)
+				local spin = CFrame.Angles(math.random() * 3, math.random() * 3, math.random() * 3)
+				local info = TweenInfo.new(DESTROY_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				TweenService:Create(part, info, {
+					CFrame = (part.CFrame + push) * spin,
+					Size = part.Size * 0.15,
+					Transparency = 1,
+				}):Play()
+			end
 		end
+		task.delay(DESTROY_SECONDS + 0.2, function()
+			copy:Destroy()
+		end)
 	end
-	task.delay(DESTROY_SECONDS + 0.2, function()
-		copy:Destroy()
-	end)
 	if destroyer == localPlayer then
 		local now = os.clock()
 		combo = if now - lastBite <= AudioConfig.ComboWindowSeconds then combo + 1 else 1

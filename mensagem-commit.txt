@@ -1,6 +1,0 @@
-Destroy the City: vida das construcoes, escombros, nivel dos desastres
-
-- vida visivel: barra de vida, 3 estagios de dano (blocos caem de cima para baixo, nada flutua) e escombros
-- nivel de cada desastre (sobe com o uso, mais forte e maior) no lugar dos contratos
-- buff do Bolt
-- desastres so no chao da area liberada (nao passam da barreira nem ficam em pecas invisiveis)

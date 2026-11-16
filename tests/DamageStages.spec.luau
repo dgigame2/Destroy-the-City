@@ -94,6 +94,17 @@ return function(t)
 		end
 	end
 
+	t.test("desabar e sumir: animações curtas (menos de 1 s, regra das explosões) e desaba no último estágio", function()
+		t.truthy(cfg.Collapse.Seconds + 0.15 < 1)
+		t.truthy(cfg.Collapse.RubbleSeconds < 1)
+		t.truthy(cfg.Vanish.Seconds < 1)
+		t.truthy(cfg.Dust.Seconds < 1)
+		t.truthy(cfg.Collapse.MaxParts > 0 and cfg.Dust.Puffs > 0)
+		-- casas para cima desabam (o último estágio é quando a vida passa do último degrau)
+		t.equal(DamageStages.stage(cfg.Thresholds[#cfg.Thresholds] - 0.01, cfg.Thresholds), #cfg.Thresholds)
+		t.truthy(#Ruins.pile(10, 10, cfg.Ruins.FromTier, 1, cfg.Ruins) > 0)
+	end)
+
 	t.test("escombros: tiers pequenos não deixam pilha", function()
 		t.equal(#Ruins.pile(10, 10, 1, 1, cfg.Ruins), 0)
 		t.equal(#Ruins.pile(10, 10, 2, 1, cfg.Ruins), 0)

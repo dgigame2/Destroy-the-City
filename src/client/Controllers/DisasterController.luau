@@ -79,12 +79,10 @@ local function groundAt(screen: Vector2, viewport: boolean): Vector3?
 			table.insert(ignore, effects)
 		end
 	end
-	-- barreiras das áreas e escombros também não são chão
-	for _, name in { "Barriers", "Ruins" } do
-		local extra = city and city:FindFirstChild(name)
-		if extra then
-			table.insert(ignore, extra)
-		end
+	-- barreiras das áreas também não são chão
+	local barriers = city and city:FindFirstChild("Barriers")
+	if barriers then
+		table.insert(ignore, barriers)
 	end
 	-- peças invisíveis (paredes da costa, colisores) não são chão: passa através delas
 	for _ = 1, 6 do

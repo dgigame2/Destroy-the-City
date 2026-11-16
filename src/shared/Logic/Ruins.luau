@@ -1,5 +1,5 @@
 --!strict
--- Escombros que ficam no lugar de uma construção derrubada (puro, testável no Lune).
+-- Escombros de uma construção que desabou (puro, testável no Lune). Ficam no lugar dela até ela cair de vez.
 -- A pilha é uma grade de blocos baixos DENTRO do terreno da construção (no máximo Margin do footprint), com
 -- alturas sorteadas pela semente e alguns pedaços menores apoiados em cima. Os blocos só se encostam
 -- (nunca um dentro do outro) e todos tocam o chão ou o bloco de baixo: nada flutua.

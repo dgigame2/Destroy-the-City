@@ -16,6 +16,7 @@ return table.freeze({
 		ChainBlast = "ChainBlast", -- servidor -> todos: ({Kind, Position, Radius}) explosão/desabamento da cadeia
 		ChainReaction = "ChainReaction", -- servidor -> quem começou: (texto, quantidade, posição) aviso de combo
 		DisasterLevelUp = "DisasterLevelUp", -- servidor -> dono: (disasterId, nível) desastre subiu de nível
+		BuildingCollapsed = "BuildingCollapsed", -- servidor -> todos: (model, {peças}) desabou em escombros
 		BuildingCracked = "BuildingCracked", -- servidor -> todos: (model, {peças}) blocos que caíram (estágio de dano)
 		BuildingDamaged = "BuildingDamaged", -- servidor -> todos: ({model}, origem) construções que levaram dano
 		ZoneCleared = "ZoneCleared", -- servidor -> todos: ({Zone, Name, Next, NextIndex, Gems, Cash, Frenzy, Gate})
