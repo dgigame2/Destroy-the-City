@@ -14,7 +14,11 @@ local DisasterConfig = require(Shared.Config.DisasterConfig)
 local Disasters = require(Shared.Logic.Disasters)
 local Remotes = require(Shared.Remotes)
 
+local MeshKitConfig = require(Shared.Config.MeshKitConfig)
+local PaletteConfig = require(Shared.Config.PaletteConfig)
+
 local Feedback = require(script.Parent.Parent.Feedback)
+local Style = require(script.Parent.Parent.Ui.Style)
 
 local localPlayer = Players.LocalPlayer
 
@@ -59,6 +63,24 @@ local function tween(
 	return t
 end
 
+-- Cópia de uma mesh do Blender importada em ReplicatedStorage.Assets (nil = ainda não importou).
+local function kitAsset(name: string): MeshPart?
+	local assets = ReplicatedStorage:FindFirstChild(MeshKitConfig.Folder)
+	local mesh = assets and assets:FindFirstChild(name, true)
+	if not (mesh and mesh:IsA("MeshPart")) then
+		return nil
+	end
+	local clone = mesh:Clone()
+	clone.Anchored = true
+	clone.CanCollide = false
+	clone.CanQuery = false
+	clone.CanTouch = false
+	clone.CastShadow = false
+	clone.Material = Enum.Material.SmoothPlastic
+	clone.Parent = folder
+	return clone
+end
+
 local function flat(position: Vector3): CFrame
 	return CFrame.new(position) * CFrame.Angles(0, 0, math.rad(90))
 end
@@ -86,7 +108,7 @@ local function meteor(cast: { [string]: any })
 	local shadow = part({
 		Shape = Enum.PartType.Cylinder,
 		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(40, 10, 10),
+		Color = Style.rgb(PaletteConfig.Vfx.MeteorShadow),
 		Transparency = 0.5,
 		Size = Vector3.new(0.15, r * 0.2, r * 0.2),
 		CFrame = flat(target),
@@ -114,11 +136,14 @@ local function meteor(cast: { [string]: any })
 		clone.CanQuery = false
 		clone.CanTouch = false
 		clone.CastShadow = false
+		if clone.TextureID == "" then
+			clone.Color = Style.rgb(PaletteConfig.Vfx.Meteor) -- mesh nova do kit (sem textura)
+		end
 		clone.Size = Vector3.one * size * 1.3
 		clone.CFrame = CFrame.new(start)
 		clone.Parent = folder
 		local glow = Instance.new("PointLight")
-		glow.Color = Color3.fromRGB(255, 120, 40)
+		glow.Color = Style.rgb(PaletteConfig.Vfx.Lava)
 		glow.Range = size * 4
 		glow.Brightness = 3
 		glow.Parent = clone
@@ -126,7 +151,7 @@ local function meteor(cast: { [string]: any })
 	else
 		rock = part({
 			Shape = Enum.PartType.Ball,
-			Color = Color3.fromRGB(255, 120, 40),
+			Color = Style.rgb(PaletteConfig.Vfx.Lava),
 			Size = Vector3.one * size,
 			CFrame = CFrame.new(start),
 		})
@@ -143,7 +168,7 @@ local function meteor(cast: { [string]: any })
 	-- impacto: anel de choque + clarão
 	local ring = part({
 		Shape = Enum.PartType.Cylinder,
-		Color = Color3.fromRGB(255, 200, 120),
+		Color = Style.rgb(PaletteConfig.Vfx.ImpactRing),
 		Transparency = 0.2,
 		Size = Vector3.new(0.4, r * 0.3, r * 0.3),
 		CFrame = flat(target),
@@ -151,14 +176,14 @@ local function meteor(cast: { [string]: any })
 	-- clarão pequeno e rápido no ponto do impacto (antes era uma bola enorme cobrindo as casas)
 	local flash = part({
 		Shape = Enum.PartType.Ball,
-		Color = Color3.fromRGB(255, 220, 160),
+		Color = Style.rgb(PaletteConfig.Vfx.ImpactFlash),
 		Transparency = 0.35,
 		Size = Vector3.one * size * 1.5,
 		CFrame = CFrame.new(landing),
 	})
 	local burst = Instance.new("ParticleEmitter")
 	burst.Texture = "rbxasset://textures/particles/smoke_main.dds"
-	burst.Color = ColorSequence.new(Color3.fromRGB(255, 170, 90), Color3.fromRGB(90, 80, 80))
+	burst.Color = ColorSequence.new(Style.rgb(PaletteConfig.Vfx.BurstHot), Style.rgb(PaletteConfig.Vfx.Smoke))
 	burst.Size = NumberSequence.new(size * 0.8, size * 2)
 	burst.Transparency = NumberSequence.new(0.2, 1)
 	burst.Lifetime = NumberRange.new(0.4, 0.7)
@@ -170,7 +195,7 @@ local function meteor(cast: { [string]: any })
 	local light = Instance.new("PointLight")
 	light.Range = math.min(r * 2, 60)
 	light.Brightness = 6
-	light.Color = Color3.fromRGB(255, 180, 90)
+	light.Color = Style.rgb(PaletteConfig.Vfx.ImpactLight)
 	light.Parent = flash
 	tween(ring, 0.4, { Size = Vector3.new(0.2, r * 2.1, r * 2.1), Transparency = 1 })
 	tween(flash, 0.2, { Size = Vector3.one * size * 3, Transparency = 1 })
@@ -190,9 +215,17 @@ local function tornado(cast: { [string]: any })
 	local dir = cast.Dir :: Vector3
 	-- o servidor corta a duração para o tornado parar na borda do chão liberado (e o nível aumenta)
 	local duration = (cast.Duration :: number?) or d.Duration
-	-- funil: discos empilhados, cada um mais largo, girando
+	-- funil do Blender (MeshKitConfig.Disasters.Tornado) girando; sem ele, discos empilhados
 	local rings = {}
-	local layers = 6
+	local funnel = kitAsset(MeshKitConfig.Disasters.Tornado)
+	local height = r * 5.4
+	if funnel then
+		funnel.Color = Style.rgb(PaletteConfig.Vfx.Tornado)
+		funnel.Transparency = 0.15
+		funnel.Size = Vector3.new(r * 2.4, height, r * 2.4)
+		table.insert(rings, funnel)
+	end
+	local layers = if funnel then 0 else 6
 	for i = 1, layers do
 		local width = r * (0.45 + 0.75 * (i / layers) ^ 1.4) * 2
 		table.insert(
@@ -200,7 +233,7 @@ local function tornado(cast: { [string]: any })
 			part({
 				Shape = Enum.PartType.Cylinder,
 				Material = Enum.Material.SmoothPlastic,
-				Color = Color3.fromRGB(150 + i * 10, 160 + i * 10, 175 + i * 10),
+				Color = Style.rgb(PaletteConfig.Vfx.TornadoRing):Lerp(Color3.new(1, 1, 1), i * 0.05),
 				Transparency = 0.25 + i * 0.06,
 				Size = Vector3.new(r * 0.9, width, width),
 			})
@@ -208,7 +241,7 @@ local function tornado(cast: { [string]: any })
 	end
 	local dust = Instance.new("ParticleEmitter")
 	dust.Texture = "rbxasset://textures/particles/smoke_main.dds"
-	dust.Color = ColorSequence.new(Color3.fromRGB(190, 180, 160))
+	dust.Color = ColorSequence.new(Style.rgb(PaletteConfig.Vfx.Dust))
 	dust.Size = NumberSequence.new(r * 0.5, r * 1.2)
 	dust.Transparency = NumberSequence.new(0.4, 1)
 	dust.Lifetime = NumberRange.new(0.6, 1)
@@ -234,6 +267,11 @@ local function tornado(cast: { [string]: any })
 		end
 		local x, z = Disasters.tornadoAt(start.X, start.Z, dir.X, dir.Z, speed, math.max(t, 0))
 		local spin = t * 8
+		if funnel then
+			local lean = math.sin(t * 2) * 0.08
+			funnel.CFrame = CFrame.new(x, start.Y + height / 2, z) * CFrame.Angles(lean, spin, lean * 0.5)
+			return
+		end
 		for i, ring in rings do
 			local y = (i - 0.5) * r * 0.9
 			local wobble = math.sin(t * 3 + i) * r * 0.08 * i
@@ -280,11 +318,13 @@ local function lightning(cast: { [string]: any })
 	local hops = cast.Hops :: { Vector3 }?
 	local p = cast.Power :: number
 	local target = cast.Target :: Vector3
-	local color = Color3.fromRGB(150, 220, 255)
+	local color = Style.rgb(PaletteConfig.Vfx.Bolt)
 	local thickness = 0.5 * p ^ 0.6
 	local pieces = {}
 	local first = if hops and #hops > 0 then hops[1] else target
-	for _, piece in bolt(first + Vector3.new(0, 90 * p ^ 0.5, 0), first, thickness * 1.6, Color3.new(1, 1, 1)) do
+	for _, piece in
+		bolt(first + Vector3.new(0, 90 * p ^ 0.5, 0), first, thickness * 1.6, Style.rgb(PaletteConfig.Vfx.BoltCore))
+	do
 		table.insert(pieces, piece)
 	end
 	if hops then
@@ -293,6 +333,16 @@ local function lightning(cast: { [string]: any })
 				table.insert(pieces, piece)
 			end
 		end
+	end
+	-- nuvem de tempestade do Blender em cima do primeiro raio
+	local top = first + Vector3.new(0, 90 * p ^ 0.5, 0)
+	local cloud = kitAsset(MeshKitConfig.Disasters.Cloud)
+	if cloud then
+		local w = 18 * p ^ 0.5
+		cloud.Color = Style.rgb(PaletteConfig.Vfx.Cloud)
+		cloud.Size = Vector3.new(w, w * 0.375, w * 0.67)
+		cloud.CFrame = CFrame.new(top + Vector3.new(0, w * 0.15, 0)) * CFrame.Angles(0, math.random() * math.pi, 0)
+		table.insert(pieces, cloud)
 	end
 	local flash = part({ Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(first) })
 	local light = Instance.new("PointLight")
@@ -353,7 +403,7 @@ local function onChainBlast(blast: { Kind: string, Position: Vector3, Radius: nu
 		local ring = part({
 			Shape = Enum.PartType.Cylinder,
 			Material = if explosion then Enum.Material.Neon else Enum.Material.SmoothPlastic,
-			Color = if explosion then Color3.fromRGB(255, 150, 60) else Color3.fromRGB(170, 160, 150),
+			Color = if explosion then Style.rgb(PaletteConfig.Vfx.Explosion) else Style.rgb(PaletteConfig.Vfx.Collapse),
 			Transparency = 0.3,
 			Size = Vector3.new(0.3, r * 0.3, r * 0.3),
 			CFrame = flat(ground),
@@ -363,8 +413,8 @@ local function onChainBlast(blast: { Kind: string, Position: Vector3, Radius: nu
 		local smoke = Instance.new("ParticleEmitter")
 		smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
 		smoke.Color = if explosion
-			then ColorSequence.new(Color3.fromRGB(255, 170, 80), Color3.fromRGB(80, 70, 70))
-			else ColorSequence.new(Color3.fromRGB(200, 190, 180))
+			then ColorSequence.new(Style.rgb(PaletteConfig.Vfx.ExplosionSmoke), Style.rgb(PaletteConfig.Vfx.Smoke))
+			else ColorSequence.new(Style.rgb(PaletteConfig.Vfx.CollapseDust))
 		smoke.Size = NumberSequence.new(r * 0.25, r * 0.6)
 		smoke.Transparency = NumberSequence.new(0.2, 1)
 		smoke.Lifetime = NumberRange.new(0.5, 0.9)
@@ -377,7 +427,7 @@ local function onChainBlast(blast: { Kind: string, Position: Vector3, Radius: nu
 			local light = Instance.new("PointLight")
 			light.Range = math.min(r * 1.5, 50)
 			light.Brightness = 5
-			light.Color = Color3.fromRGB(255, 160, 70)
+			light.Color = Style.rgb(PaletteConfig.Vfx.ExplosionLight)
 			light.Parent = puff
 			tween(light, 0.4, { Brightness = 0 })
 		end

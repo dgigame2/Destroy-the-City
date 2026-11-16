@@ -1,8 +1,11 @@
 --!strict
 -- Barra de desastres e mira (modo desastres). O cliente só PEDE; o servidor (DisasterService) decide tudo.
---   PC: teclas 1-2-3 (ou clique no botão) escolhem o desastre; o círculo segue o mouse; clique esquerdo lança.
---       Clicar de novo no mesmo botão (ou botão direito / Esc) cancela.
---   Toque: toque no botão escolhe; o próximo toque na cidade lança ali. Analógico e câmera seguem normais.
+--   PC: teclas 1-2-3 (ou clique no botão) escolhem o desastre; o círculo tracejado segue o mouse; clique
+--       esquerdo lança. Clicar de novo no mesmo botão (ou Esc) cancela. O botão direito NÃO cancela (é a câmera).
+--   Tornado (dois cliques): o 1º fixa o círculo no chão; o 2º escolhe para onde ele anda (setas mostram o
+--       caminho). Esc com o círculo fixo solta o círculo.
+--   Toque: toque no botão escolhe; o próximo toque na cidade lança ali (tornado: dois toques). Analógico e
+--       câmera seguem normais.
 -- Posições da barra: Logic/UiLayout (Disasters), a mesma conta testada em todos os aparelhos.
 
 local Players = game:GetService("Players")
@@ -23,6 +26,7 @@ local HttpService = game:GetService("HttpService")
 
 local Style = require(script.Parent.Parent.Ui.Style)
 local Feedback = require(script.Parent.Parent.Feedback)
+local AimVisual = require(script.Parent.AimVisual)
 
 local localPlayer = Players.LocalPlayer
 
@@ -30,8 +34,8 @@ local DisasterController = {}
 
 local KEYS = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three }
 local THEMES = { Style.Themes.Orange, Style.Themes.LightBlue, Style.Themes.Yellow }
-local AIM_OK = Color3.fromRGB(255, 227, 107)
-local AIM_FAR = Color3.fromRGB(255, 110, 110)
+local AIM_OK = Style.Colors.Gold
+local AIM_FAR = Style.Colors.Danger
 
 type Slot = { Disaster: DisasterConfig.Disaster, Holder: Frame, Face: Frame, Cooldown: Frame, Timer: TextLabel }
 
@@ -39,8 +43,7 @@ local slots: { Slot } = {}
 local selected: number? = nil
 local lastUse: { [string]: number } = {}
 local gui: ScreenGui
-local aimRing: Part
-local aimLine: Part
+local anchor: Vector3? = nil -- tornado: círculo já fixado no chão (falta escolher a direção)
 
 local function power(): number
 	return (localPlayer:GetAttribute("Power") :: number?) or 1
@@ -64,7 +67,7 @@ local function groundAt(screen: Vector2, viewport: boolean): Vector3?
 		then camera:ViewportPointToRay(screen.X, screen.Y)
 		else camera:ScreenPointToRay(screen.X, screen.Y)
 	-- a mira fica no CHÃO (passa através das construções): o círculo não flutua em cima dos telhados
-	local ignore: { Instance } = { aimRing, aimLine }
+	local ignore: { Instance } = { AimVisual.folder() }
 	if localPlayer.Character then
 		table.insert(ignore, localPlayer.Character :: Instance)
 	end
@@ -133,8 +136,12 @@ local function aimRadius(d: DisasterConfig.Disaster, p: number): number
 end
 
 local function hideAim()
-	aimRing.Transparency = 1
-	aimLine.Transparency = 1
+	AimVisual.hide()
+end
+
+-- O desastre anda (tornado): mira em dois cliques.
+local function isMoving(d: DisasterConfig.Disaster): boolean
+	return d.Speed ~= nil
 end
 
 local function choose(index: number?)
@@ -142,6 +149,7 @@ local function choose(index: number?)
 		index = nil -- tocar de novo cancela
 	end
 	selected = index
+	anchor = nil
 	for i, slot in slots do
 		local stroke = slot.Face:FindFirstChildOfClass("UIStroke")
 		if stroke then
@@ -166,33 +174,42 @@ local function clampedAim(d: DisasterConfig.Disaster, point: Vector3): (Vector3,
 	return Vector3.new(x, point.Y, z), far
 end
 
+-- Mira no chão: círculo tracejado; tornado também mostra as setas do caminho.
+-- Antes de fixar, o caminho sai do jogador para o mouse (prévia); depois de fixar, sai do círculo para o mouse.
 local function showAim(d: DisasterConfig.Disaster, point: Vector3)
-	local target, far = clampedAim(d, point)
+	local clock = os.clock()
 	local r = aimRadius(d, power())
-	aimRing.Size = Vector3.new(0.2, r * 2, r * 2)
-	aimRing.CFrame = CFrame.new(target + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.rad(90))
-	aimRing.Color = if far then AIM_FAR else AIM_OK
-	aimRing.Transparency = 0.55
-	-- tornado: linha mostrando para onde ele vai andar
-	local character = root()
-	if d.Speed and character then
-		local from = Vector3.new(character.Position.X, target.Y + 0.3, character.Position.Z)
-		local to = target + Vector3.new(0, 0.3, 0)
-		local length = (to - from).Magnitude
-		if length > 1 then
-			local dir = (to - from).Unit
-			local travel = Disasters.speed(d, power(), DisasterConfig) * d.Duration
-			aimLine.Size = Vector3.new(r * 0.6, 0.2, travel)
-			aimLine.CFrame = CFrame.lookAt(to + dir * travel / 2, to + dir * travel)
-			aimLine.Color = aimRing.Color
-			aimLine.Transparency = 0.6
-		end
+	local center, far
+	if anchor then
+		center, far = anchor :: Vector3, false
 	else
-		aimLine.Transparency = 1
+		center, far = clampedAim(d, point)
 	end
+	local color = if far then AIM_FAR else AIM_OK
+	AimVisual.ring(center, r, color, clock)
+	if not isMoving(d) then
+		AimVisual.hideArrows()
+		return
+	end
+	local from: Vector3
+	if anchor then
+		from = anchor :: Vector3
+	else
+		local character = root()
+		from = if character then Vector3.new(character.Position.X, center.Y, character.Position.Z) else center
+	end
+	local toward = if anchor then point else center
+	local flat = Vector3.new(toward.X - from.X, 0, toward.Z - from.Z)
+	if flat.Magnitude < 0.5 then
+		AimVisual.hideArrows()
+		return
+	end
+	local travel = Disasters.speed(d, power(), DisasterConfig) * d.Duration
+	-- as setas saem da borda do círculo (sem fixar: na direção jogador -> círculo, como prévia)
+	AimVisual.path(center, flat.Unit, travel, r, color, clock)
 end
 
-local function cast(point: Vector3)
+local function cast(point: Vector3, heading: Vector3?)
 	local index = selected
 	if index == nil then
 		return
@@ -206,7 +223,8 @@ local function cast(point: Vector3)
 	end
 	lastUse[d.Id] = now
 	local target = clampedAim(d, point)
-	Remotes.event(Remotes.Names.Events.UseDisaster):FireServer(d.Id, target)
+	anchor = nil
+	Remotes.event(Remotes.Names.Events.UseDisaster):FireServer(d.Id, target, heading)
 	Feedback.play("Cast", { Gui = slot.Holder, Text = d.Icon })
 	-- toque: cada lançamento precisa escolher de novo (evita lançar sem querer ao mexer a câmera)
 	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
@@ -232,32 +250,45 @@ local function updateCooldowns()
 	end
 end
 
+-- Clique/toque no chão com uma skill na mão. Tornado: 1º fixa o círculo, 2º lança na direção escolhida.
+local function aimAt(point: Vector3)
+	local index = selected
+	if index == nil then
+		return
+	end
+	local d = slots[index].Disaster
+	if isMoving(d) and anchor == nil then
+		local last = lastUse[d.Id]
+		if last and os.clock() - last < d.Cooldown then
+			Feedback.play("Fail", { Gui = slots[index].Holder, Text = "⏳" })
+			return
+		end
+		anchor = clampedAim(d, point)
+		return
+	end
+	if isMoving(d) and anchor then
+		cast(anchor :: Vector3, point)
+		return
+	end
+	cast(point)
+end
+
 local function layoutSlots()
 	local size = gui.AbsoluteSize
 	if size.X <= 0 or size.Y <= 0 then
 		return
 	end
-	local layout = UiLayout.place(size.X, size.Y, UiConfig)
+	local layout = UiLayout.place(
+		size.X,
+		size.Y,
+		UiConfig,
+		UiLayout.isDesktop(UserInputService.TouchEnabled, UserInputService.KeyboardEnabled)
+	)
 	for i, slot in slots do
 		local r = layout.Disasters[i]
 		slot.Holder.Position = UDim2.fromOffset(r.X0, r.Y0)
 		slot.Holder.Size = UDim2.fromOffset(r.X1 - r.X0, r.Y1 - r.Y0)
 	end
-end
-
-local function makeAimPart(name: string, shape: Enum.PartType): Part
-	local part = Instance.new("Part")
-	part.Name = name
-	part.Shape = shape
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.CastShadow = false
-	part.Material = Enum.Material.Neon
-	part.Transparency = 1
-	part.Parent = Workspace.CurrentCamera
-	return part
 end
 
 function DisasterController.init()
@@ -267,8 +298,7 @@ function DisasterController.init()
 	gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	gui.DisplayOrder = 5
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
-	aimRing = makeAimPart("DisasterAim", Enum.PartType.Cylinder)
-	aimLine = makeAimPart("DisasterPath", Enum.PartType.Block)
+	AimVisual.init()
 
 	for i, d in DisasterConfig.List do
 		local holder, hit = Style.iconButton(d.Id, THEMES[i], d.Icon, d.Name)
@@ -278,7 +308,7 @@ function DisasterController.init()
 		-- cortina escura do cooldown (desce de cima) + segundos restantes
 		local cooldown = Instance.new("Frame")
 		cooldown.Name = "Cooldown"
-		cooldown.BackgroundColor3 = Color3.fromRGB(11, 18, 48)
+		cooldown.BackgroundColor3 = Style.TextStroke
 		cooldown.BackgroundTransparency = 0.35
 		cooldown.BorderSizePixel = 0
 		cooldown.Size = UDim2.fromScale(1, 0)
@@ -323,12 +353,16 @@ function DisasterController.init()
 				return
 			end
 		end
-		if input.KeyCode == Enum.KeyCode.Escape or input.UserInputType == Enum.UserInputType.MouseButton2 then
-			choose(nil)
+		if input.KeyCode == Enum.KeyCode.Escape then
+			if anchor then
+				anchor = nil -- tornado: solta o círculo, continua com a skill na mão
+			else
+				choose(nil)
+			end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton1 and selected then
 			local point = groundAt(UserInputService:GetMouseLocation(), true)
 			if point then
-				cast(point)
+				aimAt(point)
 			end
 		end
 	end)
@@ -339,7 +373,7 @@ function DisasterController.init()
 		end
 		local point = groundAt(position, false)
 		if point then
-			cast(point)
+			aimAt(point)
 		end
 	end)
 

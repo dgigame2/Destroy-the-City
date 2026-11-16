@@ -268,7 +268,9 @@ local function lightningChain(
 	return chain, models
 end
 
-local function onUse(player: Player, id: unknown, target: unknown)
+-- `heading` (opcional, só tornado): ponto para onde ele deve andar a partir da mira (2º clique do jogador).
+-- Sem ele, anda na direção jogador -> mira.
+local function onUse(player: Player, id: unknown, target: unknown, heading: unknown)
 	if typeof(id) ~= "string" or typeof(target) ~= "Vector3" then
 		return
 	end
@@ -301,6 +303,12 @@ local function onUse(player: Player, id: unknown, target: unknown)
 	uses[d.Id] = now
 	local look = root.CFrame.LookVector
 	local dx, dz = Disasters.direction(origin.X, origin.Z, tx, tz, look.X, look.Z)
+	if typeof(heading) == "Vector3" then
+		local h = heading :: Vector3
+		if h.X == h.X and h.Z == h.Z and math.abs(h.X) < 1e6 and math.abs(h.Z) < 1e6 then
+			dx, dz = Disasters.direction(tx, tz, h.X, h.Z, dx, dz)
+		end
+	end
 	local cast: { [string]: any } = {
 		Id = d.Id,
 		Caster = player,

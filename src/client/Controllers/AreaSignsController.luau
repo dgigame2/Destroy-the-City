@@ -13,6 +13,8 @@ local Workspace = game:GetService("Workspace")
 local UiConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.UiConfig)
 
 local Feedback = require(script.Parent.Parent.Feedback)
+local Style = require(script.Parent.Parent.Ui.Style)
+local PaletteConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.PaletteConfig)
 local InterfaceController = require(script.Parent.InterfaceController)
 
 local localPlayer = Players.LocalPlayer
@@ -30,11 +32,12 @@ local signs: { [number]: { Gui: BillboardGui, Face: Frame, Title: TextLabel, Sta
 local names: { [number]: string } = {}
 local lastWarning = 0
 
-local THEMES = {
-	Locked = { Top = Color3.fromRGB(255, 120, 130), Bottom = Color3.fromRGB(214, 50, 70) },
-	Current = { Top = Color3.fromRGB(130, 236, 120), Bottom = Color3.fromRGB(40, 170, 70) },
-	Cleared = { Top = Color3.fromRGB(190, 196, 214), Bottom = Color3.fromRGB(120, 128, 150) },
-}
+local THEMES = {}
+for state, t in PaletteConfig.AreaSign do
+	if t.Top then
+		THEMES[state] = { Top = Style.rgb(t.Top), Bottom = Style.rgb(t.Bottom) }
+	end
+end
 
 local function city(): Instance?
 	return Workspace:FindFirstChild("City")
@@ -50,12 +53,12 @@ local function label(name: string, parent: Instance, y: number, h: number, color
 	text.BackgroundTransparency = 1
 	text.Position = UDim2.fromScale(0.04, y)
 	text.Size = UDim2.fromScale(0.92, h)
-	text.Font = Enum.Font.FredokaOne
+	text.Font = Style.Font
 	text.TextScaled = true
 	text.TextColor3 = color
 	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 2
-	stroke.Color = Color3.fromRGB(11, 18, 48)
+	stroke.Color = Style.TextStroke
 	stroke.Parent = text
 	text.Parent = parent
 	return text
@@ -72,7 +75,7 @@ local function makeSign(point: BasePart, zone: number)
 	gui.Adornee = point
 	local shadow = Instance.new("Frame")
 	shadow.Name = "Shadow"
-	shadow.BackgroundColor3 = Color3.fromRGB(20, 30, 80)
+	shadow.BackgroundColor3 = Style.Shadow
 	shadow.BackgroundTransparency = 0.4
 	shadow.Position = UDim2.fromScale(0, 0.08)
 	shadow.Size = UDim2.fromScale(1, 0.92)
@@ -89,14 +92,14 @@ local function makeSign(point: BasePart, zone: number)
 	corner.Parent = face
 	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 3
-	stroke.Color = Color3.fromRGB(11, 18, 48)
+	stroke.Color = Style.TextStroke
 	stroke.Parent = face
 	local gradient = Instance.new("UIGradient")
 	gradient.Rotation = 90
 	gradient.Parent = face
 	face.Parent = gui
 	local title = label("Title", face, 0.06, 0.5, Color3.new(1, 1, 1))
-	local state = label("State", face, 0.56, 0.36, Color3.fromRGB(255, 240, 180))
+	local state = label("State", face, 0.56, 0.36, Style.rgb(PaletteConfig.AreaSign.State))
 	gui.Parent = point
 	signs[zone] = { Gui = gui, Face = face, Title = title, State = state, Gradient = gradient }
 end
@@ -224,7 +227,7 @@ local function checkBarrier()
 		if zone and zone > openZone() then
 			lastWarning = os.clock()
 			local need = names[zone - 1] or "THE AREA BEFORE"
-			InterfaceController.toast(`NEED TO CLEAN {need} FIRST`, Color3.fromRGB(255, 120, 120))
+			InterfaceController.toast(`NEED TO CLEAN {need} FIRST`, Style.Colors.Danger)
 			Feedback.play("Fail", { Gui = InterfaceController.refs().Toast, Text = "🔒" })
 			return
 		end

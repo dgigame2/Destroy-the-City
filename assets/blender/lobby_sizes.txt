@@ -1,0 +1,10 @@
+Lobby_Fountain: 5268 tris, tamanho Roblox 25.26 x 13.60 x 25.27 | centro -0.00, 6.80, 0.00
+Lobby_Shop: 2448 tris, tamanho Roblox 30.00 x 28.00 x 26.40 | centro 0.00, 14.00, -1.20
+Lobby_Tree: 372 tris, tamanho Roblox 6.32 x 10.73 x 6.33 | centro -0.01, 5.37, 0.09
+Lobby_Palm: 1526 tris, tamanho Roblox 9.57 x 12.60 x 9.81 | centro 2.12, 6.30, 0.03
+Lobby_Bush: 200 tris, tamanho Roblox 4.80 x 2.60 x 3.18 | centro 0.03, 1.28, 0.04
+Lobby_Fence: 432 tris, tamanho Roblox 8.06 x 3.60 x 1.03 | centro -0.48, 1.80, 0.00
+Lobby_Umbrella: 332 tris, tamanho Roblox 8.40 x 7.40 x 8.40 | centro 0.00, 3.70, 0.00
+Lobby_Bench: 972 tris, tamanho Roblox 5.00 x 2.60 x 1.50 | centro 0.00, 1.30, 0.00
+Lobby_SignSmall: 1036 tris, tamanho Roblox 27.00 x 17.20 x 2.49 | centro 0.00, 8.60, -0.14
+Lobby_SignBig: 1156 tris, tamanho Roblox 51.00 x 34.20 x 2.49 | centro 0.00, 17.10, -0.14

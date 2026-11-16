@@ -16,13 +16,14 @@ local EatConfig = require(Shared.Config.EatConfig)
 local EatQuery = require(Shared.EatQuery)
 
 local EatEffects = require(script.Parent.EatEffects)
+local Style = require(script.Parent.Parent.Ui.Style)
 
 local localPlayer = Players.LocalPlayer
 
 local EatIndicator = {}
 
-local RING_COLOR = Color3.fromRGB(255, 227, 107)
-local LOCKED_COLOR = Color3.fromRGB(255, 80, 80)
+local RING_COLOR = Style.Colors.Gold
+local LOCKED_COLOR = Style.Colors.Danger
 
 local ring: Part
 local ringTween: Tween? = nil
@@ -105,13 +106,13 @@ local function markLocked(model: Model)
 	local text = Instance.new("TextLabel")
 	text.BackgroundTransparency = 1
 	text.Size = UDim2.fromScale(1, 1)
-	text.Font = Enum.Font.FredokaOne
+	text.Font = Style.Font
 	text.TextScaled = true
 	text.Text = "🔒 BIGGER"
 	text.TextColor3 = LOCKED_COLOR
 	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 2
-	stroke.Color = Color3.fromRGB(11, 18, 48)
+	stroke.Color = Style.TextStroke
 	stroke.Parent = text
 	text.Parent = tag
 	tag.Parent = Workspace.CurrentCamera

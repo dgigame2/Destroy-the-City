@@ -14,6 +14,8 @@ local RunConfig = require(Shared.Config.RunConfig)
 local Remotes = require(Shared.Remotes)
 local GuidePath = require(Shared.Logic.GuidePath)
 
+local Style = require(script.Parent.Parent.Ui.Style)
+
 local localPlayer = Players.LocalPlayer
 
 local ZoneController = {}
@@ -25,7 +27,7 @@ local GUIDE_SPACING = 9 -- distância entre setas (x escala)
 local GUIDE_SPEED = 14 -- quanto as setas andam por segundo (x escala)
 local GUIDE_SIZE = 5 -- tamanho de cada seta (x escala)
 local GUIDE_MAX = 60
-local GUIDE_COLOR = Color3.fromRGB(255, 214, 70)
+local GUIDE_COLOR = Style.Colors.Fill
 
 local effects = Instance.new("Folder")
 effects.Name = "ZoneEffects"

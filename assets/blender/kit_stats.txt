@@ -1,0 +1,7 @@
+Kit_Block: 108 tris, caixa 1.000 x 1.000 x 1.000
+Kit_Leaf: 80 tris, caixa 1.000 x 1.000 x 1.000
+Kit_Cylinder: 164 tris, caixa 0.975 x 1.000 x 1.000
+Kit_Ball: 80 tris, caixa 1.000 x 1.000 x 1.000
+Meteor: 80 tris, caixa 1.000 x 1.000 x 1.000
+TornadoFunnel: 236 tris, caixa 1.000 x 1.000 x 1.000
+StormCloud: 140 tris, caixa 2.400 x 1.600 x 0.900

@@ -6,6 +6,7 @@
 -- As estações abrem as telas no cliente por ProximityPrompts (nomes fixos: OpenShop, OpenWheel,
 -- OpenRewards, OpenClasses).
 
+local MaterialService = game:GetService("MaterialService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -16,6 +17,7 @@ local PartyConfig = require(Shared.Config.PartyConfig)
 local RunArea = require(Shared.Logic.RunArea)
 local WheelConfig = require(Shared.Config.WheelConfig)
 local Templates = require(Shared.Buildings.Templates)
+local PaletteConfig = require(Shared.Config.PaletteConfig)
 
 local Builder = require(script.Parent.Builder)
 
@@ -35,22 +37,41 @@ export type PadInfo = {
 }
 local padInfos: { PadInfo } = {}
 
-local COLORS = {
-	Grass = Color3.fromRGB(92, 214, 44),
-	GrassDark = Color3.fromRGB(76, 196, 36),
-	Sand = Color3.fromRGB(248, 220, 140),
-	Dirt = Color3.fromRGB(150, 98, 60),
-	DirtDark = Color3.fromRGB(128, 82, 50),
-	Stone = Color3.fromRGB(205, 205, 220),
-	Path = Color3.fromRGB(232, 206, 150),
-	Wood = Color3.fromRGB(150, 100, 64),
-	Red = Color3.fromRGB(214, 58, 84),
-	White = Color3.fromRGB(250, 250, 255),
-	Blue = Color3.fromRGB(56, 110, 230),
-	Gold = Color3.fromRGB(255, 200, 60),
-	Purple = Color3.fromRGB(150, 80, 230),
-	Neon = Color3.fromRGB(120, 230, 255),
-}
+local function rgb(c: { number }): Color3
+	return Color3.fromRGB(c[1], c[2], c[3])
+end
+
+local COLORS: { [string]: Color3 } = {}
+for name, c in PaletteConfig.Lobby do
+	COLORS[name] = rgb(c)
+end
+local INK = rgb(PaletteConfig.Ink)
+local FONT = (Enum.Font :: any)[PaletteConfig.Font] :: Enum.Font
+
+-- Textura estilizada da peça (LobbyConfig.Materials / WoodPrefixes): dá profundidade ao lobby.
+local WOOD = { Material = "WoodPlanks", Variant = "SignWood" }
+local function texture(p: BasePart, name: string)
+	local spec = LobbyConfig.Materials[name]
+	if spec == nil then
+		for _, prefix in LobbyConfig.WoodPrefixes do
+			if string.sub(name, 1, #prefix) == prefix then
+				spec = WOOD
+				break
+			end
+		end
+	end
+	if spec == nil or p.Material == Enum.Material.Neon or p.Transparency >= 1 then
+		return
+	end
+	p.Material = (Enum.Material :: any)[spec.Material]
+	if MaterialService:FindFirstChild(spec.Variant, true) then
+		p.MaterialVariant = spec.Variant
+	end
+	local tint = (spec :: any).Tint
+	if tint then
+		p.Color = Color3.fromRGB(tint[1], tint[2], tint[3])
+	end
+end
 
 -- Peça simples no espaço local do lobby (centro do gramado = origem, +Z = cidade).
 local function part(
@@ -67,12 +88,14 @@ local function part(
 		Role = name,
 		Shape = shape,
 	}
-	local p = Builder.shapedPart(b, origin * localCFrame)
+	-- blocos com o kit do Blender (cantos chanfrados); finos/compridos demais continuam peça lisa
+	local p = Builder.kitPart(b, origin * localCFrame)
 	p.Name = name
 	p.Anchored = true
 	p.Color = color
 	-- stud do Roblox em tudo, menos nas peças redondas, de vidro/neon e nas paredes invisíveis
 	Builder.studify(p, shape ~= nil or name == "Boundary" or color == COLORS.Neon)
+	texture(p, name)
 	p.Parent = parent
 	return p
 end
@@ -87,13 +110,13 @@ local function label(target: BasePart, face: Enum.NormalId, text: string, color:
 	local textLabel = Instance.new("TextLabel")
 	textLabel.BackgroundTransparency = 1
 	textLabel.Size = UDim2.fromScale(1, 1)
-	textLabel.Font = Enum.Font.FredokaOne
+	textLabel.Font = FONT
 	textLabel.TextScaled = true
 	textLabel.Text = text
 	textLabel.TextColor3 = color or Color3.new(1, 1, 1)
 	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 6
-	stroke.Color = Color3.fromRGB(11, 18, 48)
+	stroke.Color = INK
 	stroke.Parent = textLabel
 	textLabel.Parent = gui
 	gui.Parent = target
@@ -116,9 +139,44 @@ local function prompt(target: BasePart, name: string, action: string, objectText
 	p.Parent = anchor
 end
 
+-- Modelo do Blender do lobby (LobbyConfig.Props) apoiado no chão em `base` (coordenadas locais do lobby).
+-- nil = a mesh ainda não foi importada (quem chamou usa as peças antigas).
+local function prop(parent: Instance, kind: string, base: CFrame, scale: number?): MeshPart?
+	local spec = LobbyConfig.Props[kind]
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local mesh = spec and assets and assets:FindFirstChild(spec.Mesh, true)
+	if not (mesh and mesh:IsA("MeshPart")) then
+		return nil
+	end
+	local k = scale or 1
+	local p = mesh:Clone()
+	p.Name = kind
+	p.Anchored = true
+	p.Size = Vector3.new(spec.Size[1], spec.Size[2], spec.Size[3]) * k
+	p.CFrame = origin * base * CFrame.new(spec.Center[1] * k, spec.Center[2] * k, spec.Center[3] * k)
+	p.Parent = parent
+	return p
+end
+
+-- O modelo do Blender já foi importado?
+local function hasProp(kind: string): boolean
+	local spec = LobbyConfig.Props[kind]
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local mesh = spec and assets and assets:FindFirstChild(spec.Mesh, true)
+	return mesh ~= nil and mesh:IsA("MeshPart")
+end
+
 -- Coloca um modelo dos Templates (árvores, cogumelos…) no lobby.
 -- y = altura do chão onde ele fica (0 = grama; a praça é mais alta).
 local function decor(parent: Instance, templateName: string, x: number, z: number, scale: number, y: number?)
+	-- árvores, palmeiras, arbustos, guarda-sóis e bancos têm modelo do Blender (giro fixo pela posição;
+	-- os bancos olham para a fonte)
+	local natureScale = LobbyConfig.NatureScale[templateName]
+	if natureScale and hasProp(templateName) then
+		local yaw = if templateName == "Bench" then math.pi else ((x * 7 + z * 13) % 360) * math.pi / 180
+		prop(parent, templateName, CFrame.new(x, y or 0, z) * CFrame.Angles(0, yaw, 0), scale * natureScale)
+		return
+	end
 	local template = Templates[templateName]
 	local palette = MapConfig[1].Palette
 	local model = Builder.build(template, palette, math.floor(x * 7 + z * 13), origin * CFrame.new(x, y or 0, z))
@@ -127,17 +185,46 @@ local function decor(parent: Instance, templateName: string, x: number, z: numbe
 	model.Parent = parent
 end
 
+-- Cerca no fundo e nas laterais. Com o Blender: trechos de poste + trilhos (passo 8, trilhos só entre os
+-- postes) e um poste no fim. Sem: postes e trilhos em peças.
+local function buildFence(parent: Instance, w: number, d: number)
+	if not hasProp("Fence") then
+		local postX = -w / 2 + 4
+		while postX <= w / 2 - 4 do
+			part(parent, "FencePost", Vector3.new(1, 3.4, 1), CFrame.new(postX, 1.7, -d / 2 + 2), COLORS.Wood)
+			if postX + 8 <= w / 2 - 4 then
+				part(parent, "FenceRail", Vector3.new(7, 0.6, 0.6), CFrame.new(postX + 4, 2.6, -d / 2 + 2), COLORS.Wood)
+			end
+			postX += 8
+		end
+		for z = -d / 2 + 4, d / 2 - 12, 8 do
+			part(parent, "FencePost", Vector3.new(1, 3.4, 1), CFrame.new(-w / 2 + 2, 1.7, z), COLORS.Wood)
+			part(parent, "FencePost", Vector3.new(1, 3.4, 1), CFrame.new(w / 2 - 2, 1.7, z), COLORS.Wood)
+		end
+		return
+	end
+	-- trecho apoiado com o poste em `post` e os trilhos indo na direção `dir` (o +X do trecho)
+	local function run(from: Vector3, dir: Vector3, length: number)
+		local yaw = math.atan2(-dir.Z, dir.X)
+		local steps = math.floor(length / 8)
+		for i = 0, steps - 1 do
+			local post = from + dir * (i * 8)
+			prop(parent, "Fence", CFrame.new(post + dir * 4) * CFrame.Angles(0, yaw, 0))
+		end
+		local last = from + dir * (steps * 8)
+		local cap =
+			part(parent, "FencePost", Vector3.new(0.9, 3, 0.9), CFrame.new(last + Vector3.new(0, 1.5, 0)), COLORS.Wood)
+		cap.Material = Enum.Material.SmoothPlastic
+	end
+	run(Vector3.new(-w / 2 + 4, 0, -d / 2 + 2), Vector3.xAxis, w - 8)
+	for _, side in { -1, 1 } do
+		run(Vector3.new(side * (w / 2 - 2), 0, -d / 2 + 6), Vector3.zAxis, d - 20)
+	end
+end
 local function buildIsland(parent: Instance)
 	local w, d = LobbyConfig.Width, LobbyConfig.Depth
-	-- gramado em xadrez: quadrados de 15 studs com a espessura toda (nenhum enfiado no outro)
-	local tile = 15
-	for i = 0, w // tile - 1 do
-		for j = 0, d // tile - 1 do
-			local x, z = -w / 2 + (i + 0.5) * tile, -d / 2 + (j + 0.5) * tile
-			local color = if (i + j) % 2 == 1 then COLORS.GrassDark else COLORS.Grass
-			part(parent, "Grass", Vector3.new(tile, 4, tile), CFrame.new(x, -2, z), color)
-		end
-	end
+	-- gramado uniforme: uma peça só, lisa, de uma cor (pedido do usuário: sem o xadrez de quadrados)
+	part(parent, "Grass", Vector3.new(w, 4, d), CFrame.new(0, -2, 0), COLORS.Grass)
 	-- praia de areia em volta, um degrau abaixo da grama: 4 faixas encostadas no gramado (não passam por baixo dele)
 	local sand = 14
 	part(parent, "Sand", Vector3.new(w + sand * 2, 4, sand), CFrame.new(0, -3, -d / 2 - sand / 2), COLORS.Sand)
@@ -175,20 +262,7 @@ local function buildIsland(parent: Instance)
 		wall.Transparency = 1
 		wall.CastShadow = false
 	end
-	-- cerquinha de madeira nas laterais e no fundo
-	-- trilhos só entre os postes (não atravessam)
-	local postX = -w / 2 + 4
-	while postX <= w / 2 - 4 do
-		part(parent, "FencePost", Vector3.new(1, 3.4, 1), CFrame.new(postX, 1.7, -d / 2 + 2), COLORS.Wood)
-		if postX + 8 <= w / 2 - 4 then
-			part(parent, "FenceRail", Vector3.new(7, 0.6, 0.6), CFrame.new(postX + 4, 2.6, -d / 2 + 2), COLORS.Wood)
-		end
-		postX += 8
-	end
-	for z = -d / 2 + 4, d / 2 - 12, 8 do
-		part(parent, "FencePost", Vector3.new(1, 3.4, 1), CFrame.new(-w / 2 + 2, 1.7, z), COLORS.Wood)
-		part(parent, "FencePost", Vector3.new(1, 3.4, 1), CFrame.new(w / 2 - 2, 1.7, z), COLORS.Wood)
-	end
+	buildFence(parent, w, d)
 	-- mirante de vidro na frente (lado da cidade)
 	local glass = part(parent, "ViewGlass", Vector3.new(w - 8, 4, 0.6), CFrame.new(0, 2, d / 2 - 1.5), COLORS.Neon)
 	glass.Transparency = 0.6
@@ -196,6 +270,34 @@ local function buildIsland(parent: Instance)
 end
 
 local PLAZA_TOP = 0.4
+
+-- Jatos de água saindo da coroa da fonte e caindo nas bacias (destaque da praça), mais brilhinhos.
+local function addFountainJets(fountain: BasePart)
+	local cfg = LobbyConfig.FountainJets
+	local top = Instance.new("Attachment")
+	top.Name = "Jets"
+	top.Position = Vector3.new(0, fountain.Size.Y * 0.42, 0)
+	top.Parent = fountain
+	local jets = Instance.new("ParticleEmitter")
+	jets.Name = "Water"
+	jets.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	jets.Color = ColorSequence.new(COLORS.Neon, COLORS.White)
+	jets.LightEmission = 0.4
+	jets.Size = NumberSequence.new(cfg.Size[1], cfg.Size[2])
+	jets.Transparency = NumberSequence.new(0.1, 0.6)
+	jets.Lifetime = NumberRange.new(cfg.Lifetime[1], cfg.Lifetime[2])
+	jets.Speed = NumberRange.new(cfg.Speed[1], cfg.Speed[2])
+	jets.SpreadAngle = Vector2.new(22, 22)
+	jets.Acceleration = Vector3.new(0, -Workspace.Gravity * 0.15, 0)
+	jets.Rate = cfg.Rate
+	jets.EmissionDirection = Enum.NormalId.Top
+	jets.Parent = top
+	local light = Instance.new("PointLight")
+	light.Color = COLORS.Neon
+	light.Range = 18
+	light.Brightness = 0.6
+	light.Parent = top
+end
 
 local function buildPlaza(parent: Instance)
 	part(parent, "Plaza", Vector3.new(56, PLAZA_TOP, 56), CFrame.new(0, PLAZA_TOP / 2, -10), COLORS.Stone)
@@ -211,12 +313,22 @@ local function buildPlaza(parent: Instance)
 	do
 		part(parent, "Path", path[1], path[2], COLORS.Path)
 	end
-	decor(parent, "Fountain", 0, -10, 1.2, PLAZA_TOP)
-	-- placa entre dois postes encostados nas laterais (nada atravessa a placa) e viga em cima
+	-- fonte do Blender (destaque da praça) com jatos de água; sem a mesh, a fonte em blocos
+	local fountain = prop(parent, "Fountain", CFrame.new(0, PLAZA_TOP, -10), LobbyConfig.FountainScale)
+	if fountain then
+		addFountainJets(fountain)
+	else
+		decor(parent, "Fountain", 0, -10, 1.2, PLAZA_TOP)
+	end
+	-- placa do título entre dois postes encostados nas laterais (nada atravessa a placa) e viga em cima
 	local signW, signH, signBottom, post = 44, 12, 20, 1.5
 	local sign =
 		part(parent, "TitleSign", Vector3.new(signW, signH, 1), CFrame.new(0, signBottom + signH / 2, -60), COLORS.Gold)
-	label(sign, Enum.NormalId.Back, "EAT CITY", COLORS.White)
+	label(sign, Enum.NormalId.Back, "DESTROY THE CITY", COLORS.White)
+	-- moldura do Blender (postes, viga com luzinhas e floreiras); a frente dela olha para a praça (+Z)
+	if prop(parent, "SignBig", CFrame.new(0, 0, -60) * CFrame.Angles(0, math.pi, 0)) then
+		return
+	end
 	local postH = signBottom + signH + 1
 	for _, side in { -1, 1 } do
 		part(
@@ -236,39 +348,8 @@ local function buildPlaza(parent: Instance)
 	)
 end
 
--- Loja: prédio em camadas vermelho e branco com placa azul "SHOP" (referência 8).
-local function buildShop(parent: Instance)
-	-- frente da loja (-Z local) virada para +X, para a praça
-	local base = CFrame.new(-78, 0, -20) * CFrame.Angles(0, math.rad(-90), 0)
-	local function at(x: number, y: number, z: number)
-		return base * CFrame.new(x, y, z)
-	end
-	part(parent, "ShopFloor", Vector3.new(30, 1, 24), at(0, 0.5, 0), COLORS.Stone)
-	local body = part(parent, "ShopBody1", Vector3.new(28, 12, 22), at(0, 7, 0), COLORS.Red)
-	part(parent, "ShopTrim1", Vector3.new(30, 1.6, 24), at(0, 13.8, 0), COLORS.White)
-	part(parent, "ShopBody2", Vector3.new(24, 10, 18), at(0, 19.6, 0), COLORS.Red)
-	part(parent, "ShopTrim2", Vector3.new(26, 1.6, 20), at(0, 25.4, 0), COLORS.White)
-	local sign = part(parent, "ShopSign", Vector3.new(18, 7, 2), at(0, 26.2 + 3.5, -6), COLORS.Blue)
-	label(sign, Enum.NormalId.Front, "SHOP", COLORS.White)
-	for _, x in { -8, 8 } do
-		part(parent, "ShopWindow", Vector3.new(5, 5, 0.4), at(x, 8, -11.2), Color3.fromRGB(140, 200, 255))
-		part(parent, "ShopWindow2", Vector3.new(4, 4, 0.4), at(x, 20, -9.2), Color3.fromRGB(140, 200, 255))
-	end
-	part(parent, "ShopDoor", Vector3.new(5, 8, 0.4), at(0, 5, -11.2), COLORS.Wood)
-	-- toldo listrado
-	for i = 0, 5 do
-		local stripe = Builder.shapedPart(
-			{ Size = { 4, 2, 4 }, Pos = { 0, 0, 0 }, Role = "Awning", Shape = "Wedge", Rot = 0 },
-			origin * at(-10 + i * 4, 12, -13)
-		)
-		stripe.Anchored = true
-		stripe.Color = if i % 2 == 0 then COLORS.Red else COLORS.White
-		Builder.studify(stripe)
-		stripe.Parent = parent
-	end
-	-- "E" na fachada da loja, na altura da porta
-	prompt(body, "OpenShop", "Open Shop", "Gem Shop", Vector3.new(0, -1, -11.4))
-
+-- Indicador de compra na frente da porta da loja (anel neon no chão + "BUY HERE" flutuando).
+local function buildShopIndicator(parent: Instance, at: (number, number, number) -> CFrame)
 	-- Indicador de compra (referência do "SELL"): anel de traços neon no chão na frente da porta
 	-- e um ícone flutuante. O cliente gira o anel e faz o ícone subir e descer (LobbyController).
 	local ringCenter = at(0, 0, -11 - LobbyConfig.ShopRingRadius - 2)
@@ -303,17 +384,68 @@ local function buildShop(parent: Instance)
 	local text = Instance.new("TextLabel")
 	text.BackgroundTransparency = 1
 	text.Size = UDim2.fromScale(1, 1)
-	text.Font = Enum.Font.FredokaOne
+	text.Font = FONT
 	text.TextScaled = true
 	text.Text = "💎 BUY HERE"
-	text.TextColor3 = Color3.fromRGB(255, 236, 90)
+	text.TextColor3 = COLORS.SignText
 	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 4
-	stroke.Color = Color3.fromRGB(11, 18, 48)
+	stroke.Color = INK
 	stroke.Parent = text
 	text.Parent = billboard
 	billboard.Adornee = anchor
 	billboard.Parent = anchor
+end
+
+-- Loja: prédio em camadas vermelho e branco com placa azul "SHOP" (referência 8).
+local function buildShop(parent: Instance)
+	-- frente da loja (-Z local) virada para +X, para a praça
+	local base = CFrame.new(-78, 0, -20) * CFrame.Angles(0, math.rad(-90), 0)
+	local function at(x: number, y: number, z: number)
+		return base * CFrame.new(x, y, z)
+	end
+	local floor = part(parent, "ShopFloor", Vector3.new(30, 1, 24), at(0, 0.5, 0), COLORS.Stone)
+	-- loja do Blender: casinha de dois andares, telhado vermelho, toldo listrado, vitrines e floreiras
+	if prop(parent, "Shop", base) then
+		floor.Transparency = 1 -- a calçada é da mesh; esta peça só segura o indicador de compra
+		floor.CanCollide = false
+		floor:SetAttribute("NoAudit", true)
+		local sign = part(parent, "ShopSign", Vector3.new(16, 6, 1), at(0, 26.2 + 3, -3), COLORS.Blue)
+		label(sign, Enum.NormalId.Front, "SHOP", COLORS.White)
+		local door = part(parent, "ShopDoorPoint", Vector3.new(4, 6, 0.2), at(0, 4, -11.8), COLORS.White)
+		door.Transparency = 1
+		door.CanCollide = false
+		door:SetAttribute("NoAudit", true)
+		prompt(door, "OpenShop", "Open Shop", "Gem Shop", Vector3.zero)
+		buildShopIndicator(parent, at)
+		return
+	end
+	local body = part(parent, "ShopBody1", Vector3.new(28, 12, 22), at(0, 7, 0), COLORS.Red)
+	part(parent, "ShopTrim1", Vector3.new(30, 1.6, 24), at(0, 13.8, 0), COLORS.White)
+	part(parent, "ShopBody2", Vector3.new(24, 10, 18), at(0, 19.6, 0), COLORS.Red)
+	part(parent, "ShopTrim2", Vector3.new(26, 1.6, 20), at(0, 25.4, 0), COLORS.White)
+	local sign = part(parent, "ShopSign", Vector3.new(18, 7, 2), at(0, 26.2 + 3.5, -6), COLORS.Blue)
+	label(sign, Enum.NormalId.Front, "SHOP", COLORS.White)
+	for _, x in { -8, 8 } do
+		part(parent, "ShopWindow", Vector3.new(5, 5, 0.4), at(x, 8, -11.2), COLORS.ShopWindow)
+		part(parent, "ShopWindow2", Vector3.new(4, 4, 0.4), at(x, 20, -9.2), COLORS.ShopWindow)
+	end
+	part(parent, "ShopDoor", Vector3.new(5, 8, 0.4), at(0, 5, -11.2), COLORS.Wood)
+	-- toldo listrado
+	for i = 0, 5 do
+		local stripe = Builder.shapedPart(
+			{ Size = { 4, 2, 4 }, Pos = { 0, 0, 0 }, Role = "Awning", Shape = "Wedge", Rot = 0 },
+			origin * at(-10 + i * 4, 12, -13)
+		)
+		stripe.Anchored = true
+		stripe.Color = if i % 2 == 0 then COLORS.Red else COLORS.White
+		Builder.studify(stripe)
+		stripe.Parent = parent
+	end
+	-- "E" na fachada da loja, na altura da porta
+	prompt(body, "OpenShop", "Open Shop", "Gem Shop", Vector3.new(0, -1, -11.4))
+
+	buildShopIndicator(parent, at)
 end
 
 -- Roleta da sorte física (referência 1): fatias coloridas, aro com pinos, ponteiro no topo.
@@ -399,7 +531,7 @@ local function buildWheel(parent: Instance)
 	-- cubo central na frente das fatias (encosta nelas, sem entrar)
 	hub.CFrame = CFrame.fromMatrix(worldCenter + look * 1.3, look, frame.UpVector)
 	hub.Anchored = true
-	hub.Color = Color3.fromRGB(60, 64, 80)
+	hub.Color = COLORS.Hub
 	hub.Parent = rotor
 	rotor.PrimaryPart = hub
 	rotor.Parent = wheelModel
@@ -411,7 +543,7 @@ local function buildWheel(parent: Instance)
 	-- disco de trás encostado atrás das fatias (as fatias têm 1 de espessura: de -0.5 a 0.5)
 	back.CFrame = CFrame.fromMatrix(worldCenter - look * 1.0, look, frame.UpVector)
 	back.Anchored = true
-	back.Color = Color3.fromRGB(40, 60, 120)
+	back.Color = COLORS.Board
 	back.Parent = wheelModel
 	-- pernas retas: em cima da base e encostadas atrás do disco
 	for _, side in { -1, 1 } do
@@ -428,7 +560,7 @@ local function buildWheel(parent: Instance)
 	mount.Size = Vector3.new(2.4, 2.4, 1)
 	mount.CFrame = frame * CFrame.new(0, radius + 1.5 + 1.2, 1.0)
 	mount.Anchored = true
-	mount.Color = Color3.fromRGB(40, 60, 120)
+	mount.Color = COLORS.Board
 	mount.Parent = wheelModel
 	-- ponteiro: triângulo (duas cunhas) no plano das fatias, acima dos pinos, encostado no suporte e no disco
 	local tip = worldCenter + frame.UpVector * (radius + 1.25)
@@ -481,6 +613,12 @@ local function buildStation(
 	local board =
 		part(parent, name .. "Board", Vector3.new(boardW, boardH, thick), CFrame.new(x, bottom + boardH / 2, z), color)
 	label(board, Enum.NormalId.Front, title)
+	-- "E" no meio da placa, um pouco à frente da face com o texto
+	prompt(board, promptName, action, title, Vector3.new(0, -1, -(thick / 2 + 0.3)))
+	-- moldura do Blender (postes listrados, viga com luzinhas, floreiras); sem ela, postes e viga em peças
+	if prop(parent, "SignSmall", CFrame.new(x, 0, z)) then
+		return
+	end
 	local postH = bottom + boardH + 1
 	for _, side in { -1, 1 } do
 		part(
@@ -498,8 +636,6 @@ local function buildStation(
 		CFrame.new(x, postH + 0.6, z),
 		COLORS.Wood
 	)
-	-- "E" no meio da placa, um pouco à frente da face com o texto
-	prompt(board, promptName, action, title, Vector3.new(0, -1, -(thick / 2 + 0.3)))
 end
 
 -- Placa com duas linhas (título e situação), atualizada pelo PartyService.
@@ -516,12 +652,12 @@ local function statusBoard(target: BasePart): (TextLabel, TextLabel)
 		text.BackgroundTransparency = 1
 		text.Position = UDim2.fromScale(0.06, spec[1])
 		text.Size = UDim2.fromScale(0.88, spec[2])
-		text.Font = Enum.Font.FredokaOne
+		text.Font = FONT
 		text.TextScaled = true
 		text.TextColor3 = if index == 1 then COLORS.White else COLORS.Gold
 		local stroke = Instance.new("UIStroke")
 		stroke.Thickness = 5
-		stroke.Color = Color3.fromRGB(11, 18, 48)
+		stroke.Color = INK
 		stroke.Parent = text
 		text.Parent = gui
 		labels[index] = text
@@ -531,9 +667,9 @@ local function statusBoard(target: BasePart): (TextLabel, TextLabel)
 end
 
 local RUN_AREA_COLORS: { [string]: Color3 } = {
-	Floor = Color3.fromRGB(196, 140, 86),
+	Floor = COLORS.Floor,
 	Border = COLORS.Neon,
-	Board = Color3.fromRGB(40, 64, 140),
+	Board = COLORS.Board,
 	Wood = COLORS.Wood,
 	Sign = COLORS.Gold,
 }

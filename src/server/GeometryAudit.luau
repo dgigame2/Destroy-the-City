@@ -25,17 +25,30 @@ local function probeFor(part: BasePart): BasePart?
 		return nil
 	end
 	local probe: BasePart
+	local cframe = part.CFrame
+	local kit = part:GetAttribute("Kit") :: string?
 	if part:IsA("WedgePart") then
 		probe = Instance.new("WedgePart")
 	elseif part:IsA("Part") then
 		local p = Instance.new("Part")
 		p.Shape = part.Shape
 		probe = p
+	elseif kit then
+		-- mesh do kit do Blender: mede pela forma do bloco original (o cilindro do kit fica em pé, eixo Y)
+		local p = Instance.new("Part")
+		if kit == "Ball" then
+			p.Shape = Enum.PartType.Ball
+		elseif kit == "Cylinder" then
+			p.Shape = Enum.PartType.Cylinder
+			size = Vector3.new(size.Y, size.X, size.Z)
+			cframe *= CFrame.Angles(0, 0, math.rad(90))
+		end
+		probe = p
 	else
-		return nil -- MeshParts e outros: não usados no jogo
+		return nil -- outras MeshParts (meteoro etc.) não são geometria do mapa
 	end
 	probe.Size = size
-	probe.CFrame = part.CFrame
+	probe.CFrame = cframe
 	probe.Anchored = true
 	probe.CanCollide = false
 	probe.CanQuery = false

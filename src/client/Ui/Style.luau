@@ -1,41 +1,57 @@
 --!strict
 -- Padrão visual "Depth Stack" do goat: sombra azulada, gradiente, elevação (lift) e contorno uniforme.
--- Inspirado nas referências de UI: janelas claras com cabeçalho colorido e X vermelho, cards por raridade
--- com listras diagonais, etiquetas de preço verdes, coluna de botões-ícone.
+-- Estrutura das referências de UI: janelas claras com cabeçalho colorido e X vermelho, cards por raridade
+-- com listras diagonais, etiquetas de preço verdes, atalhos-ícone.
+-- Cores: paleta "Diorama" (Config/PaletteConfig), tirada dos mapas.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local PaletteConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.PaletteConfig)
 
 local Style = {}
 
-Style.Font = Enum.Font.FredokaOne
-Style.TextStroke = Color3.fromRGB(11, 18, 48)
-Style.Shadow = Color3.fromRGB(10, 20, 64)
+local function rgb(c: { number }): Color3
+	return Color3.fromRGB(c[1], c[2], c[3])
+end
+Style.rgb = rgb
+
+Style.Font = (Enum.Font :: any)[PaletteConfig.Font] :: Enum.Font
+Style.TextStroke = rgb(PaletteConfig.Ink)
+Style.Shadow = rgb(PaletteConfig.Shadow)
 Style.Robux = utf8.char(0xE002) -- ícone de Robux das fontes do Roblox
+
+-- cores de texto/barras prontas (Style.Colors.Gold etc.)
+Style.Colors = {} :: { [string]: Color3 }
+for name, c in PaletteConfig.Text do
+	Style.Colors[name] = rgb(c)
+end
 
 export type Theme = { Top: Color3, Bottom: Color3, Outline: Color3 }
 
-local function theme(top: { number }, bottom: { number }, outline: { number }): Theme
-	return {
-		Top = Color3.fromRGB(top[1], top[2], top[3]),
-		Bottom = Color3.fromRGB(bottom[1], bottom[2], bottom[3]),
-		Outline = Color3.fromRGB(outline[1], outline[2], outline[3]),
-	}
+local function theme(name: string): Theme
+	local t = PaletteConfig.Themes[name]
+	assert(t, "tema inexistente no PaletteConfig: " .. name)
+	return { Top = rgb(t.Top), Bottom = rgb(t.Bottom), Outline = rgb(t.Outline) }
 end
 
+-- Nomes usados pelas telas -> tema da paleta Diorama.
 Style.Themes = {
-	Blue = theme({ 58, 111, 224 }, { 29, 60, 154 }, { 11, 18, 48 }),
-	LightBlue = theme({ 111, 180, 255 }, { 45, 106, 214 }, { 11, 31, 87 }),
-	Green = theme({ 98, 227, 122 }, { 47, 174, 74 }, { 12, 58, 24 }),
-	Yellow = theme({ 255, 216, 77 }, { 242, 165, 30 }, { 74, 42, 0 }),
-	Red = theme({ 255, 107, 107 }, { 201, 42, 42 }, { 74, 11, 11 }),
-	Purple = theme({ 194, 123, 255 }, { 123, 53, 214 }, { 42, 11, 87 }),
-	Pink = theme({ 255, 122, 200 }, { 214, 51, 154 }, { 74, 11, 51 }),
-	Orange = theme({ 255, 190, 80 }, { 240, 120, 30 }, { 74, 30, 0 }),
-	Gray = theme({ 154, 160, 184 }, { 106, 112, 136 }, { 30, 32, 48 }),
-	Paper = theme({ 246, 248, 255 }, { 220, 228, 255 }, { 11, 18, 48 }),
+	Blue = theme("Sky"),
+	LightBlue = theme("Sea"),
+	Green = theme("Grass"),
+	Yellow = theme("Sand"),
+	Red = theme("Roof"),
+	Purple = theme("Violet"),
+	Pink = theme("Blossom"),
+	Orange = theme("Sunset"),
+	Gray = theme("Stone"),
+	Paper = theme("Paper"),
+	Night = theme("Night"),
 	-- raridades
-	Common = theme({ 206, 210, 220 }, { 150, 156, 172 }, { 30, 32, 48 }),
-	Rare = theme({ 111, 180, 255 }, { 45, 106, 214 }, { 11, 31, 87 }),
-	Epic = theme({ 194, 123, 255 }, { 123, 53, 214 }, { 42, 11, 87 }),
-	Legendary = theme({ 255, 216, 77 }, { 242, 150, 30 }, { 74, 42, 0 }),
+	Common = theme("Stone"),
+	Rare = theme("Sky"),
+	Epic = theme("Violet"),
+	Legendary = theme("Sand"),
 }
 
 local function corner(parent: Instance, radius: number)
@@ -57,7 +73,7 @@ function Style.panel(name: string, t: Theme, radius: number?): (Frame, Frame)
 	shadow.Size = UDim2.fromScale(1, 1)
 	shadow.Position = UDim2.fromOffset(0, 6)
 	shadow.BackgroundColor3 = Style.Shadow
-	shadow.BackgroundTransparency = 0.55
+	shadow.BackgroundTransparency = PaletteConfig.ShadowTransparency
 	shadow.BorderSizePixel = 0
 	shadow.ZIndex = 1
 	corner(shadow, r)
@@ -91,7 +107,7 @@ function Style.panel(name: string, t: Theme, radius: number?): (Frame, Frame)
 	lift.Position = UDim2.new(0.5, 0, 0, 5)
 	lift.Size = UDim2.new(1, -12, 0.3, 0)
 	lift.BackgroundColor3 = Color3.new(1, 1, 1)
-	lift.BackgroundTransparency = 0.82
+	lift.BackgroundTransparency = PaletteConfig.Lift
 	lift.BorderSizePixel = 0
 	lift.ZIndex = 3
 	corner(lift, math.max(r - 6, 4))
@@ -204,6 +220,30 @@ function Style.iconButton(name: string, t: Theme, icon: string, text: string): (
 	return holder, hit
 end
 
+-- Faixa de grama em blocos (duas cores alternadas) na base de um cabeçalho: o "chão" da ilha dos mapas.
+-- Fica dentro da face (não ocupa espaço do conteúdo) e afastada dos cantos arredondados.
+function Style.grassLip(face: Frame)
+	local lip = PaletteConfig.GrassLip
+	local strip = Instance.new("Frame")
+	strip.Name = "GrassLip"
+	strip.BackgroundTransparency = 1
+	strip.AnchorPoint = Vector2.new(0.5, 1)
+	strip.Position = UDim2.fromScale(0.5, 1)
+	strip.Size = UDim2.new(1, -28, 0, lip.Height)
+	strip.ZIndex = 3
+	local light, dark = rgb(lip.Light), rgb(lip.Dark)
+	for i = 0, lip.Blocks - 1 do
+		local block = Instance.new("Frame")
+		block.BorderSizePixel = 0
+		block.BackgroundColor3 = if i % 2 == 0 then light else dark
+		block.Position = UDim2.fromScale(i / lip.Blocks, 0)
+		block.Size = UDim2.fromScale(1 / lip.Blocks, 1)
+		block.ZIndex = 3
+		block.Parent = strip
+	end
+	strip.Parent = face
+end
+
 -- Janela: corpo claro + faixa de cabeçalho colorida com título à esquerda e X vermelho à direita.
 -- Retorna (holder, corpo para o conteúdo, botão X, título).
 function Style.window(
@@ -221,6 +261,7 @@ function Style.window(
 	header.Size = UDim2.new(1, 0, 0, headerH)
 	header.ZIndex = 4
 	header.Parent = body
+	Style.grassLip(headerFace)
 	local titleLabel = Style.label("Title", title)
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.AnchorPoint = Vector2.new(0, 0.5)

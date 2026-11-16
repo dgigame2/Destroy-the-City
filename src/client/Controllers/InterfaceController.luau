@@ -7,10 +7,12 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UiConfig = require(Shared.Config.UiConfig)
+local PaletteConfig = require(Shared.Config.PaletteConfig)
 local UiLayout = require(Shared.Logic.UiLayout)
 local Zones = require(Shared.Logic.Zones)
 local RunConfig = require(Shared.Config.RunConfig)
@@ -18,8 +20,8 @@ local Place = require(Shared.Place)
 local Remotes = require(Shared.Remotes)
 
 local Screens = require(script.Parent.Parent.Ui.Screens)
+local Style = require(script.Parent.Parent.Ui.Style)
 local EatEffects = require(script.Parent.EatEffects)
-local GameplayConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.GameplayConfig)
 local Feedback = require(script.Parent.Parent.Feedback)
 
 local localPlayer = Players.LocalPlayer
@@ -138,11 +140,18 @@ local function updateScale()
 		return
 	end
 	local C = UiConfig
-	local layout = UiLayout.place(area.X, area.Y, C)
+	local layout = UiLayout.place(
+		area.X,
+		area.Y,
+		C,
+		UiLayout.isDesktop(UserInputService.TouchEnabled, UserInputService.KeyboardEnabled)
+	)
 	currentScale = layout.Scale
 	for _, obj in refs.Scaled do
 		setScale(obj, currentScale)
 	end
+	setScale(refs.MatchBar, layout.MatchScale)
+	setScale(refs.TimerHolder, layout.TimerScale)
 	-- janelas: nunca maiores que a tela (celulares bem curtos)
 	for _, window in windows() do
 		local size = { W = window.Size.X.Offset, H = window.Size.Y.Offset }
@@ -236,7 +245,7 @@ function InterfaceController.bigCombo(text: string, color: Color3?)
 	comboToken += 1
 	local token = comboToken
 	refs.Combo.Text = text
-	refs.Combo.TextColor3 = color or Color3.fromRGB(255, 160, 60)
+	refs.Combo.TextColor3 = color or Style.Colors.Combo
 	refs.Combo.Visible = true
 	refs.Combo.Rotation = math.random(-6, 6)
 	InterfaceController.bump(refs.Combo)
@@ -307,13 +316,10 @@ local function updateFrenzy()
 end
 
 -- Confete caindo pela tela inteira.
-local CONFETTI_COLORS = {
-	Color3.fromRGB(255, 90, 90),
-	Color3.fromRGB(90, 200, 255),
-	Color3.fromRGB(255, 220, 60),
-	Color3.fromRGB(120, 230, 120),
-	Color3.fromRGB(220, 120, 255),
-}
+local CONFETTI_COLORS = {}
+for _, c in PaletteConfig.Confetti do
+	table.insert(CONFETTI_COLORS, Style.rgb(c))
+end
 
 local function confetti()
 	local area = refs.Gui.AbsoluteSize
@@ -385,7 +391,7 @@ function InterfaceController.celebrate(info: ZoneInfo)
 		refs.Celebration.Visible = false
 		refs.ContinueHolder.Visible = false
 		if info.Next then
-			InterfaceController.toast(`GO! {info.Next} IS OPEN!`, Color3.fromRGB(255, 227, 107))
+			InterfaceController.toast(`GO! {info.Next} IS OPEN!`, Style.Colors.Gold)
 		end
 	end
 	celebrationFinish = finish
@@ -409,24 +415,6 @@ local function onStateChanged()
 		Feedback.play("ZoneClear", { Gui = refs.Winner, Amount = gems })
 	end
 	updateHud()
-end
-
-local function setupTierToasts()
-	local lastTier = (localPlayer:GetAttribute("EdibleTier") :: number?) or 1
-	localPlayer:GetAttributeChangedSignal("EdibleTier"):Connect(function()
-		local tier = (localPlayer:GetAttribute("EdibleTier") :: number?) or 1
-		if tier > lastTier and isRun then
-			InterfaceController.toast(
-				(if GameplayConfig.Mode == "Disasters" then "YOU CAN NOW DESTROY " else "YOU CAN NOW EAT ")
-					.. EatEffects.tierName(tier)
-					.. "!",
-				Color3.fromRGB(255, 227, 107)
-			)
-			EatEffects.playTierUp()
-			Feedback.play("TierUp", { Gui = refs.Toast, Amount = tier })
-		end
-		lastTier = tier
-	end)
 end
 
 -- Barra da run: UPGRADES abre a janela; LOBBY pede confirmação (segundo toque), salva e volta ao lobby.
@@ -472,17 +460,16 @@ function InterfaceController.init()
 	end
 
 	setupCurrencies()
-	setupTierToasts()
 	setupMatchBar()
 
 	EatEffects.onLocalBite(function(info)
 		showCombo(EatEffects.currentCombo())
 		if info.Gems > 0 then
-			InterfaceController.toast("+" .. info.Gems .. " 💎 GEMS!", Color3.fromRGB(140, 210, 255))
+			InterfaceController.toast("+" .. info.Gems .. " 💎 GEMS!", Style.Colors.Gem)
 		end
 	end)
 	Remotes.event(Remotes.Names.Events.Notice).OnClientEvent:Connect(function(text: string)
-		InterfaceController.toast(text, Color3.fromRGB(255, 227, 107))
+		InterfaceController.toast(text, Style.Colors.Gold)
 	end)
 	Remotes.event(Remotes.Names.Events.RewardGranted).OnClientEvent:Connect(InterfaceController.popup)
 

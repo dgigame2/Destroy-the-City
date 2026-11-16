@@ -14,12 +14,14 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local FeedbackConfig = require(Shared.Config.FeedbackConfig)
 local Shake = require(Shared.Logic.Shake)
+local Style = require(script.Parent.Ui.Style)
 
 local localPlayer = Players.LocalPlayer
 
 local Feedback = {}
 
-export type Target = { Gui: GuiObject?, World: Vector3?, Amount: number?, Text: string? }
+-- NoNumber: só som e tremor, sem o texto flutuando (ex.: giro grátis da roleta, pedido do usuário)
+export type Target = { Gui: GuiObject?, World: Vector3?, Amount: number?, Text: string?, NoNumber: boolean? }
 
 local lastSound: { [string]: number } = {}
 local cameraShake = 0
@@ -153,13 +155,13 @@ local function showNumber(kind: string, spec: FeedbackConfig.Number, target: Tar
 	label.AnchorPoint = Vector2.new(0.5, 1)
 	label.Size = UDim2.fromOffset(220, FeedbackConfig.NumberSize)
 	label.Position = UDim2.fromOffset(point.X + math.random(-12, 12), point.Y)
-	label.Font = Enum.Font.FredokaOne
+	label.Font = Style.Font
 	label.TextScaled = true
 	label.Text = target.Text or format(spec, amount)
 	label.TextColor3 = rgb(spec.Color)
 	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 2
-	stroke.Color = Color3.fromRGB(11, 18, 48)
+	stroke.Color = Style.TextStroke
 	stroke.Parent = label
 	label.Parent = numberGui
 	merged[key] = { Label = label, Amount = amount, At = now }
@@ -202,7 +204,9 @@ function Feedback.play(kind: string, target: Target)
 		-- ação sem elemento na tela: treme a câmera de leve no lugar
 		shakeCamera(spec.Shake.Ui * 0.02, spec.Shake.Seconds)
 	end
-	showNumber(kind, spec.Number, target)
+	if not target.NoNumber then
+		showNumber(kind, spec.Number, target)
+	end
 end
 
 -- O que balança quando um botão é tocado: o próprio botão, ou o painel dele se o botão for invisível.

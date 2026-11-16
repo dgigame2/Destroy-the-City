@@ -57,7 +57,7 @@ local function request(remote: string, id: string, gui: GuiObject?, price: numbe
 			InterfaceController.bump(InterfaceController.refs().Shop)
 			Feedback.play("Buy", { Gui = gui, Amount = price })
 		elseif reason then
-			InterfaceController.toast(string.upper(reason), Color3.fromRGB(255, 120, 120))
+			InterfaceController.toast(string.upper(reason), Style.Colors.Danger)
 			Feedback.play("Fail", { Gui = gui, Amount = price })
 		end
 	end

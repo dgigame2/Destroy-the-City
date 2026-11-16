@@ -4,7 +4,10 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local StudConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.StudConfig)
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local StudConfig = require(Shared.Config.StudConfig)
+local MeshKitConfig = require(Shared.Config.MeshKitConfig)
+local MeshKit = require(Shared.Logic.MeshKit)
 
 local Builder = {}
 
@@ -109,6 +112,35 @@ function Builder.shapedPart(b: Box, cframe: CFrame): BasePart
 	return part
 end
 
+-- Mesh do kit do Blender (DioramaKit) já importada no Studio, por nome. Guarda em cache.
+local kitCache: { [string]: MeshPart | false } = {}
+local function kitMesh(name: string): MeshPart?
+	local cached = kitCache[name]
+	if cached ~= nil then
+		return cached or nil
+	end
+	local assets = ReplicatedStorage:FindFirstChild(MeshKitConfig.Folder)
+	local found = assets and assets:FindFirstChild(name, true)
+	local mesh = if found and found:IsA("MeshPart") then found else nil
+	kitCache[name] = mesh or false
+	return mesh
+end
+
+-- Peça de um bloco com a mesh do kit (cantos chanfrados, copa low-poly...). Sem o kit, a peça normal.
+-- A mesh tem caixa 1x1x1: Size do bloco = Size da mesh. O cilindro do kit já fica em pé (eixo Y).
+function Builder.kitPart(b: Box, cframe: CFrame): BasePart
+	local name = MeshKit.choose(b, MeshKitConfig)
+	local mesh = name and kitMesh(name)
+	if not mesh then
+		return Builder.shapedPart(b, cframe)
+	end
+	local part = mesh:Clone()
+	part.Size = Vector3.new(b.Size[1], b.Size[2], b.Size[3])
+	part.CFrame = cframe * CFrame.new(b.Pos[1], b.Pos[2], b.Pos[3])
+	part:SetAttribute("Kit", b.Shape or "Block") -- forma original (a varredura de sobreposição usa)
+	return part
+end
+
 -- Mesh do Blender importada pelo usuário em ReplicatedStorage.Assets (nil = ainda não importou: usa os blocos).
 local function meshFor(name: string?): MeshPart?
 	if name == nil then
@@ -159,7 +191,7 @@ function Builder.build(template: Template, palette: Palette, variant: number, cf
 		return roleVariant[key]
 	end
 	for index, b in template.Boxes do
-		local part = Builder.shapedPart(b, cframe)
+		local part = Builder.kitPart(b, cframe)
 		part.Name = b.Role
 		part.Anchored = true
 		part.Color = Builder.color(palette, b.Role, variantFor(b.Role))

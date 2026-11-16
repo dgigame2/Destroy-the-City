@@ -30,8 +30,8 @@ local size = PartyConfig.MaxSize
 local busy = false
 local cards: { Screens.SavedRunCard } = {}
 
-local GOOD = Color3.fromRGB(125, 255, 138)
-local BAD = Color3.fromRGB(255, 120, 120)
+local GOOD = Style.Colors.LevelFill
+local BAD = Style.Colors.Danger
 
 local function wins(): number
 	return (localPlayer:GetAttribute("Wins") :: number?) or 0

@@ -168,7 +168,7 @@ local function request(payment: string, gui: GuiObject)
 	local index = Remotes.func(Remotes.Names.Functions.SpinWheel):InvokeServer(payment)
 	if index == nil then
 		spinning = false
-		InterfaceController.toast("CAN'T SPIN NOW", Color3.fromRGB(255, 120, 120))
+		InterfaceController.toast("CAN'T SPIN NOW", Style.Colors.Danger)
 		Feedback.play("Fail", { Gui = gui, Text = "✖" })
 		refresh()
 		return
@@ -176,7 +176,8 @@ local function request(payment: string, gui: GuiObject)
 	if payment == "Gems" then
 		Feedback.play("Spin", { Gui = gui, Amount = WheelConfig.GemCost, Text = `-{WheelConfig.GemCost} 💎` })
 	else
-		Feedback.play("Spin", { Gui = gui, Text = if payment == "Free" then "FREE!" else "-1 🎟️" })
+		-- giro grátis: sem o "FREE!" flutuando (só som e tremor)
+		Feedback.play("Spin", { Gui = gui, Text = "-1 🎟️", NoNumber = payment == "Free" })
 	end
 	if preview then
 		spin(preview, index, WheelConfig.SpinSeconds - 0.3)

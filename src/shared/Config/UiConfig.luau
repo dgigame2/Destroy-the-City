@@ -27,6 +27,7 @@ return table.freeze({
 	-- Botões da run (embaixo, centralizados)
 	UpgradesButton = { W = 260, H = 92 },
 	LobbyButton = { W = 200, H = 88 },
+	MatchScale = 0.85, -- UPGRADES e LOBBY um pouco menores que o resto do HUD (nunca abaixo de MinTouch)
 	LeaveConfirmSeconds = 3, -- o botão LOBBY pede um segundo toque dentro desse tempo
 
 	-- Janela padrão (loja, roleta, recompensas)
@@ -72,10 +73,20 @@ return table.freeze({
 	-- barra de desastres (client/Controllers/DisasterController): coluna no canto direito, de baixo para cima
 	DisasterButton = { W = 150, H = 96 },
 	DisasterCount = 3,
-	-- painel de níveis dos desastres (client/Controllers/LevelsController): canto direito, 1 linha por desastre
-	-- (texto, não é botão). Em telas baixas (celular) fica no topo; nas altas, mais abaixo (lista de jogadores).
-	Levels = { W = 340, RowH = 46, Pad = 8, Rows = 3 }, -- embaixo da comemoração: fecha antes do tempo
 	ConfettiPieces = 60,
+	-- PC (sem toque ou com teclado): HUD mais minimalista. O celular continua com o layout acima.
+	-- Pedido do usuário (16/11/2026): desastres numa fileira embaixo à direita, tudo menor.
+	Desktop = table.freeze({
+		HudScale = 0.75, -- multiplica a escala do HUD (janelas não mudam)
+		DisasterButton = { W = 104, H = 96 },
+		Recommended = { W = 250, H = 64 },
+	}),
+	-- "RECOMMENDED: <construção>" no canto superior direito (texto, não é botão): o tier que o seu poder
+	-- já destrói bem (atributo EdibleTier). Substitui o aviso "YOU CAN NOW DESTROY ...".
+	Recommended = { W = 320, H = 76 }, -- largura: "SHOPS & BIG HOUSES" cabe na fonte mínima no menor celular
+	-- mini barra do nível embaixo de cada desastre, com "LV 3" escrito em cima (texto >= fonte mínima no celular)
+	LevelBar = { H = 32, Gap = 4 },
+	TimerScale = 0.85, -- progresso da run um pouco menor que o resto do HUD
 	Popup = { W = 520, H = 140 },
 	-- placa flutuante de cada área da cidade (client/Controllers/AreaSignsController), em studs
 	AreaSign = table.freeze({
@@ -93,6 +104,7 @@ return table.freeze({
 	BarrierGlow = table.freeze({
 		HeightPerScale = 3, -- altura da linha = isso x escala do jogador (sempre acima da barreira)
 		TopLine = 0.4, -- grossura da linha (x escala)
+		Transparency = 0.7, -- parede de luz (a linha do topo é sólida)
 		Color = { 255, 60, 90 },
 	}),
 })

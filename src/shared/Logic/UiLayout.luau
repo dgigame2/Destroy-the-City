@@ -48,8 +48,10 @@ export type Layout = {
 	Chips: { Rect }, -- prêmios dentro da comemoração (coordenadas da tela)
 	Continue: Rect, -- botão CONTINUE embaixo da comemoração
 	Disasters: { Rect }, -- botões dos desastres (coluna no canto direito, o 1º embaixo)
-	Levels: Rect, -- painel de níveis dos desastres (canto direito)
-	LevelRows: { Rect },
+	DisasterBars: { Rect }, -- mini barra do nível (LV) embaixo de cada desastre
+	Recommended: Rect, -- "RECOMMENDED: ..." no canto superior direito
+	TimerScale: number, -- escala real do progresso da run (UIScale dele)
+	MatchScale: number, -- escala real da barra UPGRADES/LOBBY (UIScale dela)
 }
 
 -- Fila de botões lado a lado, alinhados por baixo, a partir de (x, y) com altura total h.
@@ -77,8 +79,18 @@ local function rowWidth(sizes: { { W: number, H: number } }, s: number, gap: num
 	return w + gap * (#sizes - 1)
 end
 
-function UiLayout.place(w: number, h: number, c: UiConfig): Layout
+-- PC = tem teclado ou não tem toque. Celular/tablet sem teclado = toque (layout de toque).
+function UiLayout.isDesktop(touchEnabled: boolean, keyboardEnabled: boolean): boolean
+	return keyboardEnabled or not touchEnabled
+end
+
+-- desktop = true: HUD menor (UiConfig.Desktop.HudScale), progresso e níveis no canto superior direito e
+-- desastres numa fileira embaixo à direita. desktop = false/nil: layout de toque (igual ao de sempre).
+function UiLayout.place(w: number, h: number, c: UiConfig, desktop: boolean?): Layout
 	local s = UiLayout.scale(w, h, c)
+	if desktop then
+		s *= c.Desktop.HudScale
+	end
 	local m, gap = c.Margin, c.Gap * s
 
 	-- dinheiro e gemas lado a lado (assim a coluna de atalhos fica mais alta na tela)
@@ -98,15 +110,23 @@ function UiLayout.place(w: number, h: number, c: UiConfig): Layout
 	end
 
 	-- barra da run embaixo no centro
-	local matchSizes = { c.UpgradesButton, c.LobbyButton }
-	local barH = math.max(c.UpgradesButton.H, c.LobbyButton.H) * s
-	local matchW = rowWidth(matchSizes, s, gap)
+	-- um pouco menores que o resto do HUD (MatchScale), mas nunca abaixo do polegar (MinTouch)
+	local ms = math.max(s * c.MatchScale, c.MinTouch / math.min(c.UpgradesButton.H, c.LobbyButton.H))
+	local matchSizes = {
+		{ W = c.UpgradesButton.W * ms / s, H = c.UpgradesButton.H * ms / s },
+		{ W = c.LobbyButton.W * ms / s, H = c.LobbyButton.H * ms / s },
+	}
+	local barH = math.max(matchSizes[1].H, matchSizes[2].H) * s
+	local matchGap = c.Gap * ms -- a barra inteira usa a escala dela (UIScale = ms)
+	local matchW = rowWidth(matchSizes, s, matchGap)
 	local barY = h - m - barH
 	local matchBar = rect((w - matchW) / 2, barY, matchW, barH)
-	local matchButtons = row(matchBar.X0, barY, barH, matchSizes, s, gap)
+	local matchButtons = row(matchBar.X0, barY, barH, matchSizes, s, matchGap)
 
-	-- relógio em cima no centro, subindo para a faixa da barra do Roblox (o centro dela fica livre)
-	local timerW, timerH = c.Timer.W * s, c.Timer.H * s
+	-- progresso da run em cima no centro, sem fundo, subindo para a faixa da barra do Roblox (o centro dela fica
+	-- livre). Um pouco menor que o resto do HUD (TimerScale), mas o texto nunca abaixo da fonte mínima.
+	local ts = math.max(s * c.TimerScale, c.MinTextSize / c.TextRow)
+	local timerW, timerH = c.Timer.W * ts, c.Timer.H * ts
 	local timer = rect((w - timerW) / 2, c.TimerTop - c.TopbarInset, timerW, timerH)
 
 	-- textos de aviso (não são botões)
@@ -154,29 +174,30 @@ function UiLayout.place(w: number, h: number, c: UiConfig): Layout
 		rect(celebration.X0 + (celebW - continueW) / 2, celebration.Y1 + cb.Gap * celebScale, continueW, continueH)
 
 	-- desastres: coluna no canto direito, de baixo para cima (na run não tem pulo; o canto fica livre)
-	local disasters = {}
-	local db = c.DisasterButton
+	-- PC: fileira embaixo à direita (o 1º na ponta direita). Embaixo de cada um, a mini barra do nível (LV).
+	local disasters, disasterBars = {}, {}
+	local db = if desktop then c.Desktop.DisasterButton else c.DisasterButton
 	local dw, dh = math.max(db.W * s, c.MinTouch), math.max(db.H * s, c.MinTouch)
+	local lh, lgap = c.LevelBar.H * s, c.LevelBar.Gap * s
+	local slotH = dh + lgap + lh -- botão + mini barra
 	for i = 0, c.DisasterCount - 1 do
-		table.insert(disasters, rect(w - m - dw, h - m - dh - i * (dh + gap), dw, dh))
+		local x = if desktop then w - m - dw - i * (dw + gap) else w - m - dw
+		local y = if desktop then h - m - slotH else h - m - slotH - i * (slotH + gap)
+		table.insert(disasters, rect(x, y, dw, dh))
+		table.insert(disasterBars, rect(x, y + dh + lgap, dw, lh))
 	end
 
-	-- níveis dos desastres: canto direito; em telas altas desce (a lista de jogadores do Roblox fica no topo direito)
-	local cc = c.Levels
-	local panelW, rowH, pad = cc.W * s, cc.RowH * s, cc.Pad * s
-	local panelH = cc.Rows * rowH + pad * 2
-	local panelY = if h < c.CompactHeight then m else math.min(h * 0.3, disasters[c.DisasterCount].Y0 - gap - panelH)
-	local levels = rect(w - m - panelW, panelY, panelW, panelH)
-	local levelRows = {}
-	for i = 0, cc.Rows - 1 do
-		table.insert(levelRows, rect(levels.X0 + pad, levels.Y0 + pad + i * rowH, panelW - pad * 2, rowH))
-	end
+	-- construção recomendada: canto superior direito (texto, não é botão)
+	local rec = if desktop then c.Desktop.Recommended else c.Recommended
+	local recommended = rect(w - m - rec.W * s, m, rec.W * s, rec.H * s)
 
 	return {
 		Scale = s,
 		Disasters = disasters,
-		Levels = levels,
-		LevelRows = levelRows,
+		DisasterBars = disasterBars,
+		Recommended = recommended,
+		TimerScale = ts,
+		MatchScale = ms,
 		Frenzy = frenzy,
 		Celebration = celebration,
 		Chips = chips,

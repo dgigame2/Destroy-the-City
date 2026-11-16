@@ -17,6 +17,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local DamageConfig = require(Shared.Config.DamageConfig)
 local DamageStages = require(Shared.Logic.DamageStages)
 local Remotes = require(Shared.Remotes)
+local PaletteConfig = require(Shared.Config.PaletteConfig)
 
 local DamageVfx = {}
 
@@ -269,7 +270,7 @@ local function makeBar(model: Model): Bar?
 	shadow.AnchorPoint = Vector2.new(0.5, 0)
 	shadow.Position = UDim2.new(0.5, 0, 0, 4)
 	shadow.Size = UDim2.fromOffset(w, h)
-	shadow.BackgroundColor3 = Color3.fromRGB(20, 30, 70)
+	shadow.BackgroundColor3 = rgb(PaletteConfig.Vfx.HpShadow)
 	shadow.BackgroundTransparency = 0.55
 	shadow.BorderSizePixel = 0
 	Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 4)
@@ -281,12 +282,12 @@ local function makeBar(model: Model): Bar?
 	back.AnchorPoint = Vector2.new(0.5, 0)
 	back.Position = UDim2.new(0.5, 0, 0, 1)
 	back.Size = UDim2.fromOffset(w, h)
-	back.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+	back.BackgroundColor3 = rgb(PaletteConfig.Vfx.HpBack)
 	back.BorderSizePixel = 0
 	Instance.new("UICorner", back).CornerRadius = UDim.new(0, 4)
 	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 2
-	stroke.Color = Color3.fromRGB(15, 15, 22)
+	stroke.Color = rgb(PaletteConfig.Vfx.HpStroke)
 	stroke.Parent = back
 	back.Parent = gui
 

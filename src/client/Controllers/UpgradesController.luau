@@ -39,7 +39,7 @@ local function buy(id: string, gui: GuiObject, cost: number)
 		InterfaceController.bump(InterfaceController.refs().Upgrades)
 		Feedback.play("Buy", { Gui = gui, Amount = cost })
 	else
-		InterfaceController.toast("NOT ENOUGH CASH", Color3.fromRGB(255, 120, 120))
+		InterfaceController.toast("NOT ENOUGH CASH", Style.Colors.Danger)
 		-- número = quanto falta
 		local coins = (localPlayer:GetAttribute("Coins") :: number?) or 0
 		Feedback.play("Fail", { Gui = gui, Amount = math.max(cost - coins, 0) })

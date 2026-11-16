@@ -132,7 +132,7 @@ end
 
 local function badge(parent: Instance): TextLabel
 	local b = Style.label("Badge", "!")
-	b.BackgroundColor3 = Color3.fromRGB(255, 60, 70)
+	b.BackgroundColor3 = Style.Colors.Badge
 	b.BackgroundTransparency = 0
 	b.Size = UDim2.fromOffset(34, 34)
 	b.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -167,7 +167,7 @@ function Screens.card(
 	sized(iconLabel, 100, 86, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 48))
 	iconLabel.Parent = face
 	local subtitleLabel = Style.label("Subtitle", subtitle)
-	subtitleLabel.TextColor3 = Color3.fromRGB(255, 247, 194)
+	subtitleLabel.TextColor3 = Style.Colors.Cream
 	sized(subtitleLabel, C.Card.W - 20, 40, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 138))
 	subtitleLabel.Parent = face
 	local buttonHolder, button, buttonFace = Style.button("Buy", Style.Themes.Green, buttonText)
@@ -240,14 +240,14 @@ function Screens.savedRunCard(parent: Instance, order: number): SavedRunCard
 	local with = Style.label("With", "")
 	with.TextXAlignment = Enum.TextXAlignment.Left
 	with.TextTruncate = Enum.TextTruncate.AtEnd
-	with.TextColor3 = Color3.fromRGB(255, 227, 107)
+	with.TextColor3 = Style.Colors.Gold
 	placeRect(with, layout.With)
 	with.Parent = face
 	local difficulty = tag("Difficulty", Style.Themes.Green, layout.DifficultyTag, face)
 	local progress = tag("Progress", Style.Themes.LightBlue, layout.ProgressTag, face)
 	local expires = Style.label("Expires", "")
 	expires.TextXAlignment = Enum.TextXAlignment.Left
-	expires.TextColor3 = Color3.fromRGB(255, 150, 150)
+	expires.TextColor3 = Style.Colors.Danger
 	placeRect(expires, layout.Expires)
 	expires.Parent = face
 	local loadHolder, load = Style.button("Load", Style.Themes.Green, "LOAD GAME")
@@ -303,7 +303,7 @@ function Screens.partyWindow()
 		sized(title, w, 40, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 8))
 		title.Parent = face
 		local sub = Style.label("Sub", "")
-		sub.TextColor3 = Color3.fromRGB(255, 247, 194)
+		sub.TextColor3 = Style.Colors.Cream
 		sized(sub, w, C.TextRow, Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -8))
 		sub.Parent = face
 		holder.Parent = body
@@ -440,28 +440,40 @@ function Screens.build(parent: Instance): Refs
 	local rewardsBadge = badge(rewardsHolder)
 	add(icons)
 
-	-- Progresso da run (topo centro): "42% EATEN", nome do mapa e barra --------------
-	local timerHolder, timerFace = Style.panel("Timer", Style.Themes.Blue)
+	-- Progresso da run (topo centro): nome da área, "AREA 1/4 • 0%" e barra. Sem fundo (minimalista):
+	-- só os textos com contorno e a barrinha, flutuando sobre a cidade.
+	local timerHolder = Instance.new("Frame")
+	timerHolder.Name = "Timer"
+	timerHolder.BackgroundTransparency = 1
 	sized(timerHolder, C.Timer.W, C.Timer.H, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, C.Margin))
+	local timerFace = Instance.new("Frame")
+	timerFace.Name = "Face"
+	timerFace.BackgroundTransparency = 1
+	timerFace.Size = UDim2.fromScale(1, 1)
+	timerFace.Parent = timerHolder
 	local timer = Style.label("Time", "0% EATEN")
 	sized(timer, C.Timer.W - 24, 38, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 4))
 	timer.Parent = timerFace
 	local mapName = Style.label("Map", "")
-	mapName.TextColor3 = Color3.fromRGB(255, 227, 107)
+	mapName.TextColor3 = Style.Colors.Gold
 	sized(mapName, C.Timer.W - 24, C.TextRow, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 42))
 	mapName.Parent = timerFace
 	local track = Instance.new("Frame")
 	track.Name = "Progress"
-	track.BackgroundColor3 = Color3.fromRGB(16, 26, 70)
+	track.BackgroundColor3 = Style.Colors.Track
 	track.BorderSizePixel = 0
 	track.ZIndex = 5
 	sized(track, C.Timer.W - 40, 8, Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -6))
 	local trackCorner = Instance.new("UICorner")
 	trackCorner.CornerRadius = UDim.new(1, 0)
 	trackCorner.Parent = track
+	local trackStroke = Instance.new("UIStroke")
+	trackStroke.Color = Style.TextStroke
+	trackStroke.Thickness = 2
+	trackStroke.Parent = track
 	local fill = Instance.new("Frame")
 	fill.Name = "Fill"
-	fill.BackgroundColor3 = Color3.fromRGB(255, 211, 61)
+	fill.BackgroundColor3 = Style.Colors.Fill
 	fill.BorderSizePixel = 0
 	fill.Size = UDim2.fromScale(0, 1)
 	fill.ZIndex = 6
@@ -500,7 +512,7 @@ function Screens.build(parent: Instance): Refs
 	sized(shop, C.Window.W, C.Window.H, Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5))
 	shop.Visible = false
 	local shopGems = Style.label("GemsLabel", "💎 0")
-	shopGems.TextColor3 = Color3.fromRGB(200, 240, 255)
+	shopGems.TextColor3 = Style.Colors.Gem
 	shopGems.TextXAlignment = Enum.TextXAlignment.Right
 	sized(shopGems, 220, 46, Vector2.new(1, 0.5), UDim2.new(1, -(C.CloseButton.W + 20), 0.5, 0))
 	shopGems.Parent = shopTitle.Parent :: Frame
@@ -560,7 +572,7 @@ function Screens.build(parent: Instance): Refs
 	sized(upgrades, C.UpgradeWindow.W, C.UpgradeWindow.H, Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5))
 	upgrades.Visible = false
 	local upgradesCash = Style.label("CashLabel", "💵 0")
-	upgradesCash.TextColor3 = Color3.fromRGB(205, 255, 205)
+	upgradesCash.TextColor3 = Style.Colors.Cash
 	upgradesCash.TextXAlignment = Enum.TextXAlignment.Right
 	sized(upgradesCash, 260, 46, Vector2.new(1, 0.5), UDim2.new(1, -(C.CloseButton.W + 20), 0.5, 0))
 	upgradesCash.Parent = upgradesTitle.Parent :: Frame
@@ -651,7 +663,7 @@ function Screens.build(parent: Instance): Refs
 		sized(title, C.WheelButton.W - 30, 44, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 8))
 		title.Parent = face
 		local sub = Style.label("Sub", spec[4] :: string)
-		sub.TextColor3 = Color3.fromRGB(255, 247, 194)
+		sub.TextColor3 = Style.Colors.Cream
 		sized(sub, C.WheelButton.W - 30, 26, Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -8))
 		sub.Parent = face
 		holder.Parent = wheelBody
@@ -759,7 +771,7 @@ function Screens.build(parent: Instance): Refs
 		ray.AnchorPoint = Vector2.new(0.5, 0.5)
 		ray.Size = UDim2.fromOffset(CW * 2.4, 70)
 		ray.Rotation = k * 22.5
-		ray.BackgroundColor3 = Color3.fromRGB(255, 240, 160)
+		ray.BackgroundColor3 = Style.Colors.Ray
 		ray.BackgroundTransparency = 0.72
 		ray.BorderSizePixel = 0
 		ray.ZIndex = 0
@@ -818,7 +830,7 @@ function Screens.build(parent: Instance): Refs
 	toast.Visible = false
 	add(toast)
 	local combo = Style.label("Combo", "")
-	combo.TextColor3 = Color3.fromRGB(255, 227, 107)
+	combo.TextColor3 = Style.Colors.Gold
 	sized(combo, C.Combo.W, C.Combo.H, Vector2.new(0.5, 0.5), UDim2.fromScale(0.72, 0.6))
 	combo.Visible = false
 	add(combo)

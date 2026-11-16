@@ -17,6 +17,7 @@ local CityPlans = require("../src/shared/Config/CityPlans")
 local DisasterConfig = require("../src/shared/Config/DisasterConfig")
 local MasteryConfig = require("../src/shared/Config/MasteryConfig")
 local ChainConfig = require("../src/shared/Config/ChainConfig")
+local TierConfig = require("../src/shared/Config/TierConfig")
 
 -- Tamanhos em pontos (como o Roblox enxerga), deitado. Insets: L, R, B (pontos).
 -- MEDIDOS das especificações públicas dos aparelhos; bordas seguras = ESTIMATIVA dos valores do iOS/Android.
@@ -78,7 +79,7 @@ return function(t)
 	t.test("celulares deitados usam 2 colunas de atalhos; tablet e PC usam 1", function()
 		for _, device in DEVICES do
 			local h = device.H - c.TopbarInset - device.B
-			local layout = UiLayout.place(device.W - device.L - device.R, h, c)
+			local layout = UiLayout.place(device.W - device.L - device.R, h, c, not device.Touch)
 			local expected = if device.H <= 500 then 2 else 1
 			if layout.IconColumns ~= expected then
 				error(`{device.Name}: {layout.IconColumns} colunas`)
@@ -89,7 +90,7 @@ return function(t)
 	for _, device in DEVICES do
 		local top = c.TopbarInset
 		local w, h = device.W - device.L - device.R, device.H - top - device.B
-		local layout = UiLayout.place(w, h, c)
+		local layout = UiLayout.place(w, h, c, not device.Touch)
 		local s = layout.Scale
 		local gap = c.Gap * s
 		local name = device.Name
@@ -125,10 +126,11 @@ return function(t)
 			end
 		end)
 
-		t.test(`{name}: relógio no centro da faixa da barra do Roblox, dentro da tela`, function()
+		t.test(`{name}: progresso da run em cima no centro (faixa da barra do Roblox), dentro da tela`, function()
 			local r = layout.Timer
 			t.truthy(r.Y0 >= -c.TopbarInset) -- não sai por cima da tela
 			t.truthy(r.X0 >= 0 and r.X1 <= w)
+			t.truthy(math.abs((r.X0 + r.X1) / 2 - w / 2) <= 1.5) -- centralizado (Precise Centering)
 			-- longe dos botões do Roblox: logo, menu e chat ficam à esquerda da barra. MEDIDO no print do emulador
 			-- de 14/11/2026: terminam a ~210 pontos da borda esquerda da tela (folga até 220).
 			t.truthy(r.X0 + device.L >= 220)
@@ -145,7 +147,9 @@ return function(t)
 				end
 				for i = 1, #list do
 					for j = i + 1, #list do
-						if UiLayout.intersects(list[i], list[j], gap - 0.01) then
+						-- a barra da run tem escala própria (MatchScale): o espaço entre UPGRADES e LOBBY segue ela
+						local tolerance = c.Gap * math.min(s, layout.MatchScale) - 0.01
+						if UiLayout.intersects(list[i], list[j], tolerance) then
 							error(`elementos {i} e {j} encostam`)
 						end
 					end
@@ -187,39 +191,68 @@ return function(t)
 			end
 		end)
 
-		t.test(`{name}: painel de níveis: na tela, sem cobrir HUD, desastres nem a barra; textos cabem`, function()
-			local panel = layout.Levels
-			t.truthy(inside(panel, w, h))
-			for label, r in
+		t.test(`{name}: mini barra de nível embaixo de cada desastre: na tela, sem encostar, "LV 30" cabe`, function()
+			t.equal(#layout.DisasterBars, #layout.Disasters)
+			local others = { layout.Cash, layout.Gems, layout.Timer, layout.MatchBar, layout.Recommended }
+			for _, r in buttons do
+				table.insert(others, r)
+			end
+			for i, bar in layout.DisasterBars do
+				local button = layout.Disasters[i]
+				t.truthy(inside(bar, w, h))
+				t.truthy(bar.Y0 >= button.Y1) -- embaixo do próprio botão
+				t.truthy(math.abs(bar.X0 - button.X0) < 0.5 and math.abs(bar.X1 - button.X1) < 0.5)
+				for _, o in others do
+					if UiLayout.intersects(bar, o, 0) then
+						error(`barra de nível {i} encosta em outro elemento`)
+					end
+				end
+				for j, other in layout.Disasters do
+					if UiLayout.intersects(bar, other, 0) and i ~= j then
+						error(`barra de nível {i} encosta no desastre {j}`)
+					end
+				end
+				for j, other in layout.DisasterBars do
+					if i ~= j and UiLayout.intersects(bar, other, gap - 0.01) then
+						error(`barras de nível {i} e {j} encostam`)
+					end
+				end
+				local bw, bh = (bar.X1 - bar.X0) * 0.9, (bar.Y1 - bar.Y0) * 0.9
+				t.truthy(textFits(`LV {MasteryConfig.MaxLevel}`, bw, bh))
+				t.truthy(textFits("MAX", bw, bh))
+			end
+		end)
+
+		t.test(`{name}: construção recomendada: canto superior direito, sem encostar em nada, texto cabe`, function()
+			local r = layout.Recommended
+			t.truthy(inside(r, w, h))
+			t.truthy(r.X0 >= w / 2)
+			for label, o in
 				{
 					Timer = layout.Timer,
-					Frenzy = layout.Frenzy,
 					MatchBar = layout.MatchBar,
 					Cash = layout.Cash,
 					Gems = layout.Gems,
 					Icons = layout.Icons,
 				}
 			do
-				if UiLayout.intersects(panel, r, 0) then
-					error(`painel de níveis encosta em {label}`)
+				if UiLayout.intersects(r, o, 0) then
+					error(`recomendada encosta em {label}`)
 				end
 			end
-			for i, r in layout.Disasters do
-				if UiLayout.intersects(panel, r, gap - 0.01) then
-					error(`painel de níveis encosta no desastre {i}`)
+			for i, d in layout.Disasters do
+				if UiLayout.intersects(r, d, gap - 0.01) then
+					error(`recomendada encosta no desastre {i}`)
 				end
 			end
-			-- uma linha por desastre; rótulo (60% da linha) e "LV 30" (40%), 62% da altura (o resto é a barrinha)
-			t.equal(#layout.LevelRows, #DisasterConfig.List)
-			local row = layout.LevelRows[1]
-			local rw, rh = row.X1 - row.X0, (row.Y1 - row.Y0) * 0.62
-			for _, d in DisasterConfig.List do
-				if not textFits(`{d.Icon} {d.Name}`, rw * 0.6, rh) then
-					error(`desastre "{d.Name}" não cabe no painel de níveis`)
+			-- título em cima (40%) e nome do tier embaixo (50%), largura - 16
+			local rw, rh = r.X1 - r.X0 - 16 * s, r.Y1 - r.Y0
+			t.truthy(textFits("⭐ RECOMMENDED", rw, rh * 0.4))
+			for _, tier in TierConfig do
+				if not textFits(tier.DisplayName, rw, rh * 0.5) then
+					error(`"{tier.DisplayName}" não cabe na recomendada`)
 				end
 			end
-			t.truthy(textFits(`LV {MasteryConfig.MaxLevel}`, rw * 0.4, rh))
-			t.truthy(textFits("MAX", rw * 0.4, rh))
 		end)
 
 		t.test(`{name}: janelas cabem na tela (com o ajuste automático)`, function()
@@ -237,7 +270,8 @@ return function(t)
 		t.test(`{name}: textos dos botões cabem sem cortar (fonte >= {c.MinTextSize}px)`, function()
 			-- rótulo do Style.button: 86% da largura e 60% da altura; legenda dos atalhos: largura - 6 e 34%
 			local function buttonFits(text, size)
-				return textFits(text, size.W * s * 0.86, size.H * s * 0.6)
+				local ms = layout.MatchScale
+				return textFits(text, size.W * ms * 0.86, size.H * ms * 0.6)
 			end
 			for text, size in
 				{
@@ -256,11 +290,13 @@ return function(t)
 				end
 			end
 			-- progresso da run no relógio (o nome do mapa fica na linha de baixo)
-			if not textFits("100% EATEN", (c.Timer.W - 24) * s, 38 * s) then
+			if not textFits("100% EATEN", (c.Timer.W - 24) * layout.TimerScale, 38 * layout.TimerScale) then
 				error("progresso não cabe no relógio")
 			end
 			for _, map in MapConfig do
-				if not textFits(map.DisplayName, (c.Timer.W - 24) * s, c.TextRow * s) then
+				if
+					not textFits(map.DisplayName, (c.Timer.W - 24) * layout.TimerScale, c.TextRow * layout.TimerScale)
+				then
 					error(`nome do mapa "{map.DisplayName}" não cabe no relógio`)
 				end
 			end
@@ -270,7 +306,7 @@ return function(t)
 			-- nome da área no lugar do relógio (título de 38) e a linha "AREA 2 OF 5" (a barra mostra quanto falta)
 			for _, plan in CityPlans do
 				for _, zone in plan.Zones do
-					if not textFits(zone.Name, (c.Timer.W - 24) * s, 38 * s) then
+					if not textFits(zone.Name, (c.Timer.W - 24) * layout.TimerScale, 38 * layout.TimerScale) then
 						error(`nome da área "{zone.Name}" não cabe`)
 					end
 					if
@@ -294,14 +330,11 @@ return function(t)
 					end
 				end
 			end
-			t.truthy(textFits("AREA 5/5 • 100%", (c.Timer.W - 24) * s, c.TextRow * s))
+			t.truthy(textFits("AREA 5/5 • 100%", (c.Timer.W - 24) * layout.TimerScale, c.TextRow * layout.TimerScale))
 			-- avisos dos desastres
 			local toastW, toastH = layout.Toast.X1 - layout.Toast.X0, layout.Toast.Y1 - layout.Toast.Y0
 			if not textFits("TOO STRONG! DESTROY SMALLER THINGS FIRST", toastW, toastH) then
 				error("aviso de construção forte demais não cabe")
-			end
-			if not textFits("YOU CAN NOW DESTROY SHOPS & BIG HOUSES!", toastW, toastH) then
-				error("aviso de novo tier não cabe")
 			end
 			for _, d in DisasterConfig.List do
 				if not textFits(`{d.Icon} {d.Name} LV {MasteryConfig.MaxLevel}!`, toastW, toastH) then
