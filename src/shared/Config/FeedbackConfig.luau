@@ -18,6 +18,8 @@ export type Kind = { Sound: Sound, Shake: Shake, Number: Number }
 local POP = "rbxassetid://109359226723492"
 local COIN = "rbxassetid://135483737426662"
 local TIER_UP = "rbxassetid://134821092416328"
+-- estouro de bolha do resgate (Creator Store "bubble-pop-100784"), outro que o POP de comer
+local BUBBLE = "rbxassetid://137273815815490"
 
 local function sound(id: string, volume: number, pitch: number, jitter: number, minGap: number): Sound
 	return { Id = id, Volume = volume, Pitch = pitch, Jitter = jitter, MinGap = minGap }
@@ -79,7 +81,8 @@ local kinds: { [string]: Kind } = {
 	},
 	-- prêmio resgatado (diário/semanal) ou prêmio especial
 	Reward = {
-		Sound = sound("rbxasset://sounds/electronicpingshort.wav", 0.45, 1, 0, 0.2),
+		-- bolha estourando, um pouco mais grave e variando a cada resgate (parecido, não igual)
+		Sound = sound(BUBBLE, 0.5, 0.9, 0.06, 0.2),
 		Shake = { Ui = 4, Seconds = 0.25 }, -- o cartão do prêmio é grande: balanço leve (antes 12 "tremia a tela")
 		Number = { Color = { 255, 227, 107 }, Format = "+%d", Merge = 0, Hidden = true }, -- o cartão já mostra o prêmio
 	},

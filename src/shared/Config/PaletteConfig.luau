@@ -106,8 +106,22 @@ return table.freeze({
 		Sand = { 244, 224, 160 },
 		Dirt = { 150, 98, 60 },
 		DirtDark = { 128, 82, 50 },
-		Stone = { 214, 206, 214 },
-		Path = { 226, 222, 210 },
+		-- praça e caminhos um tom abaixo: lisos (sem textura) o claro estourava com a luz do lobby
+		Stone = { 186, 190, 212 },
+		Path = { 212, 202, 178 },
+		-- cidadezinha em volta do parque: asfalto azulado, calçada clara e faixa amarela
+		Hedge = { 84, 186, 60 },
+		-- árvores de blocos: folha (multiplica a textura) e tronco
+		Leaves = { 150, 214, 110 },
+		Trunk = { 122, 82, 50 },
+		PathBorder = { 196, 186, 166 },
+		Road = { 78, 84, 98 },
+		Sidewalk = { 218, 214, 204 },
+		RoadLine = { 255, 214, 80 },
+		-- fonte da praça: pedra creme, detalhes um tom abaixo e água azul-piscina
+		FountainStone = { 222, 206, 178 },
+		FountainTrim = { 190, 170, 140 },
+		FountainWater = { 92, 206, 236 },
 		Wood = { 170, 110, 60 },
 		Red = { 223, 70, 80 },
 		White = { 250, 248, 240 },

@@ -1,0 +1,125 @@
+{
+  "Basins": [
+    {
+      "Base": 0,
+      "BowlRadius": 9.5,
+      "FloorTop": 2,
+      "Inner": 10.2,
+      "Radius": 11.5,
+      "RimHeight": 0.6,
+      "RimOuter": 12.1,
+      "WallTop": 4,
+      "WaterTop": 3.2
+    },
+    {
+      "Base": 9.2,
+      "BowlRadius": 3.6,
+      "FloorTop": 10.799999999999999,
+      "Inner": 5.2,
+      "Radius": 6,
+      "RimHeight": 0.4,
+      "RimOuter": 6.4,
+      "WallTop": 11.799999999999999,
+      "WaterTop": 11.299999999999999
+    },
+    {
+      "Base": 14.299999999999999,
+      "BowlRadius": 1.8,
+      "FloorTop": 15.499999999999998,
+      "Inner": 2.6,
+      "Radius": 3.2,
+      "RimHeight": 0.3,
+      "RimOuter": 3.5,
+      "WallTop": 16.2,
+      "WaterTop": 15.849999999999998
+    }
+  ],
+  "Colors": {
+    "Stone": [
+      222,
+      206,
+      178
+    ],
+    "Trim": [
+      190,
+      170,
+      140
+    ]
+  },
+  "Columns": [
+    [
+      {
+        "Base": 3.2,
+        "Height": 0.8,
+        "Radius": 2.6
+      },
+      {
+        "Base": 4,
+        "Height": 2.6,
+        "Radius": 1.7
+      },
+      {
+        "Base": 6.6,
+        "Height": 1,
+        "Radius": 2.3
+      },
+      {
+        "Base": 7.6000000000000005,
+        "Height": 1.6,
+        "Radius": 1.4
+      }
+    ],
+    [
+      {
+        "Base": 11.299999999999999,
+        "Height": 0.6,
+        "Radius": 1.5
+      },
+      {
+        "Base": 11.899999999999999,
+        "Height": 1.8,
+        "Radius": 1
+      },
+      {
+        "Base": 13.7,
+        "Height": 0.6,
+        "Radius": 1.4
+      }
+    ]
+  ],
+  "Crown": {
+    "Base": 17.45,
+    "Size": 2
+  },
+  "Finial": [
+    {
+      "Base": 15.849999999999998,
+      "Height": 0.6,
+      "Radius": 0.9
+    },
+    {
+      "Base": 16.45,
+      "Height": 1,
+      "Radius": 0.55
+    }
+  ],
+  "Segments": 64,
+  "Spills": [
+    {
+      "Basin": 2,
+      "Curve": 1,
+      "Land": 7.4,
+      "Radius": 6.4,
+      "Top": 12.199999999999998,
+      "WaterTop": 3.200000000000001
+    },
+    {
+      "Basin": 3,
+      "Curve": 1,
+      "Land": 4.5,
+      "Radius": 3.5,
+      "Top": 16.499999999999996,
+      "WaterTop": 11.299999999999999
+    }
+  ]
+}
