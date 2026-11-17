@@ -28,4 +28,13 @@ return function(t)
 		t.truthy(#GuidePath.arrows(path, 1, 0, 5) == 5)
 		t.near(GuidePath.length(path), 20)
 	end)
+
+	t.test("setas somem ao atravessar a barreira para dentro da área nova", function()
+		-- barreira em x = 0 (de z -50 a 50); meio da área nova em x = 40
+		local boxes = { { X = 0, Z = 0, HalfX = 0.3, HalfZ = 50 } }
+		local finish = { 40, 0 }
+		t.falsy(GuidePath.inside(-10, 5, finish, boxes)) -- ainda do lado de fora
+		t.truthy(GuidePath.inside(3, 5, finish, boxes)) -- passou da barreira
+		t.truthy(GuidePath.inside(40, 0, finish, boxes))
+	end)
 end

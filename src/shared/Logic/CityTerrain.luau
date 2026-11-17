@@ -28,7 +28,14 @@ export type Result = {
 	Half: { number }, -- meia-largura da grade da cidade, X e Z
 }
 
-type Grid = { Width: number, Depth: number, Kind: { string }, Height: { number }, Zone: { number } }
+type Grid = {
+	Width: number,
+	Depth: number,
+	Kind: { string },
+	Height: { number },
+	Zone: { number },
+	Occupied: { boolean },
+}
 type Template = { Footprint: { number } }
 type Biome = { [string]: any }
 type Rng = {
@@ -241,11 +248,14 @@ local function lines(out: { Slab }, grid: Grid, biome: Biome, cfg: any)
 				while kindAt(x + 1 + runRight, z) == "Runway" do
 					runRight += 1
 				end
+				-- sem faixa embaixo de avião parado na pista (o pneu encostaria na pintura)
 				if
 					runLeft == runRight
 					and kindAt(x, z + 1) == "Runway"
 					and not nearSea(x, z)
 					and not nearSea(x, z + 1)
+					and not grid.Occupied[z * w + x + 1]
+					and not grid.Occupied[(z + 1) * w + x + 1]
 				then
 					local cx, cz = (x + 0.5 - w / 2) * size, (z + 1 - d / 2) * size
 					addLine(cx - 0.6, runwayTop, cz - 3, cx + 0.6, top, cz + 3)

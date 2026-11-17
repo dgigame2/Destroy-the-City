@@ -5,7 +5,7 @@
 
 return table.freeze({
 	-- Mudou as plantas/geração das cidades? Aumente: runs salvas de versões antigas recomeçam a cidade.
-	LayoutVersion = 7,
+	LayoutVersion = 9,
 	CellSize = 3, -- lado de cada célula da grade
 	PlanUnit = 6, -- as plantas (CityPlans) são desenhadas em unidades de 6 studs
 	WalkCells = 1, -- largura da calçada (em células) em volta das ruas

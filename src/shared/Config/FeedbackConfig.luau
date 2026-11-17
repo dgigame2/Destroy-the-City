@@ -95,6 +95,12 @@ local kinds: { [string]: Kind } = {
 		Shake = { Camera = 0.6, Seconds = 0.35 },
 		Number = { Color = { 255, 227, 107 }, Format = "SIZE %d", Merge = 0 },
 	},
+	-- fim de uma leva grande de destruição (número = dinheiro somado da leva, no aviso do combo)
+	Burst = {
+		Sound = sound(TIER_UP, 0.5, 1.25, 0.05, 0.5),
+		Shake = { Camera = 0.8, Seconds = 0.35 },
+		Number = { Color = { 125, 255, 138 }, Format = "+%d 💵", Merge = 0 },
+	},
 	-- área limpa (número = gemas ganhas)
 	ZoneClear = {
 		Sound = sound(TIER_UP, 0.7, 0.85, 0, 1),

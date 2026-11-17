@@ -27,6 +27,40 @@ function GuidePath.nearestGate(x: number, z: number, boxes: { Box }): Point?
 	return best
 end
 
+-- O segmento (ax, az) -> (bx, bz) atravessa a caixa? (método das faixas; a caixa ganha `pad` de folga)
+local function segmentHitsBox(ax: number, az: number, bx: number, bz: number, box: Box, pad: number): boolean
+	local t0, t1 = 0, 1
+	for _, axis in { { ax, bx - ax, box.X, box.HalfX + pad }, { az, bz - az, box.Z, box.HalfZ + pad } } do
+		local origin, delta, center, half = axis[1], axis[2], axis[3], axis[4]
+		local lo, hi = center - half, center + half
+		if math.abs(delta) < 1e-9 then
+			if origin < lo or origin > hi then
+				return false
+			end
+		else
+			local ta, tb = (lo - origin) / delta, (hi - origin) / delta
+			if ta > tb then
+				ta, tb = tb, ta
+			end
+			t0, t1 = math.max(t0, ta), math.min(t1, tb)
+			if t0 > t1 then
+				return false
+			end
+		end
+	end
+	return true
+end
+
+-- Já entrou na área nova? Do jogador até o meio da área (`finish`) não cruza mais nenhuma barreira dela.
+function GuidePath.inside(x: number, z: number, finish: Point, boxes: { Box }): boolean
+	for _, box in boxes do
+		if segmentHitsBox(x, z, finish[1], finish[2], box, 0.5) then
+			return false
+		end
+	end
+	return true
+end
+
 function GuidePath.length(points: { Point }): number
 	local total = 0
 	for i = 1, #points - 1 do

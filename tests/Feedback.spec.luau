@@ -17,6 +17,7 @@ local ACTIONS = {
 	"Spin",
 	"TierUp",
 	"ZoneClear",
+	"Burst", -- fim de uma leva grande de destruição
 }
 
 return function(t)

@@ -6,6 +6,8 @@
 -- Garden e Market são os bairros das primeiras etapas: cheios de coisas pequenas (tier 1) e médias (tier 2),
 -- para o começo ser varrer uma região inteira, não caçar coisinhas entre casas.
 
+local ModelCatalog = if script then require(script.Parent.ModelCatalog) else require("./ModelCatalog")
+
 type Mix = { [string]: number }
 type Spec = { Ground: string, Buildings: Mix, Nature: Mix, NatureChance: number, BlockFill: number }
 export type Fill = {
@@ -16,6 +18,7 @@ export type Fill = {
 	Plaza: Mix,
 	Boats: Mix,
 	BoatChance: number,
+	Planner: any?,
 }
 
 -- chance = natureza no que sobrar; blockFill = quanto o miolo dos quarteirões é preenchido com construções
@@ -111,16 +114,93 @@ local function common(nature: Mix, yard: Mix, small: Mix, market: Mix): { [strin
 	}
 end
 
-local GARDEN_NATURE = { Tree = 5, Bush = 3, Flowers = 3, Hedge = 2, Rock = 0.5, Mushroom = 1 }
+local GARDEN_NATURE = { Tree = 5, Bush = 3, Flowers = 1, Hedge = 2, Rock = 0.5, Mushroom = 1 }
 local BEACH_NATURE = { Palm = 5, Bush = 2, Flowers = 2, Hedge = 1, Rock = 1 }
 local FROST_NATURE = { SnowPine = 5, IceCrystal = 1.5, Snowman = 1.5, Bush = 1, Rock = 1 }
 
-local function fill(nature: Mix, yard: Mix, small: Mix, market: Mix, extra: { [string]: Spec }, beach: Mix): Fill
+-- Gerador planejado (Logic/CityGen + Logic/Placement + Config/ModelCatalog). Uma cidade por vez: hoje só a
+-- Garden Village usa; Beach e Frost continuam no gerador antigo até a Garden ser aprovada.
+local function group(chance: number, min: number, max: number, radius: number)
+	return table.freeze({ Chance = chance, Min = min, Max = max, Radius = radius })
+end
+
+local GARDEN_PLANNER = table.freeze({
+	Catalog = ModelCatalog,
+	BlockReach = 8, -- prédio no miolo só até 24 studs da calçada; mais fundo vira quintal
+	FrontClear = 1, -- sem árvore na faixa da fachada
+	Groups = group(0.035, 2, 4, 3), -- quintais e bairros
+	DistrictGroups = table.freeze({
+		Garden = group(0.18, 3, 6, 3), -- 1ª etapa: jardim (canteiros, mesas, bancos) em ilhas
+		Market = group(0.06, 2, 4, 3),
+		Park = group(0.09, 3, 6, 4),
+		Downtown = group(0.015, 1, 3, 2),
+		-- pátios (asfalto): poucos cones e contêineres soltos
+		Industrial = group(0.006, 1, 2, 3),
+		Harbor = group(0.006, 1, 2, 3),
+		Airport = group(0.003, 1, 2, 3),
+	}),
+	DrivewayCar = 0.45,
+	Houses = table.freeze({
+		Bungalow = true,
+		House = true,
+		Cottage = true,
+		BigHouse = true,
+		Townhouse = true,
+		Villa = true,
+		BeachHouse = true,
+		SnowCabin = true,
+	}),
+	EntrancePots = 0.3,
+	Storefronts = table.freeze({
+		Shop = true,
+		Cafe = true,
+		CornerStore = true,
+		Supermarket = true,
+		Bank = true,
+		SurfShop = true,
+		Hotel = true,
+	}),
+	Sidewalk = table.freeze({ Bin = 2, Hydrant = 1.5, Mailbox = 1, BusStop = 0.6 }),
+	SidewalkChance = 0.07,
+	Beach = table.freeze({
+		Anchor = table.freeze({ Umbrella = 1 }),
+		Companions = table.freeze({ Towel = 2, Umbrella = 1, Palm = 0.4 }),
+		NearWater = 8, -- células (24 studs) da água
+		Group = group(0.03, 1, 3, 3),
+	}),
+	Runway = table.freeze({ Plane = 1 }),
+	RunwayChance = 0.05,
+	Apron = table.freeze({ Plane = 1 }),
+	ApronChance = 0.0015,
+	Wild = group(0.04, 2, 5, 3), -- bosque na margem antes do mar (mata fechada é natural)
+	-- densidade com função (mais coisa para destruir sem perder a cara de cidade)
+	Yard = table.freeze({
+		Mailbox = 0.7,
+		Fence = 0.75,
+		BackGap = 3, -- cerca a 9 studs do fundo da casa
+		Plant = 0.85,
+		Plants = table.freeze({ Bush = 3, Hedge = 2, Flowers = 1 }),
+	}),
+	CurbCars = table.freeze({ Chance = 0.6, Spacing = 19, MinRoad = 6 }),
+	ParkingChance = 0.9, -- estacionamento lotado
+	PlazaChance = 0.2, -- praça com bancos, vasos e carrinhos (cada um longe do outro igual)
+})
+
+local function fill(
+	nature: Mix,
+	yard: Mix,
+	small: Mix,
+	market: Mix,
+	extra: { [string]: Spec },
+	beach: Mix,
+	planner: any?
+): Fill
 	local districts = common(nature, yard, small, market)
 	for name, s in extra do
 		districts[name] = s
 	end
 	return table.freeze({
+		Planner = planner,
 		Districts = table.freeze(districts),
 		Sidewalk = { Bin = 2, Hydrant = 1.5, FlowerPot = 2, Bench = 1.5, Mailbox = 1, BusStop = 0.5, Cone = 0.4 },
 		Parking = { Car = 6, Bus = 0.6, Truck = 1 },
@@ -135,15 +215,16 @@ end
 return table.freeze({
 	Garden = fill(
 		GARDEN_NATURE,
-		{ Tree = 4, Bush = 3, Flowers = 3, Hedge = 3, Fence = 1 },
-		{ Flowers = 3, Hedge = 3, Bush = 3, PicnicTable = 2, Bench = 2, FlowerPot = 2, Mushroom = 1.5, Fence = 1 },
-		{ FoodCart = 3, IceCreamStand = 2, BusStop = 1, Car = 2, Tree = 3, Umbrella = 1.5, Pine = 1 },
+		{ Tree = 4, Bush = 3, Flowers = 1, Hedge = 3, Fence = 1 },
+		{ Flowers = 1, Hedge = 3, Bush = 3, PicnicTable = 2, Bench = 2, FlowerPot = 2, Mushroom = 1.5, Fence = 1 },
+		{ FoodCart = 3, IceCreamStand = 2, BusStop = 1, Car = 2, Tree = 3, Pine = 1 },
 		{},
 		{
 			Umbrella = 2,
 			Towel = 3,
 			Palm = 1,
-		}
+		},
+		GARDEN_PLANNER
 	),
 	Beach = fill(
 		BEACH_NATURE,

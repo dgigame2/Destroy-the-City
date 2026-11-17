@@ -16,6 +16,8 @@
 -- balanceamento garante que, ao terminar uma etapa, você já come tudo da próxima (varre região por região).
 -- Paredes invisíveis acompanham a costa (ninguém entra no mar).
 
+local Placement = if script then require(script.Parent.Placement) else require("./Placement")
+
 local CityGen = {}
 
 export type Rect = { number } -- {x0, z0, x1, z1} em células; x1/z1 são exclusivos
@@ -106,6 +108,11 @@ export type Layout = {
 	ZoneNames: { string },
 	Steps: { StepInfo },
 	Problems: { string }, -- marcos que não couberam (os testes exigem lista vazia)
+	-- só no gerador planejado (Fill.Planner): distâncias mínimas por grupo e células reservadas de acesso
+	-- (porta / entrada de carro na calçada: nada de poste, vaso ou banco em cima)
+	Planner: Planner?,
+	Index: Placement.Index?,
+	Access: { [number]: boolean }?,
 }
 
 type Template = { Tier: number, Footprint: { number } }
@@ -151,6 +158,38 @@ export type Fill = {
 	Boats: { [string]: number }, -- barcos na água do porto
 	BoatChance: number,
 	Wild: { [string]: number }, -- natureza da margem antes do mar (Coast.Wild): destrutível, conta na área
+	Planner: Planner?, -- gerador planejado (regras espaciais); nil = gerador antigo (sorteio por célula)
+}
+
+-- Grupo natural: Chance = chance de uma célula livre virar centro de grupo; Min/Max itens; Radius em células.
+export type GroupSpec = { Chance: number, Min: number, Max: number, Radius: number }
+
+-- Regras da cidade planejada (DistrictConfig). Ordem: construções -> acessos -> infraestrutura -> natureza
+-- -> decoração de cada região. Catalog = Config/ModelCatalog.
+export type Planner = {
+	Catalog: Placement.Catalog,
+	BlockReach: number, -- construção do miolo só até tantas células da calçada (mais fundo = quintal)
+	FrontClear: number, -- faixa (células) junto da calçada sem árvore (não tampa a fachada)
+	Groups: GroupSpec, -- grupos de natureza padrão
+	DistrictGroups: { [string]: GroupSpec }?, -- por bairro (ex.: jardim da 1ª etapa mais cheio)
+	DrivewayCar: number, -- chance de uma casa ter carro na entrada
+	Houses: { [string]: boolean }, -- modelos que têm entrada de carro
+	EntrancePots: number, -- chance de vasos ao lado da porta de lojas/cafés
+	Storefronts: { [string]: boolean },
+	Sidewalk: { [string]: number },
+	SidewalkChance: number,
+	Beach: { Anchor: { [string]: number }, Companions: { [string]: number }, NearWater: number, Group: GroupSpec },
+	Runway: { [string]: number }, -- aviões na pista
+	RunwayChance: number,
+	Apron: { [string]: number }, -- aviões no pátio do aeroporto
+	ApronChance: number,
+	Wild: GroupSpec, -- grupos na margem antes do mar
+	-- quintal das casas: chance de caixa de correio, cerca no fundo (a BackGap células) e planta atrás
+	Yard: { Mailbox: number, Fence: number, BackGap: number, Plant: number, Plants: { [string]: number } }?,
+	-- carros estacionados no meio-fio (só em ruas largas, longe de esquinas e portas)
+	CurbCars: { Chance: number, Spacing: number, MinRoad: number }?,
+	ParkingChance: number?, -- estacionamento: chance por célula (lotado = alto)
+	PlazaChance: number?,
 }
 
 local DIRS = { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } }
@@ -632,6 +671,9 @@ local function occupy(layout: Layout, rng: Rng, cfg: Config, name: string, r: Re
 		Step = grid.Step[first],
 		Cells = r,
 	})
+	if layout.Index and layout.Planner then
+		Placement.register(layout.Index, layout.Planner.Catalog, name, cx, cz)
+	end
 end
 
 -- Escolhe um modelo do sorteio entre os tamanhos minTier..cap da etapa.
@@ -640,12 +682,18 @@ local function pick(
 	templates: { [string]: Template },
 	mix: { [string]: number },
 	cap: number,
-	minTier: number?
+	minTier: number?,
+	filter: ((string) -> boolean)?
 ): string?
 	local allowed = {}
 	for name, weight in mix do
 		local template = templates[name]
-		if template and template.Tier <= cap and template.Tier >= (minTier or 1) then
+		if
+			template
+			and template.Tier <= cap
+			and template.Tier >= (minTier or 1)
+			and (filter == nil or filter(name))
+		then
 			allowed[name] = weight
 		end
 	end
@@ -697,10 +745,189 @@ local function placeSites(layout: Layout, plan: Plan, templates: { [string]: Tem
 	end
 end
 
+-- Centro (studs) de um retângulo de células.
+local function centerOf(layout: Layout, cfg: Config, r: Rect): (number, number)
+	return CityGen.cellToWorld(layout.Grid, cfg.CellSize, (r[1] + r[3]) / 2, (r[2] + r[4]) / 2)
+end
+
+-- Gerador planejado: o modelo respeita o catálogo (chão, bairro, distância do mesmo grupo) em `r`?
+local function planOk(layout: Layout, cfg: Config, name: string, r: Rect): boolean
+	local planner, idx = layout.Planner, layout.Index
+	if planner == nil or idx == nil then
+		return true
+	end
+	local i = index(layout.Grid, r[1], r[2])
+	if i == nil then
+		return false
+	end
+	if not Placement.allowed(planner.Catalog, name, layout.Grid.Kind[i], layout.Grid.District[i]) then
+		return false
+	end
+	local cx, cz = centerOf(layout, cfg, r)
+	return Placement.spaced(idx, planner.Catalog, name, cx, cz)
+end
+
+-- Tenta colocar `name` no retângulo que começa em (x0, z0); devolve o retângulo se colocou.
+local function tryPlace(
+	layout: Layout,
+	templates: { [string]: Template },
+	rng: Rng,
+	cfg: Config,
+	name: string,
+	x0: number,
+	z0: number,
+	rotation: number,
+	ground: string?,
+	district: string?
+): Rect?
+	local template = templates[name]
+	if template == nil then
+		return nil
+	end
+	local cw, cd = cellsFor(template, rotation, cfg)
+	local r = { x0, z0, x0 + cw, z0 + cd }
+	if fits(layout.Grid, r, ground, district) and planOk(layout, cfg, name, r) then
+		occupy(layout, rng, cfg, name, r, rotation)
+		return r
+	end
+	return nil
+end
+
+-- No gerador planejado, frente de rua e miolo só recebem construções e barraquinhas (carro, árvore, banco e
+-- guarda-sol têm lugar próprio).
+local function buildingFilter(layout: Layout): ((string) -> boolean)?
+	local planner = layout.Planner
+	if planner == nil then
+		return nil
+	end
+	return function(name: string): boolean
+		local category = Placement.category(planner.Catalog, name)
+		return category == "Building" or category == "Stall"
+	end
+end
+
+-- Construção de frente para a calçada na direção `dirIndex`: reserva a calçada na frente da porta (nada em
+-- cima), põe carro na entrada (casas) e vasos ao lado da porta (lojas). Só no gerador planejado.
+local function dressFront(
+	layout: Layout,
+	templates: { [string]: Template },
+	rng: Rng,
+	cfg: Config,
+	name: string,
+	r: Rect,
+	dirIndex: number
+)
+	local planner, access = layout.Planner, layout.Access
+	if planner == nil or access == nil or Placement.category(planner.Catalog, name) ~= "Building" then
+		return
+	end
+	local grid = layout.Grid
+	local d = DIRS[dirIndex]
+	-- células de calçada logo na frente: o meio da fachada (porta) e as vizinhas
+	local mx, mz = (r[1] + r[3] - 1) // 2, (r[2] + r[4] - 1) // 2
+	local fx = if d[1] < 0 then r[1] - 1 elseif d[1] > 0 then r[3] else mx
+	local fz = if d[2] < 0 then r[2] - 1 elseif d[2] > 0 then r[4] else mz
+	local ax, az = math.abs(d[2]), math.abs(d[1]) -- ao longo da fachada
+	for k = -1, 1 do
+		local j = index(grid, fx + ax * k, fz + az * k)
+		if j and grid.Kind[j] == "Walk" then
+			access[j] = true
+		end
+	end
+	-- um vaso ao lado da porta (lojas e cafés), na calçada; o lado varia
+	if planner.Storefronts[name] and rng:next() < planner.EntrancePots then
+		local k = if rng:next() < 0.5 then -2 else 2
+		local x, z = fx + ax * k, fz + az * k
+		local j = index(grid, x, z)
+		if j and not access[j] then
+			tryPlace(layout, templates, rng, cfg, "FlowerPot", x, z, 0, "Walk", nil)
+		end
+	end
+	-- quintal completo das casas: caixa de correio na calçada, cerca no fundo do lote e uma planta atrás
+	local yard = planner.Yard
+	if planner.Houses[name] and yard then
+		local i = index(grid, r[1], r[2]) :: number
+		local ground, district = grid.Kind[i], grid.District[i]
+		if rng:next() < yard.Mailbox then
+			local k = if rng:next() < 0.5 then -2 else 2
+			local x, z = fx + ax * k, fz + az * k
+			local j = index(grid, x, z)
+			if j and not access[j] then
+				tryPlace(layout, templates, rng, cfg, "Mailbox", x, z, 0, "Walk", nil)
+			end
+		end
+		if rng:next() < yard.Fence and templates.Fence then
+			-- cerca deitada ao longo do fundo do lote (paralela à fachada), um pedaço atrás do outro; se o fundo
+			-- já tem algo, a linha chega mais perto da casa (até encostar)
+			local rotation = if d[1] == 0 then 0 else 90
+			local fw, fd = cellsFor(templates.Fence, rotation, cfg)
+			for gap = yard.BackGap, 0, -1 do
+				local placed = 0
+				if d[1] == 0 then
+					local bz = if d[2] < 0 then r[4] + gap else r[2] - gap - 1
+					for x = r[1], r[3] - fw, fw do
+						if tryPlace(layout, templates, rng, cfg, "Fence", x, bz, rotation, ground, district) then
+							placed += 1
+						end
+					end
+				else
+					local bx = if d[1] < 0 then r[3] + gap else r[1] - gap - 1
+					for z = r[2], r[4] - fd, fd do
+						if tryPlace(layout, templates, rng, cfg, "Fence", bx, z, rotation, ground, district) then
+							placed += 1
+						end
+					end
+				end
+				if placed > 0 then
+					break
+				end
+			end
+		end
+		if rng:next() < yard.Plant then
+			local plant = pick(rng, templates, yard.Plants, capAt(layout, i), minAt(layout, i, cfg))
+			if plant then
+				-- no meio do quintal, logo atrás da casa (entre a casa e a cerca)
+				local rotation = rng:int(0, 3) * 90
+				local pw, pd = cellsFor(templates[plant], rotation, cfg)
+				local px = if d[1] == 0 then mx else (if d[1] < 0 then r[3] else r[1] - pw)
+				local pz = if d[2] == 0 then mz else (if d[2] < 0 then r[4] else r[2] - pd)
+				tryPlace(layout, templates, rng, cfg, plant, px, pz, rotation, ground, district)
+			end
+		end
+	end
+	-- carro na entrada: ao lado da casa, encostado na calçada, virado para a rua
+	if planner.Houses[name] and rng:next() < planner.DrivewayCar then
+		local car = templates.Car
+		if car == nil then
+			return
+		end
+		local i = index(grid, r[1], r[2]) :: number
+		if car.Tier > capAt(layout, i) or car.Tier < minAt(layout, i, cfg) then
+			return
+		end
+		local rotation = ROTATION_FOR[dirIndex]
+		local cw, cd = cellsFor(car, rotation, cfg)
+		for _, side in { 1, -1 } do
+			local x0, z0
+			if d[1] == 0 then
+				x0 = if side > 0 then r[3] else r[1] - cw
+				z0 = if d[2] < 0 then r[2] else r[4] - cd
+			else
+				z0 = if side > 0 then r[4] else r[2] - cd
+				x0 = if d[1] < 0 then r[1] else r[3] - cw
+			end
+			if tryPlace(layout, templates, rng, cfg, "Car", x0, z0, rotation, grid.Kind[i], grid.District[i]) then
+				break
+			end
+		end
+	end
+end
+
 -- Terrenos de frente para a rua: cada célula de grama encostada numa calçada recebe uma construção virada
 -- para a calçada (se couber).
 local function fillFrontage(layout: Layout, fill: Fill, templates: { [string]: Template }, rng: Rng, cfg: Config)
 	local grid = layout.Grid
+	local filter = buildingFilter(layout)
 	local fronts = {}
 	for z = 0, grid.Depth - 1 do
 		for x = 0, grid.Width - 1 do
@@ -732,7 +959,7 @@ local function fillFrontage(layout: Layout, fill: Fill, templates: { [string]: T
 		local rotation = ROTATION_FOR[dirIndex]
 		local d = DIRS[dirIndex]
 		for _ = 1, cfg.FrontageTries do
-			local name = pick(rng, templates, spec.Buildings, cap, minAt(layout, i, cfg))
+			local name = pick(rng, templates, spec.Buildings, cap, minAt(layout, i, cfg), filter)
 			if name == nil then
 				break
 			end
@@ -746,9 +973,9 @@ local function fillFrontage(layout: Layout, fill: Fill, templates: { [string]: T
 				z0 = z - (cd - 1) // 2
 				x0 = if d[1] < 0 then x else x - cw + 1
 			end
-			local r = { x0, z0, x0 + cw, z0 + cd }
-			if fits(grid, r, spec.Ground, grid.District[i]) then
-				occupy(layout, rng, cfg, name, r, rotation)
+			local r = tryPlace(layout, templates, rng, cfg, name, x0, z0, rotation, spec.Ground, grid.District[i])
+			if r then
+				dressFront(layout, templates, rng, cfg, name, r, dirIndex)
 				break
 			end
 		end
@@ -769,24 +996,27 @@ local function nearestWalk(grid: Grid, x: number, z: number, reach: number): num
 end
 
 -- Miolo dos quarteirões: mais construções do bairro, viradas para a calçada mais perto (cidade cheia).
+-- Planejado: só até BlockReach células da calçada (mais fundo vira quintal / jardim, sem prédio sem acesso).
 local function fillBlocks(layout: Layout, fill: Fill, templates: { [string]: Template }, rng: Rng, cfg: Config)
 	local grid = layout.Grid
+	local filter = buildingFilter(layout)
+	local reach = if layout.Planner then layout.Planner.BlockReach else 20
 	for z = 0, grid.Depth - 1 do
 		for x = 0, grid.Width - 1 do
 			local i = index(grid, x, z) :: number
 			local spec = fill.Districts[grid.District[i]]
 			if spec and not grid.Occupied[i] and grid.Kind[i] == spec.Ground and rng:next() < spec.BlockFill then
-				local dirIndex = nearestWalk(grid, x, z, 20) or rng:int(1, 4)
-				local rotation = ROTATION_FOR[dirIndex]
+				local dirIndex = nearestWalk(grid, x, z, reach)
+				if dirIndex == nil and layout.Planner then
+					continue
+				end
+				local rotation = ROTATION_FOR[dirIndex or rng:int(1, 4)]
 				for _ = 1, cfg.FrontageTries do
-					local name = pick(rng, templates, spec.Buildings, capAt(layout, i), minAt(layout, i, cfg))
+					local name = pick(rng, templates, spec.Buildings, capAt(layout, i), minAt(layout, i, cfg), filter)
 					if name == nil then
 						break
 					end
-					local cw, cd = cellsFor(templates[name], rotation, cfg)
-					local r = { x, z, x + cw, z + cd }
-					if fits(grid, r, spec.Ground, grid.District[i]) then
-						occupy(layout, rng, cfg, name, r, rotation)
+					if tryPlace(layout, templates, rng, cfg, name, x, z, rotation, spec.Ground, grid.District[i]) then
 						break
 					end
 				end
@@ -840,12 +1070,9 @@ local function scatter(
 			then
 				local name = pick(rng, templates, mix, capAt(layout, i), minAt(layout, i, cfg))
 				if name then
-					local rotation = rng:int(0, 1) * 90
-					local cw, cd = cellsFor(templates[name], rotation, cfg)
-					local r = { x, z, x + cw, z + cd }
-					if fits(grid, r, ground, nil) then
-						occupy(layout, rng, cfg, name, r, rotation)
-					end
+					-- planejado: estacionamento com todos os carros alinhados (mesma direção)
+					local rotation = if layout.Planner and ground == "Asphalt" then 0 else rng:int(0, 1) * 90
+					tryPlace(layout, templates, rng, cfg, name, x, z, rotation, ground, nil)
 				end
 			end
 		end
@@ -881,6 +1108,359 @@ local function fillSidewalks(layout: Layout, fill: Fill, templates: { [string]: 
 						occupy(layout, rng, cfg, name, r, 0)
 					end
 				end
+			end
+		end
+	end
+end
+
+-- ===== Gerador planejado (Fill.Planner) =====
+
+-- Tem calçada/rua a até `n` células (quadrado em volta)?
+local function nearWalk(grid: Grid, x: number, z: number, n: number): boolean
+	for dx = -n, n do
+		for dz = -n, n do
+			local j = index(grid, x + dx, z + dz)
+			if j and (grid.Kind[j] == "Walk" or grid.Kind[j] == "Road") then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Rotação de um objeto de convivência: de frente para a calçada mais perto (banco olhando o caminho).
+local function faceWalk(grid: Grid, rng: Rng, x: number, z: number): number
+	local dirIndex = nearestWalk(grid, x, z, 8)
+	return if dirIndex then ROTATION_FOR[dirIndex] else rng:int(0, 3) * 90
+end
+
+-- Grupos naturais: uma célula livre vira centro (chance `spec.Chance`), recebe o item principal (de
+-- preferência uma árvore) e de Min a Max itens em volta, espalhados em ângulos e distâncias diferentes.
+-- Cada item respeita o catálogo (distância mínima do mesmo grupo). Nada em fila, sobra espaço vazio.
+local function placeGroups(
+	layout: Layout,
+	templates: { [string]: Template },
+	rng: Rng,
+	cfg: Config,
+	ground: string,
+	mixFor: (number) -> { [string]: number }?,
+	specFor: (number) -> GroupSpec,
+	cellOk: ((number, number, number) -> boolean)?
+)
+	local planner = layout.Planner :: Planner
+	local grid = layout.Grid
+	local catalog = planner.Catalog
+	local function isTree(name: string): boolean
+		return Placement.category(catalog, name) == "Tree"
+	end
+	local function notTree(name: string): boolean
+		return not isTree(name)
+	end
+	for z = 0, grid.Depth - 1 do
+		for x = 0, grid.Width - 1 do
+			local i = index(grid, x, z) :: number
+			if grid.Kind[i] ~= ground or grid.Occupied[i] or grid.Edge[i] then
+				continue
+			end
+			local mix = mixFor(i)
+			if mix == nil or (cellOk and not cellOk(i, x, z)) then
+				continue
+			end
+			local spec = specFor(i)
+			if rng:next() >= spec.Chance then
+				continue
+			end
+			local cap, low = capAt(layout, i), minAt(layout, i, cfg)
+			-- árvore no centro (não na faixa da fachada); sem árvore possível, qualquer item do grupo
+			local anchor = if nearWalk(grid, x, z, planner.FrontClear)
+				then nil
+				else pick(rng, templates, mix, cap, low, isTree)
+			anchor = anchor or pick(rng, templates, mix, cap, low, notTree)
+			if anchor == nil then
+				continue
+			end
+			if tryPlace(layout, templates, rng, cfg, anchor, x, z, rng:int(0, 3) * 90, ground, nil) == nil then
+				continue
+			end
+			local count = Placement.groupSize(spec.Min, spec.Max, rng:next())
+			for k = 1, count do
+				local name = pick(rng, templates, mix, cap, low, notTree)
+				if name == nil then
+					break
+				end
+				local dx, dz = Placement.groupOffset(k, spec.Radius, rng:next())
+				local px, pz = x + dx, z + dz
+				local rotation = if Placement.category(catalog, name) == "Leisure"
+					then faceWalk(grid, rng, px, pz)
+					else rng:int(0, 3) * 90
+				tryPlace(layout, templates, rng, cfg, name, px, pz, rotation, ground, nil)
+			end
+		end
+	end
+end
+
+-- Natureza dos bairros em grupos (jardins, quintais, parques).
+local function fillGroups(layout: Layout, fill: Fill, templates: { [string]: Template }, rng: Rng, cfg: Config)
+	local planner = layout.Planner :: Planner
+	local grid = layout.Grid
+	local grounds = {}
+	for _, spec in fill.Districts do
+		grounds[spec.Ground] = true
+	end
+	-- ordem fixa dos tipos de chão (determinística)
+	for _, ground in { "Lot", "Asphalt" } do
+		if not grounds[ground] then
+			continue
+		end
+		placeGroups(layout, templates, rng, cfg, ground, function(i)
+			local spec = fill.Districts[grid.District[i]]
+			return if spec and spec.Ground == ground and spec.NatureChance > 0 then spec.Nature else nil
+		end, function(i)
+			local district = grid.District[i]
+			return planner.DistrictGroups and planner.DistrictGroups[district] or planner.Groups
+		end, nil)
+	end
+end
+
+-- Distância (em células) de cada célula até a água (mar, rio, porto): busca em largura a partir da água.
+local function waterDistance(grid: Grid): { number }
+	local dist = {}
+	local queue = {}
+	for i = 1, grid.Width * grid.Depth do
+		local kind = grid.Kind[i]
+		if kind == "Sea" or kind == "Water" then
+			dist[i] = 0
+			table.insert(queue, i)
+		end
+	end
+	local head = 1
+	while head <= #queue do
+		local i = queue[head]
+		head += 1
+		local x, z = (i - 1) % grid.Width, (i - 1) // grid.Width
+		for _, d in DIRS do
+			local j = index(grid, x + d[1], z + d[2])
+			if j and dist[j] == nil then
+				dist[j] = dist[i] + 1
+				table.insert(queue, j)
+			end
+		end
+	end
+	return dist
+end
+
+-- Praia: grupos de guarda-sol (com toalhas, palmeira...) só na areia perto da água; o resto da areia fica livre.
+local function fillBeach(layout: Layout, templates: { [string]: Template }, rng: Rng, cfg: Config)
+	local planner = layout.Planner :: Planner
+	local beach = planner.Beach
+	local grid = layout.Grid
+	local dist = waterDistance(grid)
+	local catalog = planner.Catalog
+	for z = 0, grid.Depth - 1 do
+		for x = 0, grid.Width - 1 do
+			local i = index(grid, x, z) :: number
+			if
+				grid.Kind[i] ~= "Sand"
+				or grid.Occupied[i]
+				or grid.Edge[i]
+				or (dist[i] or math.huge) > beach.NearWater
+				or rng:next() >= beach.Group.Chance
+			then
+				continue
+			end
+			local cap, low = capAt(layout, i), minAt(layout, i, cfg)
+			local anchor = pick(rng, templates, beach.Anchor, cap, low)
+			if anchor == nil or tryPlace(layout, templates, rng, cfg, anchor, x, z, 0, "Sand", nil) == nil then
+				continue
+			end
+			local count = Placement.groupSize(beach.Group.Min, beach.Group.Max, rng:next())
+			for k = 1, count do
+				local name = pick(rng, templates, beach.Companions, cap, low)
+				if name == nil then
+					break
+				end
+				local dx, dz = Placement.groupOffset(k, beach.Group.Radius, rng:next())
+				local j = index(grid, x + dx, z + dz)
+				-- companheiros também ficam perto da água (não sobem para a rua)
+				if j and (dist[j] or math.huge) <= beach.NearWater then
+					local rotation = if Placement.category(catalog, name) == "Beach" then rng:int(0, 3) * 90 else 0
+					tryPlace(layout, templates, rng, cfg, name, x + dx, z + dz, rotation, "Sand", nil)
+				end
+			end
+		end
+	end
+end
+
+-- Aeroporto: aviões na pista (alinhados com ela) e no pátio, respeitando a distância entre aviões.
+local function fillAirport(layout: Layout, templates: { [string]: Template }, rng: Rng, cfg: Config)
+	local planner = layout.Planner :: Planner
+	local grid = layout.Grid
+	local function runLength(x: number, z: number, dx: number, dz: number): number
+		local n = 0
+		while true do
+			local j = index(grid, x + dx * (n + 1), z + dz * (n + 1))
+			if j == nil or grid.Kind[j] ~= "Runway" then
+				return n
+			end
+			n += 1
+		end
+	end
+	for z = 0, grid.Depth - 1 do
+		for x = 0, grid.Width - 1 do
+			local i = index(grid, x, z) :: number
+			local kind = grid.Kind[i]
+			if grid.Occupied[i] then
+				continue
+			end
+			if kind == "Runway" and rng:next() < planner.RunwayChance then
+				local name = pick(rng, templates, planner.Runway, capAt(layout, i), minAt(layout, i, cfg))
+				if name then
+					-- frente do avião (-Z) ao longo do lado comprido da pista
+					local alongX = runLength(x, z, 1, 0) + runLength(x, z, -1, 0)
+					local alongZ = runLength(x, z, 0, 1) + runLength(x, z, 0, -1)
+					tryPlace(layout, templates, rng, cfg, name, x, z, if alongX > alongZ then 90 else 0, "Runway", nil)
+				end
+			elseif kind == "Asphalt" and grid.District[i] == "Airport" and rng:next() < planner.ApronChance then
+				local name = pick(rng, templates, planner.Apron, capAt(layout, i), minAt(layout, i, cfg))
+				if name then
+					tryPlace(layout, templates, rng, cfg, name, x, z, rng:int(0, 3) * 90, "Asphalt", "Airport")
+				end
+			end
+		end
+	end
+end
+
+-- Calçadas planejadas: postes acompanhando a rua com espaçamento (pulando cruzamentos e portas) e poucos
+-- objetos de rua (lixeira, hidrante, correio, ponto de ônibus), cada um longe do outro igual.
+local function fillSidewalksPlanned(layout: Layout, templates: { [string]: Template }, rng: Rng, cfg: Config)
+	local planner = layout.Planner :: Planner
+	local grid = layout.Grid
+	local access = layout.Access :: { [number]: boolean }
+	local idx = layout.Index :: Placement.Index
+	local lampGroup, lampSpacing = Placement.spacing(planner.Catalog, "Lamp")
+	-- esquinas: calçada que encosta na rua em dois eixos (dentro da curva) ou só na diagonal (fora da curva)
+	local cross = {}
+	local function road(x: number, z: number): boolean
+		local j = index(grid, x, z)
+		return j ~= nil and grid.Kind[j] == "Road"
+	end
+	for z = 0, grid.Depth - 1 do
+		for x = 0, grid.Width - 1 do
+			local i = index(grid, x, z) :: number
+			if grid.Kind[i] == "Walk" then
+				local alongX = road(x + 1, z) or road(x - 1, z)
+				local alongZ = road(x, z + 1) or road(x, z - 1)
+				local diagonal = road(x + 1, z + 1) or road(x - 1, z + 1) or road(x + 1, z - 1) or road(x - 1, z - 1)
+				if (alongX and alongZ) or (diagonal and not alongX and not alongZ) then
+					cross[i] = true
+				end
+			end
+		end
+	end
+	local function nearCross(x: number, z: number): boolean
+		for dx = -2, 2 do
+			for dz = -2, 2 do
+				local j = index(grid, x + dx, z + dz)
+				if j and cross[j] then
+					return true
+				end
+			end
+		end
+		return false
+	end
+	for z = 0, grid.Depth - 1 do
+		for x = 0, grid.Width - 1 do
+			local i = index(grid, x, z) :: number
+			if grid.Kind[i] ~= "Walk" or grid.Occupied[i] or grid.Edge[i] or access[i] then
+				continue
+			end
+			local byRoad = false
+			for _, d in DIRS do
+				local j = index(grid, x + d[1], z + d[2])
+				if j and grid.Kind[j] == "Road" then
+					byRoad = true
+				end
+			end
+			if byRoad and lampGroup and not nearCross(x, z) then
+				local cx, cz = CityGen.cellToWorld(grid, cfg.CellSize, x + 0.5, z + 0.5)
+				local far = capAt(layout, i) >= cfg.FarLampCap
+				if not Placement.near(idx, lampGroup, cx, cz, if far then lampSpacing * 2 else lampSpacing) then
+					if tryPlace(layout, templates, rng, cfg, "Lamp", x, z, 0, "Walk", nil) then
+						continue
+					end
+				end
+			end
+			if rng:next() < planner.SidewalkChance then
+				local name = pick(rng, templates, planner.Sidewalk, capAt(layout, i), minAt(layout, i, cfg))
+				if name then
+					tryPlace(layout, templates, rng, cfg, name, x, z, 0, "Walk", nil)
+				end
+			end
+		end
+	end
+end
+
+-- Carros estacionados no meio-fio: na faixa da rua encostada na calçada, alinhados com a rua, só em ruas
+-- largas (MinRoad células), com a calçada inteira do lado (não em esquina nem em entrada de casa) e espaçados.
+local function fillCurbCars(layout: Layout, templates: { [string]: Template }, rng: Rng, cfg: Config)
+	local planner = layout.Planner :: Planner
+	local curb = planner.CurbCars
+	local car = templates.Car
+	if curb == nil or car == nil then
+		return
+	end
+	local grid = layout.Grid
+	local access = layout.Access :: { [number]: boolean }
+	local idx = layout.Index :: Placement.Index
+	local function kind(x: number, z: number): string?
+		local j = index(grid, x, z)
+		return if j then grid.Kind[j] else nil
+	end
+	for z = 0, grid.Depth - 1 do
+		for x = 0, grid.Width - 1 do
+			local i = index(grid, x, z) :: number
+			if grid.Kind[i] ~= "Road" or grid.Occupied[i] or rng:next() >= curb.Chance then
+				continue
+			end
+			for _, d in DIRS do
+				if kind(x + d[1], z + d[2]) ~= "Walk" then
+					continue
+				end
+				-- largura da rua para dentro (direção oposta à calçada)
+				local width = 0
+				while kind(x - d[1] * width, z - d[2] * width) == "Road" do
+					width += 1
+				end
+				if width < curb.MinRoad or car.Tier > capAt(layout, i) or car.Tier < minAt(layout, i, cfg) then
+					break
+				end
+				-- comprido ao longo da calçada (frente do modelo = -Z)
+				local rotation = if d[1] == 0 then 90 else 0
+				local cw, cd = cellsFor(car, rotation, cfg)
+				local x0 = if d[1] < 0 then x elseif d[1] > 0 then x - cw + 1 else x
+				local z0 = if d[2] < 0 then z elseif d[2] > 0 then z - cd + 1 else z
+				-- a calçada do lado tem que ser contínua e sem porta
+				local ok = true
+				for cx = x0, x0 + cw - 1 do
+					for cz = z0, z0 + cd - 1 do
+						local sx, sz = cx + d[1], cz + d[2]
+						local onSide = (d[1] ~= 0 and sx == (if d[1] < 0 then x0 - 1 else x0 + cw))
+							or (d[2] ~= 0 and sz == (if d[2] < 0 then z0 - 1 else z0 + cd))
+						if onSide then
+							local j = index(grid, sx, sz)
+							if j == nil or grid.Kind[j] ~= "Walk" or access[j] then
+								ok = false
+							end
+						end
+					end
+				end
+				local cx, cz = CityGen.cellToWorld(grid, cfg.CellSize, x0 + cw / 2, z0 + cd / 2)
+				if ok and not Placement.near(idx, "CurbCar", cx, cz, curb.Spacing) then
+					if tryPlace(layout, templates, rng, cfg, "Car", x0, z0, rotation, "Road", nil) then
+						Placement.add(idx, "CurbCar", cx, cz)
+					end
+				end
+				break
 			end
 		end
 	end
@@ -1293,16 +1873,41 @@ function CityGen.generate(
 	for _, zone in plan.Zones do
 		table.insert(layout.ZoneNames, zone.Name)
 	end
+	local planner = fill.Planner
+	if planner then
+		layout.Planner = planner
+		layout.Index = Placement.newIndex(24)
+		layout.Access = {}
+	end
 	placeSites(layout, plan, templates, rng, cfg)
-	fillFrontage(layout, fill, templates, rng, cfg)
-	fillBlocks(layout, fill, templates, rng, cfg)
-	fillInterior(layout, fill, templates, rng, cfg)
-	scatter(layout, templates, rng, cfg, "Sand", fill.Beach, 0.12, nil)
-	scatter(layout, templates, rng, cfg, "Plaza", fill.Plaza, 0.1, nil)
-	scatter(layout, templates, rng, cfg, "Asphalt", fill.Parking, 0.35, "Parking")
-	scatter(layout, templates, rng, cfg, "Water", fill.Boats, fill.BoatChance, "Harbor")
-	scatter(layout, templates, rng, cfg, "Wild", fill.Wild, cfg.WildChance, nil)
-	fillSidewalks(layout, fill, templates, rng, cfg)
+	if planner then
+		-- ordem do planejamento: construções e acessos -> infraestrutura -> natureza -> decoração das regiões
+		fillFrontage(layout, fill, templates, rng, cfg)
+		fillBlocks(layout, fill, templates, rng, cfg)
+		fillSidewalksPlanned(layout, templates, rng, cfg)
+		fillCurbCars(layout, templates, rng, cfg)
+		scatter(layout, templates, rng, cfg, "Asphalt", fill.Parking, planner.ParkingChance or 0.35, "Parking")
+		fillAirport(layout, templates, rng, cfg)
+		fillGroups(layout, fill, templates, rng, cfg)
+		fillBeach(layout, templates, rng, cfg)
+		scatter(layout, templates, rng, cfg, "Plaza", fill.Plaza, planner.PlazaChance or 0.1, nil)
+		scatter(layout, templates, rng, cfg, "Water", fill.Boats, fill.BoatChance, "Harbor")
+		placeGroups(layout, templates, rng, cfg, "Wild", function()
+			return fill.Wild
+		end, function()
+			return planner.Wild
+		end, nil)
+	else
+		fillFrontage(layout, fill, templates, rng, cfg)
+		fillBlocks(layout, fill, templates, rng, cfg)
+		fillInterior(layout, fill, templates, rng, cfg)
+		scatter(layout, templates, rng, cfg, "Sand", fill.Beach, 0.12, nil)
+		scatter(layout, templates, rng, cfg, "Plaza", fill.Plaza, 0.1, nil)
+		scatter(layout, templates, rng, cfg, "Asphalt", fill.Parking, 0.35, "Parking")
+		scatter(layout, templates, rng, cfg, "Water", fill.Boats, fill.BoatChance, "Harbor")
+		scatter(layout, templates, rng, cfg, "Wild", fill.Wild, cfg.WildChance, nil)
+		fillSidewalks(layout, fill, templates, rng, cfg)
+	end
 	walls(layout, cfg)
 	spawns(layout, #plan.Zones, rng, cfg)
 	return layout

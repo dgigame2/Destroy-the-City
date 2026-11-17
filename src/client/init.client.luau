@@ -31,6 +31,7 @@ if Place.isRun() then
 		require(script.Controllers.DisasterVfx).init()
 		require(script.Controllers.DamageVfx).init() -- barra de vida, blocos caindo e destroços
 		require(script.Controllers.LevelsController).init() -- nível de cada desastre
+		require(script.Controllers.BurstController).init() -- resumo por golpe ("MASSIVE! 23 DESTROYED")
 	else
 		require(script.Controllers.EatIndicator).init()
 	end

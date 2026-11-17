@@ -22,7 +22,7 @@ local ZoneController = {}
 
 local BREAK_SECONDS = 0.8 -- regra do goat: explosões duram menos de 1 segundo
 local PIECE_LENGTH = 6
-local GUIDE_SECONDS = 25 -- setas somem depois disso (ou quando você chega no meio da área nova)
+local GUIDE_SECONDS = 25 -- setas somem depois disso (ou assim que você entra na área nova)
 local GUIDE_SPACING = 9 -- distância entre setas (x escala)
 local GUIDE_SPEED = 14 -- quanto as setas andam por segundo (x escala)
 local GUIDE_SIZE = 5 -- tamanho de cada seta (x escala)
@@ -147,9 +147,10 @@ local function guide(zone: number, boxes: { GuidePath.Box })
 		local elapsed = os.clock() - start
 		local scale = (localPlayer:GetAttribute("Scale") :: number?) or 1
 		local finish = point and Vector2.new(point.Position.X, point.Position.Z)
+		-- passou da barreira para dentro da área nova: as setas somem
 		local arrived = root
 			and finish
-			and (Vector2.new(root.Position.X, root.Position.Z) - finish).Magnitude < 20 * scale
+			and GuidePath.inside(root.Position.X, root.Position.Z, { finish.X, finish.Y }, boxes)
 		if root == nil or elapsed > GUIDE_SECONDS or arrived then
 			folder:Destroy()
 			if guideConnection then
