@@ -1,0 +1,1 @@
+Lobby_Mushroom: 372 tris | Size = { 3.33, 2.78, 3.35 }, Center = { 0.03, 1.39, -0.00 }

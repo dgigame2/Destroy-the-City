@@ -1,0 +1,5 @@
+Lobby_PlanterLong: 865 tris | Size = { 12.00, 2.22, 2.00 }, Center = { 0.00, 1.11, -0.00 }
+Lobby_PlanterWide: 914 tris | Size = { 7.00, 2.17, 3.20 }, Center = { 0.00, 1.09, -0.00 }
+Lobby_Hill1: 502 tris | Size = { 125.74, 34.00, 115.82 }, Center = { -1.59, 17.00, 0.64 }
+Lobby_Hill2: 502 tris | Size = { 160.05, 26.00, 166.43 }, Center = { 0.60, 13.00, 2.84 }
+Lobby_Hill3: 502 tris | Size = { 94.49, 40.00, 85.51 }, Center = { -0.37, 20.00, -1.30 }

@@ -40,4 +40,5 @@ if Place.isRun() then
 else
 	require(script.Controllers.LobbyController).init()
 	require(script.Controllers.PartyController).init()
+	require(script.Controllers.FountainController).init() -- água animada da fonte
 end
