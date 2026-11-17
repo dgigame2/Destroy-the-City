@@ -79,6 +79,11 @@ return table.freeze({
 		ExplosionSmoke = { 255, 176, 90 },
 		CollapseDust = { 214, 204, 192 },
 		ExplosionLight = { 255, 166, 76 },
+		Fire = { 255, 120, 40 }, -- fogo da cadeia (chamas)
+		FireCore = { 255, 214, 110 },
+		FireSmoke = { 90, 82, 92 },
+		Spark = { 150, 230, 255 }, -- faísca do condutor
+		ImpactDust = { 200, 186, 160 }, -- batida de objeto que voou
 		HpShadow = { 74, 106, 168 },
 		HpBack = { 43, 58, 103 },
 		HpStroke = { 43, 58, 103 },
@@ -88,10 +93,10 @@ return table.freeze({
 
 	-- placas das áreas da cidade (mundo 3D)
 	AreaSign = table.freeze({
-		Locked = { Top = { 255, 146, 130 }, Bottom = { 223, 70, 80 } },
-		Current = { Top = { 168, 234, 111 }, Bottom = { 77, 180, 58 } },
-		Cleared = { Top = { 223, 228, 238 }, Bottom = { 167, 176, 198 } },
-		State = { 255, 248, 214 },
+		Pill = { 22, 26, 40 }, -- fundo da pílula (escuro translúcido)
+		Locked = { 255, 96, 104 }, -- contorno de cada estado
+		Current = { 126, 230, 92 },
+		Cleared = { 200, 208, 224 },
 	}),
 
 	-- ilha do lobby: mesmas cores do Garden Village (MapConfig) para o lobby ter a vibe dos mapas

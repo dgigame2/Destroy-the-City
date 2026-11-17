@@ -5,7 +5,7 @@
 
 return table.freeze({
 	-- Mudou as plantas/geração das cidades? Aumente: runs salvas de versões antigas recomeçam a cidade.
-	LayoutVersion = 3,
+	LayoutVersion = 7,
 	CellSize = 3, -- lado de cada célula da grade
 	PlanUnit = 6, -- as plantas (CityPlans) são desenhadas em unidades de 6 studs
 	WalkCells = 1, -- largura da calçada (em células) em volta das ruas
@@ -14,21 +14,24 @@ return table.freeze({
 	-- (MovementConfig.MaxStepHeight): na run não tem pulo.
 	Heights = table.freeze({
 		Lot = 0.05, -- grama dos terrenos (onde ficam casas, prédios e árvores)
+		Wild = 0.05, -- margem natural antes do mar (sem ruas nem casas; árvores e moitas destrutíveis)
 		Road = 0.15,
 		Walk = 0.3, -- calçada
-		Water = 0.02, -- rio, lago, porto (dá para andar por cima: visual de água rasa)
+		Water = -0.6, -- rio, lago, porto: mais baixo que o chão (canal); dá para andar por cima
+		Bank = 0.3, -- margem de pedra (cais) em volta da água
 		Sand = 0.1,
 		Plaza = 0.3,
 		Asphalt = 0.12, -- estacionamentos, pátios
 		Runway = 0.12, -- pista do aeroporto (fica vazia, com faixas)
 		Sea = -1, -- mar (atrás das paredes da costa; a superfície de verdade vem do bioma, SeaLevel)
 	}),
+	SunkLayer = 0.4, -- espessura da lâmina de água do rio rebaixado (a terra para embaixo dela)
 	LineTop = 0.25, -- faixas brancas apoiadas em cima da rua
 	HillStep = 0.8, -- cada anel do morro sobe isso (menos que um degrau)
 	HillRing = 4, -- largura de cada anel do morro (células)
 
 	-- Xadrez do chão: tamanho dos quadrados em células, por tipo
-	Checker = table.freeze({ Lot = 4, Road = 8, Sand = 4, Plaza = 2, Asphalt = 6, Runway = 12 }),
+	Checker = table.freeze({ Lot = 4, Wild = 4, Road = 8, Sand = 4, Plaza = 2, Asphalt = 6, Runway = 12 }),
 	BigCheckerZone = 3, -- a partir desta zona os quadrados do xadrez dobram de tamanho
 	LineDash = 10, -- comprimento de cada faixa branca
 	LineEvery = 24, -- distância entre faixas
@@ -58,6 +61,7 @@ return table.freeze({
 	InnerDecorSpacing = 7, -- pedras/barcos no mar entre a costa e a borda da grade (células)
 	InnerDecorMinCells = 4,
 	InnerDecorChance = 0.35,
+	WildChance = 0.05, -- árvores/moitas na margem natural (por célula; destrutíveis, contam na área)
 	Mountains = 18, -- montanhas no horizonte
 	MountainSize = { 180, 420 },
 	MountainNear = 650,

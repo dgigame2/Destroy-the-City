@@ -174,14 +174,15 @@ function UiLayout.place(w: number, h: number, c: UiConfig, desktop: boolean?): L
 		rect(celebration.X0 + (celebW - continueW) / 2, celebration.Y1 + cb.Gap * celebScale, continueW, continueH)
 
 	-- desastres: coluna no canto direito, de baixo para cima (na run não tem pulo; o canto fica livre)
-	-- PC: fileira embaixo à direita (o 1º na ponta direita). Embaixo de cada um, a mini barra do nível (LV).
+	-- PC: fileira embaixo à direita, na ordem das teclas da esquerda para a direita (1 · 2 · 3: meteoro, tornado,
+	-- bolt). Embaixo de cada um, a mini barra do nível (LV).
 	local disasters, disasterBars = {}, {}
 	local db = if desktop then c.Desktop.DisasterButton else c.DisasterButton
 	local dw, dh = math.max(db.W * s, c.MinTouch), math.max(db.H * s, c.MinTouch)
 	local lh, lgap = c.LevelBar.H * s, c.LevelBar.Gap * s
 	local slotH = dh + lgap + lh -- botão + mini barra
 	for i = 0, c.DisasterCount - 1 do
-		local x = if desktop then w - m - dw - i * (dw + gap) else w - m - dw
+		local x = if desktop then w - m - dw - (c.DisasterCount - 1 - i) * (dw + gap) else w - m - dw
 		local y = if desktop then h - m - slotH else h - m - slotH - i * (slotH + gap)
 		table.insert(disasters, rect(x, y, dw, dh))
 		table.insert(disasterBars, rect(x, y + dh + lgap, dw, lh))

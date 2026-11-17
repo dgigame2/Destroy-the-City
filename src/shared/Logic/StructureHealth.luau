@@ -25,6 +25,17 @@ function StructureHealth.hit(state: State, id: number, damage: number, maxHp: nu
 	return false
 end
 
+-- Igual ao hit, mas também devolve o dano que REALMENTE entrou (sem passar da vida que sobrava): é o que
+-- conta no placar "Damage", então 4 jogadores batendo na mesma construção somam no máximo a vida dela.
+function StructureHealth.hitDealt(state: State, id: number, damage: number, maxHp: number): (boolean, number)
+	if state.Dead[id] or damage <= 0 then
+		return false, 0
+	end
+	local before = state.Hp[id] or maxHp
+	local dealt = math.min(before, damage)
+	return StructureHealth.hit(state, id, damage, maxHp), dealt
+end
+
 -- Marca como destruída por fora (comer antigo, coleta automática, run salva).
 function StructureHealth.kill(state: State, id: number): boolean
 	if state.Dead[id] then

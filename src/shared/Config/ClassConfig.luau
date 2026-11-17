@@ -1,8 +1,11 @@
 --!strict
 -- Classes compradas com gemas. Só uma fica equipada; os bônus valem enquanto você joga.
--- Buffs: Speed/Magnet/Growth/Coins somam ao bônus dos upgrades (0.25 = +25%).
--- Gems: multiplica a chance de cair gema ao comer (1 = +100%, ou seja, 2x).
--- StartPoints: pontos de crescimento ao começar cada run.
+-- Ids antigos do Eat City continuam iguais (quem já comprou continua com a classe), com tema de desastres.
+-- Buffs somam ao bônus dos upgrades do mesmo nome (0.25 = +25%), ver UpgradeConfig:
+--   Damage, Magnet (tamanho), Range, Cooldown (recarga), Duration (tornado), Chain (reações), Growth (poder),
+--   Speed, Coins.
+-- Gems: multiplica a chance de cair gema (1 = +100%, ou seja, 2x).
+-- StartPoints: pontos de poder ao começar cada run.
 
 export type ClassInfo = {
 	Id: string,
@@ -16,29 +19,45 @@ export type ClassInfo = {
 local classes: { ClassInfo } = {
 	{
 		Id = "Glutton",
-		Name = "Glutton",
-		Description = "+25% growth",
-		Icon = "🍔",
+		Name = "Stormcaller",
+		Description = "+25% power gain",
+		Icon = "⛈️",
 		Price = 150,
 		Buffs = { Growth = 0.25 },
 	},
 	{
 		Id = "Sprinter",
-		Name = "Sprinter",
-		Description = "+25% speed",
+		Name = "Chaser",
+		Description = "+25% speed\n+15% range",
 		Icon = "👟",
 		Price = 150,
-		Buffs = { Speed = 0.25 },
+		Buffs = { Speed = 0.25, Range = 0.15 },
 	},
 	{
 		Id = "Vacuum",
-		Name = "Vacuum",
-		Description = "+30% eating reach",
+		Name = "Twister",
+		Description = "+30% tornado time\n+10% size",
 		Icon = "🌀",
 		Price = 250,
-		Buffs = { Magnet = 0.3 },
+		Buffs = { Duration = 0.3, Magnet = 0.1 },
 	},
-	{ Id = "Tycoon", Name = "Tycoon", Description = "+50% cash", Icon = "💰", Price = 250, Buffs = { Coins = 0.5 } },
+	{ Id = "Tycoon", Name = "Looter", Description = "+50% cash", Icon = "💰", Price = 250, Buffs = { Coins = 0.5 } },
+	{
+		Id = "Demolisher",
+		Name = "Demolisher",
+		Description = "+25% damage",
+		Icon = "💥",
+		Price = 300,
+		Buffs = { Damage = 0.25 },
+	},
+	{
+		Id = "Pyro",
+		Name = "Pyro",
+		Description = "+50% chain damage",
+		Icon = "🔥",
+		Price = 350,
+		Buffs = { Chain = 0.5 },
+	},
 	{
 		Id = "Lucky",
 		Name = "Lucky",
@@ -48,9 +67,17 @@ local classes: { ClassInfo } = {
 		Buffs = { Gems = 1 },
 	},
 	{
+		Id = "Overcharge",
+		Name = "Overcharge",
+		Description = "+30% recharge speed",
+		Icon = "🔋",
+		Price = 450,
+		Buffs = { Cooldown = 0.3 },
+	},
+	{
 		Id = "Titan",
 		Name = "Titan",
-		Description = "Start every run bigger",
+		Description = "Start every run stronger",
 		Icon = "🦖",
 		Price = 600,
 		Buffs = { StartPoints = 60 },

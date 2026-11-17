@@ -25,18 +25,7 @@ export type Template = {
 
 local box, add, stepRoof = Voxel.box, Voxel.add, Voxel.stepRoof
 local frontWindows, wheels, stripes = Voxel.frontWindows, Voxel.wheels, Voxel.stripes
-
--- Chaminé apoiada em cima de um degrau do telhado, no trecho que o degrau de cima não cobre
--- (assim ela não entra no telhado). x = posição em X; level = degrau onde ela fica (0 = o de baixo).
-local function chimney(boxes: { Box }, d: number, baseY: number, steps: number, stepH: number, x: number, level: number)
-	local full = d + 1.2
-	local outer = full * (1 - level / steps) / 2 -- meia-profundidade do degrau onde apoia
-	local inner = full * (1 - (level + 1) / steps) / 2 -- meia-profundidade do degrau de cima
-	local size = math.min(1.6, outer - inner)
-	local z = (outer + inner) / 2
-	local top = baseY + 0.6 + (level + 1) * stepH
-	table.insert(boxes, box(size, 3, size, x, top, z, "Chimney"))
-end
+local shaped, gable = Voxel.shaped, Voxel.gable
 
 local function sideWindows(boxes: { Box }, w: number, zs: { number }, y: number, ww: number, wh: number)
 	for _, z in zs do
@@ -85,14 +74,15 @@ function builders.Bin()
 	}
 end
 
+-- Arbusto: três bolas low-poly encostadas (referência dos packs de natureza).
 function builders.Bush()
 	return {
 		Name = "Bush",
 		Tier = 1,
 		Boxes = {
-			box(3.6, 1.8, 3.2, 0, 0, 0, "Leaves"),
-			box(2.6, 1.2, 2.4, -0.3, 1.8, 0.2, "Leaves2"),
-			box(1.4, 0.8, 1.4, 0.4, 3, -0.2, "Leaves"),
+			shaped(box(3, 2.4, 3, -1.5, 0, 0, "Leaves"), "Ball"),
+			shaped(box(3, 2.4, 3, 1.5, 0, 0.2, "Leaves2"), "Ball"),
+			shaped(box(2.2, 2, 2.2, 0, 2.4, 0.1, "Leaves"), "Ball"),
 		},
 	}
 end
@@ -123,29 +113,31 @@ function builders.Cone()
 	}
 end
 
+-- Vaso redondo com borda, moita e duas flores em cima.
 function builders.FlowerPot()
 	return {
 		Name = "FlowerPot",
 		Tier = 1,
 		Boxes = {
-			box(1.8, 1.3, 1.8, 0, 0, 0, "Pot"),
-			box(1.6, 0.6, 1.6, 0, 1.3, 0, "Leaves"),
-			box(0.7, 0.7, 0.7, -0.4, 1.9, 0, "Flower"),
-			box(0.7, 0.7, 0.7, 0.4, 1.9, 0.3, "Flower2"),
+			shaped(box(1.6, 1.2, 1.6, 0, 0, 0, "Pot"), "Cylinder"),
+			shaped(box(2, 0.3, 2, 0, 1.2, 0, "Pot"), "Cylinder"),
+			shaped(box(1.8, 1.4, 1.8, 0, 1.5, 0, "Leaves"), "Ball"),
+			shaped(box(0.7, 0.7, 0.7, -0.4, 2.9, 0, "Flower"), "Ball"),
+			shaped(box(0.7, 0.7, 0.7, 0.4, 2.9, 0.3, "Flower2"), "Ball"),
 		},
 	}
 end
 
+-- Cogumelos (referência da floresta low-poly): um grande e um pequeno, pé redondo e chapéu em domo.
 function builders.Mushroom()
 	return {
 		Name = "Mushroom",
 		Tier = 1,
 		Boxes = {
-			box(1, 1.6, 1, 0, 0, 0, "Stem"),
-			box(3, 0.8, 3, 0, 1.6, 0, "Cap"),
-			box(2, 0.6, 2, 0, 2.4, 0, "Cap"),
-			box(0.5, 0.3, 0.5, 0.6, 3, -0.4, "Trim"),
-			box(0.5, 0.3, 0.5, -0.5, 3, 0.4, "Trim"),
+			shaped(box(0.9, 1.6, 0.9, 0, 0, 0, "Stem"), "Cylinder"),
+			shaped(box(3, 1.6, 3, 0, 1.6, 0, "Cap"), "Ball"),
+			shaped(box(0.5, 0.8, 0.5, 1.9, 0, 1.2, "Stem"), "Cylinder"),
+			shaped(box(1.4, 0.8, 1.4, 1.9, 0.8, 1.2, "Cap"), "Ball"),
 		},
 	}
 end
@@ -168,8 +160,8 @@ function builders.Flowers()
 	for i, spot in { { -1.3, -0.8 }, { 0.2, 0.7 }, { 1.4, -0.6 }, { -0.4, -0.2 } } do
 		add(
 			boxes,
-			box(0.3, 1, 0.3, spot[1], 0.3, spot[2], "Leaves2"),
-			box(0.9, 0.7, 0.9, spot[1], 1.3, spot[2], if i % 2 == 0 then "Flower2" else "Flower")
+			shaped(box(0.25, 1, 0.25, spot[1], 0.3, spot[2], "Leaves2"), "Cylinder"),
+			shaped(box(0.9, 0.7, 0.9, spot[1], 1.3, spot[2], if i % 2 == 0 then "Flower2" else "Flower"), "Ball")
 		)
 	end
 	return { Name = "Flowers", Tier = 1, Boxes = boxes }
@@ -190,18 +182,17 @@ end
 
 -- Tier 2: árvores, natureza dos biomas e veículos ----------------------------------
 
+-- Árvore redonda low-poly (packs de natureza): tronco redondo, copa grande em bola e bolas menores.
 function builders.Tree()
 	return {
 		Name = "Tree",
 		Tier = 2,
 		Boxes = {
-			box(1.4, 3.8, 1.4, 0, 0, 0, "Trunk"),
-			box(5.6, 1.6, 5.6, 0, 3.8, 0, "Leaves"),
-			box(6.8, 2.4, 6.8, 0, 5.4, 0, "Leaves2"),
-			box(5.2, 2, 5.2, 0, 7.8, 0, "Leaves"),
-			box(3, 1.4, 3, 0.4, 9.8, -0.3, "Leaves2"),
-			box(2, 1.6, 2, -4.4, 5.8, 0.8, "Leaves"),
-			box(2, 1.4, 2, 4.4, 6.2, -1.2, "Leaves"),
+			shaped(box(1.4, 4.4, 1.4, 0, 0, 0, "Trunk"), "Cylinder"),
+			shaped(box(7.4, 6.4, 7.4, 0, 4.4, 0, "Leaves"), "Ball"),
+			shaped(box(3.6, 3.2, 3.6, 0.6, 10.8, -0.4, "Leaves2"), "Ball"),
+			shaped(box(3.2, 3, 3.2, 5.3, 6.4, 0.6, "Leaves2"), "Ball"),
+			shaped(box(2.8, 2.6, 2.8, -5.1, 7, -0.8, "Leaves"), "Ball"),
 		},
 	}
 end
@@ -232,10 +223,11 @@ function builders.Rock()
 	return {
 		Name = "Rock",
 		Tier = 2,
+		-- pedras facetadas (bolas low-poly achatadas), como nos packs de natureza
 		Boxes = {
-			box(4.4, 2, 3.6, 0, 0, 0, "Rock"),
-			box(2.8, 1.4, 2.6, -0.5, 2, 0.2, "Rock"),
-			box(2, 1.2, 1.6, 1.6, 0, 2.6, "Rock"),
+			shaped(box(4.4, 2.6, 3.6, 0, 0, 0, "Rock"), "Ball"),
+			shaped(box(2.4, 1.6, 2.2, -0.4, 2.6, 0.1, "Rock"), "Ball"),
+			shaped(box(2, 1.4, 1.6, 3.2, 0, 1.2, "Rock"), "Ball"),
 		},
 	}
 end
@@ -397,36 +389,52 @@ end
 
 -- Tier 3: casas e fonte -----------------------------------------------------------
 
+-- Casa (referência da casinha de telhado laranja): base de pedra, paredes claras, telhado de duas águas com
+-- beiral, varanda com colunas e telhadinho, toldos nas janelas e chaminé de tijolo encostada na lateral.
 function builders.House()
-	local w, d, h = 12, 10, 8
+	local w, d, h = 12, 10, 7
 	local boxes = {
-		box(w + 1, 0.6, d + 1, 0, 0, 0, "Trim"),
-		box(w, h, d, 0, 0.6, 0, "Wall"),
-		box(2.4, 4.4, 0.4, 0, 0.6, -d / 2 - 0.2, "Door"),
-		box(4, 0.5, 1.6, 0, 0, -d / 2 - 1.3, "Trim"),
-		box(0.6, 0.6, 0.6, 1.8, 3.4, -d / 2 - 0.3, "Light"),
+		box(w + 0.6, 0.8, d + 0.6, 0, 0, 0, "Stone"),
+		box(w, h, d, 0, 0.8, 0, "Wall"),
+		box(2.2, 4, 0.3, 0, 0.8, -d / 2 - 0.15, "Door"),
+		-- varanda: degrau, duas colunas e telhadinho em cunha encostado na parede
+		box(5, 0.5, 2, 0, 0, -d / 2 - 1.3, "Stone"),
+		box(0.5, 4.5, 0.5, -2.1, 0.5, -d / 2 - 2, "Trim"),
+		box(0.5, 4.5, 0.5, 2.1, 0.5, -d / 2 - 2, "Trim"),
+		shaped(box(5.4, 1.2, 2.7, 0, 5, -d / 2 - 1.35, "Roof"), "Wedge", 0),
+		-- toldos sobre as janelas da frente
+		box(2.8, 0.5, 1, -4.1, 5.3, -d / 2 - 0.5, "Awning"),
+		box(2.8, 0.5, 1, 4.1, 5.3, -d / 2 - 0.5, "Awning"),
+		-- chaminé de tijolo do chão até acima da cumeeira
+		box(1.4, 14.2, 1.6, w / 2 + 1, 0, 2, "Chimney"),
+		box(1.8, 0.4, 2, w / 2 + 1, 14.2, 2, "Trim"),
 	}
-	frontWindows(boxes, d, { -3.8, 3.8 }, 3.2, 2.6, 2.4)
-	sideWindows(boxes, w, { -2, 2 }, 3.2, 2.4, 2.4)
-	local roofY, steps, stepH = h + 0.6, 4, 1.3
-	stepRoof(boxes, w, d, roofY, steps, stepH, "Roof")
-	chimney(boxes, d, roofY, steps, stepH, 3, 2)
+	frontWindows(boxes, d, { -4.1, 4.1 }, 3, 2.2, 2)
+	sideWindows(boxes, w, { -2.5 }, 3, 2.2, 2)
+	gable(boxes, w, d, 0, 0, h + 0.8, 4.6, 0.3, 0.9, "Roof")
 	return { Name = "House", Tier = 3, Boxes = boxes }
 end
 
+-- Chalé enxaimel (referência da casa com vigas de madeira): base de pedra, parede branca com vigas,
+-- janela com venezianas, porta com cobertura, telhado de duas águas e chaminé de tijolo por fora.
 function builders.Cottage()
 	local w, d, h = 11, 9, 7
 	local boxes = {
-		box(w, 1.2, d, 0, 0, 0, "Stone"),
-		box(w, h, d, 0, 1.2, 0, "WallWhite"),
-		box(2.2, 4.2, 0.4, -2.5, 1.2, -d / 2 - 0.2, "Door"),
+		box(w + 0.4, 1, d + 0.4, 0, 0, 0, "Stone"),
+		box(w, h, d, 0, 1, 0, "WallWhite"),
+		box(2.2, 4.2, 0.4, -2.5, 1, -d / 2 - 0.2, "Door"),
+		shaped(box(2.8, 0.8, 1.4, -2.5, 5.4, -d / 2 - 0.7, "Roof"), "Wedge", 0),
+		-- venezianas dos dois lados da janela
+		box(0.7, 2.2, 0.3, 1.85, 3.4, -d / 2 - 0.15, "Plank"),
+		box(0.7, 2.2, 0.3, 4.55, 3.4, -d / 2 - 0.15, "Plank"),
+		box(1.4, 14, 1.6, -w / 2 - 1.1, 0, 1.5, "Chimney"),
 	}
-	-- vigas aparentes (enxaimel), sem cruzar porta nem janela
-	for _, x in { -w / 2 + 0.3, -1, 1.5, w / 2 - 0.3 } do
-		table.insert(boxes, box(0.6, h, 0.4, x, 1.2, -d / 2 - 0.2, "Beam"))
+	-- vigas aparentes (enxaimel), sem cruzar porta, janela nem venezianas
+	for _, x in { -w / 2 + 0.3, -0.6, 0.9, w / 2 - 0.3 } do
+		table.insert(boxes, box(0.6, h, 0.4, x, 1, -d / 2 - 0.2, "Beam"))
 	end
-	frontWindows(boxes, d, { 3.2 }, 3, 2.2, 2.2)
-	stepRoof(boxes, w, d, h + 1.2, 4, 1.2, "Roof")
+	frontWindows(boxes, d, { 3.2 }, 3.4, 2, 2.2)
+	gable(boxes, w, d, 0, 0, h + 1, 5, 0.4, 0.8, "Roof")
 	return { Name = "Cottage", Tier = 3, Boxes = boxes }
 end
 
@@ -449,22 +457,28 @@ end
 -- Tier 4: sobrado, loja, ônibus, posto ----------------------------------------------
 
 function builders.BigHouse()
+	-- sobrado moderno (referência da casa branca de telhado cinza): base, faixa entre os andares, varanda de
+	-- vidro em cima, garagem, telhado de duas águas com beiral e chaminé encostada na lateral
 	local w, d = 16, 12
 	local boxes = {
-		box(w + 1, 0.6, d + 1, 0, 0, 0, "Trim"),
-		box(w, 7, d, 0, 0.6, 0, "Wall"),
-		box(w + 0.6, 0.8, d + 0.6, 0, 7.6, 0, "Trim"),
-		box(w, 6, d, 0, 8.4, 0, "Wall"),
-		box(2.6, 4.6, 0.4, -4, 0.6, -d / 2 - 0.2, "Door"),
-		box(6, 4.6, 0.4, 3.5, 0.6, -d / 2 - 0.2, "Garage"),
-		box(5, 0.5, 2.4, -4, 5.4, -d / 2 - 1.2, "Awning"),
+		box(w + 0.6, 0.8, d + 0.6, 0, 0, 0, "Stone"),
+		box(w, 6.4, d, 0, 0.8, 0, "Wall"),
+		box(w + 0.4, 0.5, d + 0.4, 0, 7.2, 0, "Trim"),
+		box(w, 5.6, d, 0, 7.7, 0, "Wall"),
+		box(2.4, 4.4, 0.4, -4.5, 0.8, -d / 2 - 0.2, "Door"),
+		box(4, 0.4, 1.6, -4.5, 5.6, -d / 2 - 0.8, "Trim"),
+		box(6, 4.6, 0.4, 3.5, 0.8, -d / 2 - 0.2, "Garage"),
+		-- varanda do 2º andar: piso e guarda-corpo de vidro
+		box(6, 0.4, 1.4, -4, 7.7, -d / 2 - 0.9, "Trim"),
+		box(6, 1.2, 0.2, -4, 8.1, -d / 2 - 1.5, "Glass"),
+		box(5, 3.2, 0.4, -4, 9, -d / 2 - 0.2, "Glass"),
+		box(3, 2.6, 0.4, 4, 9.4, -d / 2 - 0.2, "Window"),
+		box(1.4, 20.5, 1.6, w / 2 + 1.1, 0, 2.5, "Chimney"),
 	}
-	frontWindows(boxes, d, { -5, 0, 5 }, 10, 2.6, 2.6)
+	frontWindows(boxes, d, { -1.2 }, 2.8, 2, 2.2)
 	sideWindows(boxes, w, { -3, 3 }, 3, 2.4, 2.4)
-	sideWindows(boxes, w, { -3, 3 }, 10, 2.4, 2.6)
-	local roofY, steps, stepH = 14.4, 5, 1.3
-	stepRoof(boxes, w, d, roofY, steps, stepH, "Roof")
-	chimney(boxes, d, roofY, steps, stepH, -5, 3)
+	sideWindows(boxes, w, { -3, 3 }, 9.4, 2.4, 2.4)
+	gable(boxes, w, d, 0, 0, 13.3, 5.5, 0.4, 0.8, "Roof")
 	return { Name = "BigHouse", Tier = 4, Boxes = boxes }
 end
 

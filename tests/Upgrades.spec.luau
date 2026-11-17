@@ -11,7 +11,7 @@ return function(t)
 	end)
 
 	t.test("find acha por id e retorna nil para id inexistente", function()
-		t.equal(Upgrades.find(UpgradeConfig, "Speed").Id, "Speed")
+		t.equal(Upgrades.find(UpgradeConfig, "Coins").Id, "Coins")
 		t.equal(Upgrades.find(UpgradeConfig, "Nada"), nil)
 	end)
 

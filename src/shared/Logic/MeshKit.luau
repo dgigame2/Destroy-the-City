@@ -41,7 +41,7 @@ function MeshKit.choose(b: Box, config: Config): string?
 			return config.Leaf
 		end
 		return config.Block
-	elseif shape == "Cylinder" then
+	elseif shape == "Cylinder" or shape == "CylinderZ" then
 		return config.Cylinder
 	elseif shape == "Ball" then
 		return config.Ball

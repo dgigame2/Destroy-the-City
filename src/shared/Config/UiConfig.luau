@@ -90,8 +90,9 @@ return table.freeze({
 	Popup = { W = 520, H = 140 },
 	-- placa flutuante de cada área da cidade (client/Controllers/AreaSignsController), em studs
 	AreaSign = table.freeze({
-		PixelWidth = 260, -- largura na tela (px numa tela de 720 de altura): tamanho fixo, sem zoom gigante
-		Aspect = 0.3, -- altura = largura x isso
+		PixelWidth = 150, -- largura na tela (px numa tela de 720 de altura): tamanho fixo, sem zoom gigante
+		Aspect = 0.2, -- altura = largura x isso
+		PillTransparency = 0.3, -- fundo da pílula (0 = sólido)
 		MinScreenScale = 0.6, -- celulares: placa encolhe com a tela até este limite
 		Height = 30, -- quanto fica acima do chão (studs, x escala do jogador ^ GrowExponent)
 		GrowExponent = 0.8,

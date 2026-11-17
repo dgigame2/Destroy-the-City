@@ -1,5 +1,5 @@
 --!strict
--- Janela de upgrades da partida (etapa 3 do goat): compra com o dinheiro ganho comendo a cidade.
+-- Janela de upgrades da partida (etapa 3 do goat): compra com o dinheiro ganho destruindo a cidade.
 -- Abre pelo botão UPGRADES da barra da partida.
 
 local Players = game:GetService("Players")
@@ -17,7 +17,12 @@ local Feedback = require(script.Parent.Parent.Feedback)
 
 local localPlayer = Players.LocalPlayer
 
-local ICONS: { [string]: string } = { Speed = "👟", Magnet = "🧲", Growth = "🍔", Coins = "💵" }
+local ICONS: { [string]: string } = {
+	Cooldown = "⏱️",
+	Range = "🎯",
+	Xp = "⭐",
+	Coins = "💵",
+}
 
 local UpgradesController = {}
 

@@ -29,7 +29,7 @@ local function probeFor(part: BasePart): BasePart?
 	local kit = part:GetAttribute("Kit") :: string?
 	if part:IsA("WedgePart") then
 		probe = Instance.new("WedgePart")
-	elseif part:IsA("Part") then
+	elseif kit == nil and part:IsA("Part") then
 		local p = Instance.new("Part")
 		p.Shape = part.Shape
 		probe = p
@@ -38,7 +38,8 @@ local function probeFor(part: BasePart): BasePart?
 		local p = Instance.new("Part")
 		if kit == "Ball" then
 			p.Shape = Enum.PartType.Ball
-		elseif kit == "Cylinder" then
+		elseif kit == "Cylinder" or kit == "CylinderZ" then
+			-- (o CylinderZ do kit é a mesma mesh em pé girada: no espaço da peça o eixo continua em Y)
 			p.Shape = Enum.PartType.Cylinder
 			size = Vector3.new(size.Y, size.X, size.Z)
 			cframe *= CFrame.Angles(0, 0, math.rad(90))

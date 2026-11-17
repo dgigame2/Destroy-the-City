@@ -49,6 +49,15 @@ local function power(): number
 	return (localPlayer:GetAttribute("Power") :: number?) or 1
 end
 
+-- Bônus de upgrades + classe (o servidor publica "Mod_<stat>"; Logic/Disasters.mods).
+local function mod(stat: string): number
+	return (localPlayer:GetAttribute("Mod_" .. stat) :: number?) or 1
+end
+
+local function cooldownOf(d: DisasterConfig.Disaster): number
+	return Disasters.cooldown(d, mod("Cooldown"))
+end
+
 local function root(): BasePart?
 	local character = localPlayer.Character
 	return character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -128,7 +137,7 @@ local function levelOf(id: string): number
 end
 
 local function aimRadius(d: DisasterConfig.Disaster, p: number): number
-	local size = Mastery.size(levelOf(d.Id), MasteryConfig)
+	local size = Mastery.size(levelOf(d.Id), MasteryConfig) * mod("Size")
 	if d.Radius then
 		return Disasters.radius(d, p, DisasterConfig) * size
 	end
@@ -168,7 +177,7 @@ local function clampedAim(d: DisasterConfig.Disaster, point: Vector3): (Vector3,
 	if r == nil then
 		return point, false
 	end
-	local range = Disasters.range(d, power(), DisasterConfig)
+	local range = Disasters.range(d, power(), DisasterConfig) * mod("Range")
 	local x, z = Disasters.clampTarget(r.Position.X, r.Position.Z, point.X, point.Z, range)
 	local far = math.abs(x - point.X) > 0.5 or math.abs(z - point.Z) > 0.5
 	return Vector3.new(x, point.Y, z), far
@@ -204,7 +213,7 @@ local function showAim(d: DisasterConfig.Disaster, point: Vector3)
 		AimVisual.hideArrows()
 		return
 	end
-	local travel = Disasters.speed(d, power(), DisasterConfig) * d.Duration
+	local travel = Disasters.speed(d, power(), DisasterConfig) * d.Duration * mod("Duration")
 	-- as setas saem da borda do círculo (sem fixar: na direção jogador -> círculo, como prévia)
 	AimVisual.path(center, flat.Unit, travel, r, color, clock)
 end
@@ -217,7 +226,7 @@ local function cast(point: Vector3, heading: Vector3?)
 	local slot = slots[index]
 	local d = slot.Disaster
 	local now = os.clock()
-	if lastUse[d.Id] and now - lastUse[d.Id] < d.Cooldown then
+	if lastUse[d.Id] and now - lastUse[d.Id] < cooldownOf(d) then
 		Feedback.play("Fail", { Gui = slot.Holder, Text = "⏳" })
 		return
 	end
@@ -237,10 +246,11 @@ local function updateCooldowns()
 	for _, slot in slots do
 		local d = slot.Disaster
 		local last = lastUse[d.Id]
-		local left = if last then d.Cooldown - (now - last) else 0
+		local cooldown = cooldownOf(d)
+		local left = if last then cooldown - (now - last) else 0
 		if left > 0 then
 			slot.Cooldown.Visible = true
-			slot.Cooldown.Size = UDim2.fromScale(1, math.clamp(left / d.Cooldown, 0, 1))
+			slot.Cooldown.Size = UDim2.fromScale(1, math.clamp(left / cooldown, 0, 1))
 			slot.Timer.Visible = true
 			slot.Timer.Text = string.format("%.1f", left)
 		else
@@ -259,7 +269,7 @@ local function aimAt(point: Vector3)
 	local d = slots[index].Disaster
 	if isMoving(d) and anchor == nil then
 		local last = lastUse[d.Id]
-		if last and os.clock() - last < d.Cooldown then
+		if last and os.clock() - last < cooldownOf(d) then
 			Feedback.play("Fail", { Gui = slots[index].Holder, Text = "⏳" })
 			return
 		end

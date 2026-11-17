@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Growth = require(Shared.Logic.Growth)
 local Upgrades = require(Shared.Logic.Upgrades)
 local Buffs = require(Shared.Logic.Buffs)
+local Disasters = require(Shared.Logic.Disasters)
 local GrowthConfig = require(Shared.Config.GrowthConfig)
 local TierConfig = require(Shared.Config.TierConfig)
 local UpgradeConfig = require(Shared.Config.UpgradeConfig)
@@ -121,6 +122,13 @@ function GrowthService.apply(player: Player, force: boolean?)
 	-- Scale = tamanho do corpo (câmera, placas, efeitos); Power = força dos desastres
 	player:SetAttribute("Scale", if DISASTERS then 1 else scale)
 	player:SetAttribute("Power", scale)
+	-- bônus de upgrades + classe nos desastres (o cliente desenha a mira e o cooldown com eles)
+	local mods = Disasters.mods(function(stat)
+		return GrowthService.multiplier(player, stat)
+	end)
+	for key, value in mods do
+		player:SetAttribute("Mod_" .. key, value)
+	end
 	player:SetAttribute("EdibleTier", Growth.highestEdibleTier(scale, TierConfig))
 	-- alcance da boca (studs), para o círculo no chão do cliente
 	player:SetAttribute("EatRadius", GrowthService.eatRadius(player))

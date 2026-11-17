@@ -27,16 +27,14 @@ local glowFolder = Instance.new("Folder")
 glowFolder.Name = "AreaBorder"
 local glowZone = 0 -- zona cuja barreira está brilhando
 local glowCount = 0 -- quantas barreiras dela já tinham chegado (a cidade chega aos poucos no cliente)
-local signs: { [number]: { Gui: BillboardGui, Face: Frame, Title: TextLabel, State: TextLabel, Gradient: UIGradient } } =
-	{}
+local signs: { [number]: { Gui: BillboardGui, Face: Frame, Title: TextLabel, Stroke: UIStroke } } = {}
 local names: { [number]: string } = {}
 local lastWarning = 0
 
-local THEMES = {}
-for state, t in PaletteConfig.AreaSign do
-	if t.Top then
-		THEMES[state] = { Top = Style.rgb(t.Top), Bottom = Style.rgb(t.Bottom) }
-	end
+-- cor do contorno de cada estado (Locked / Current / Cleared)
+local THEMES: { [string]: Color3 } = {}
+for _, state in { "Locked", "Current", "Cleared" } do
+	THEMES[state] = Style.rgb(PaletteConfig.AreaSign[state])
 end
 
 local function city(): Instance?
@@ -47,24 +45,8 @@ local function openZone(): number
 	return (ReplicatedStorage:GetAttribute("RunZone") :: number?) or 1
 end
 
-local function label(name: string, parent: Instance, y: number, h: number, color: Color3): TextLabel
-	local text = Instance.new("TextLabel")
-	text.Name = name
-	text.BackgroundTransparency = 1
-	text.Position = UDim2.fromScale(0.04, y)
-	text.Size = UDim2.fromScale(0.92, h)
-	text.Font = Style.Font
-	text.TextScaled = true
-	text.TextColor3 = color
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 2
-	stroke.Color = Style.TextStroke
-	stroke.Parent = text
-	text.Parent = parent
-	return text
-end
-
--- Placa em estilo Depth Stack: sombra azulada, face com gradiente, contorno uniforme.
+-- Placa minimalista: pílula escura translúcida com contorno fino na cor do estado e uma linha só
+-- ("▶ DOWNTOWN"). As limpas ficam bem apagadas para não poluir a cidade.
 local function makeSign(point: BasePart, zone: number)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "AreaSign"
@@ -73,35 +55,29 @@ local function makeSign(point: BasePart, zone: number)
 	gui.MaxDistance = SIGN.MaxDistance
 	gui.StudsOffsetWorldSpace = Vector3.new(0, SIGN.Height, 0)
 	gui.Adornee = point
-	local shadow = Instance.new("Frame")
-	shadow.Name = "Shadow"
-	shadow.BackgroundColor3 = Style.Shadow
-	shadow.BackgroundTransparency = 0.4
-	shadow.Position = UDim2.fromScale(0, 0.08)
-	shadow.Size = UDim2.fromScale(1, 0.92)
-	local shadowCorner = Instance.new("UICorner")
-	shadowCorner.CornerRadius = UDim.new(0.25, 0)
-	shadowCorner.Parent = shadow
-	shadow.Parent = gui
 	local face = Instance.new("Frame")
 	face.Name = "Face"
-	face.BackgroundColor3 = Color3.new(1, 1, 1)
-	face.Size = UDim2.fromScale(1, 0.92)
+	face.BackgroundColor3 = Style.rgb(PaletteConfig.AreaSign.Pill)
+	face.Size = UDim2.fromScale(1, 1)
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.25, 0)
+	corner.CornerRadius = UDim.new(0.5, 0)
 	corner.Parent = face
 	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 3
-	stroke.Color = Style.TextStroke
+	stroke.Thickness = 1.5
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	stroke.Parent = face
-	local gradient = Instance.new("UIGradient")
-	gradient.Rotation = 90
-	gradient.Parent = face
 	face.Parent = gui
-	local title = label("Title", face, 0.06, 0.5, Color3.new(1, 1, 1))
-	local state = label("State", face, 0.56, 0.36, Style.rgb(PaletteConfig.AreaSign.State))
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.BackgroundTransparency = 1
+	title.Position = UDim2.fromScale(0.08, 0.18)
+	title.Size = UDim2.fromScale(0.84, 0.64)
+	title.Font = Style.Font
+	title.TextScaled = true
+	title.TextColor3 = Color3.new(1, 1, 1)
+	title.Parent = face
 	gui.Parent = point
-	signs[zone] = { Gui = gui, Face = face, Title = title, State = state, Gradient = gradient }
+	signs[zone] = { Gui = gui, Face = face, Title = title, Stroke = stroke }
 end
 
 -- Borda da área atual: a barreira da próxima área (open + 1) ganha uma parede de luz baixa e uma linha forte
@@ -169,19 +145,15 @@ local function refresh()
 	local pixelW = SIGN.PixelWidth * math.clamp(screen, SIGN.MinScreenScale, 1.2)
 	for zone, sign in signs do
 		local name = names[zone] or ""
-		sign.Title.Text = `AREA {zone} · {name}`
-		local theme
-		if zone > open then
-			theme = THEMES.Locked
-			sign.State.Text = `🔒 CLEAN {names[zone - 1] or "THE AREA BEFORE"} FIRST`
-		elseif zone == open then
-			theme = THEMES.Current
-			sign.State.Text = "▶ YOU ARE HERE"
-		else
-			theme = THEMES.Cleared
-			sign.State.Text = "✔ CLEANED"
-		end
-		sign.Gradient.Color = ColorSequence.new(theme.Top, theme.Bottom)
+		local state = if zone > open then "Locked" elseif zone == open then "Current" else "Cleared"
+		local icon = if state == "Locked" then "🔒" elseif state == "Current" then "▶" else "✔"
+		sign.Title.Text = `{icon} {name}`
+		sign.Stroke.Color = THEMES[state]
+		-- a atual se destaca; as limpas quase somem
+		local dim = if state == "Current" then 0 elseif state == "Locked" then 0.15 else 0.45
+		sign.Face.BackgroundTransparency = SIGN.PillTransparency + dim * (1 - SIGN.PillTransparency)
+		sign.Title.TextTransparency = dim
+		sign.Stroke.Transparency = dim
 		-- tamanho fixo na tela (não vira um painel gigante quando a câmera chega perto)
 		sign.Gui.Size = UDim2.fromOffset(pixelW, pixelW * SIGN.Aspect)
 		sign.Gui.StudsOffsetWorldSpace = Vector3.new(0, SIGN.Height * grow, 0)

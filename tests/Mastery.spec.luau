@@ -55,20 +55,18 @@ return function(t)
 			t.truthy(Mastery.damage(level, cfg) > Mastery.damage(level - 1, cfg))
 			t.truthy(Mastery.size(level, cfg) > Mastery.size(level - 1, cfg))
 		end
-		t.truthy(Mastery.extraHops("Lightning", cfg.MaxLevel, cfg) >= 5)
+		t.truthy(Mastery.extraHops("Lightning", cfg.MaxLevel, cfg) >= 2)
 		t.equal(Mastery.extraHops("Meteor", cfg.MaxLevel, cfg), 0)
 		t.truthy(Mastery.extraDuration("Tornado", cfg.MaxLevel, cfg) > 0)
 		-- tamanho no máximo continua razoável (celular): até 2x
 		t.truthy(Mastery.size(cfg.MaxLevel, cfg) <= 2)
 	end)
 
-	t.test("buff do raio: mais dano, mais pulos e perde menos força por pulo", function()
+	t.test("raio é zap: poucos pulos e recarga curta", function()
 		local bolt = DisasterConfig.ById.Lightning
-		t.truthy(bolt.Damage >= 110)
-		t.truthy(bolt.Hops >= 8)
-		t.truthy(bolt.HopDecay >= 0.85)
-		-- força no último pulo ainda relevante (antes 0.75^6 = 18%)
-		t.truthy(bolt.HopDecay ^ bolt.Hops > 0.25)
+		t.truthy(bolt.Hops <= 3)
+		t.truthy(bolt.Cooldown < DisasterConfig.ById.Meteor.Cooldown)
+		t.truthy(bolt.Cooldown < DisasterConfig.ById.Tornado.Cooldown)
 	end)
 
 	-- chão liberado de exemplo: só x entre -10 e 10 (o resto é mar / área fechada)

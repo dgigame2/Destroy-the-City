@@ -113,6 +113,35 @@ function Voxel.stepRoof(boxes: { Box }, w: number, d: number, baseY: number, ste
 	end
 end
 
+-- Bloco com forma: "Wedge" (cunha, alta em +Z antes de Rot), "Cylinder" (em pé), "CylinderZ" (deitado ao
+-- longo de Z: fuselagem, turbina) ou "Ball". A caixa (Size) continua sendo a do mundo.
+function Voxel.shaped(b: Box, shape: string, rot: number?): Box
+	b.Shape = shape
+	b.Rot = rot
+	return b
+end
+
+-- Telhado de duas águas (referências de casa): duas cunhas encostadas na cumeeira (ao longo de X) e uma
+-- capa fina em cima. ox/oz = beiral para os lados/frente e trás. Retorna o topo da cumeeira.
+function Voxel.gable(
+	boxes: { Box },
+	w: number,
+	d: number,
+	x: number,
+	z: number,
+	baseY: number,
+	h: number,
+	ox: number,
+	oz: number,
+	role: string
+): number
+	local W, D = w + ox * 2, d + oz * 2
+	table.insert(boxes, Voxel.shaped(box(W, h, D / 2, x, baseY, z - D / 4, role), "Wedge", 0))
+	table.insert(boxes, Voxel.shaped(box(W, h, D / 2, x, baseY, z + D / 4, role), "Wedge", 180))
+	table.insert(boxes, box(W + 0.2, 0.4, 0.8, x, baseY + h, z, "RoofTop"))
+	return baseY + h + 0.4
+end
+
 -- Rodas quadradas coladas na lateral do veículo.
 function Voxel.wheels(boxes: { Box }, xs: { number }, zs: { number }, size: number)
 	for _, x in xs do

@@ -28,6 +28,7 @@ local DISASTERS = GameplayConfig.Mode == "Disasters"
 local PlayerData = require(script.Parent.PlayerData)
 local GrowthService = require(script.Parent.GrowthService)
 local MapService = require(script.Parent.MapService)
+local StatsService = require(script.Parent.StatsService)
 
 local EatService = {}
 
@@ -72,24 +73,6 @@ local function rootOf(player: Player): BasePart?
 	return character:FindFirstChild("HumanoidRootPart") :: BasePart?
 end
 
--- Placar da party (leaderstats "Score", aparece na lista de jogadores do Roblox).
-local function addScore(player: Player, points: number)
-	local stats = player:FindFirstChild("leaderstats")
-	if stats == nil then
-		local folder = Instance.new("Folder")
-		folder.Name = "leaderstats"
-		local value = Instance.new("IntValue")
-		value.Name = "Score"
-		value.Parent = folder
-		folder.Parent = player
-		stats = folder
-	end
-	local value = (stats :: Instance):FindFirstChild("Score") :: IntValue?
-	if value then
-		value.Value += math.floor(points + 0.5)
-	end
-end
-
 -- Come (ou destrói) uma construção: efeito para todos, dinheiro/gemas/pontos para quem deu o golpe e
 -- crescimento (poder, no modo desastres) para a party inteira. `origin` = de onde veio o golpe (efeito).
 local function eatModel(player: Player, model: Model, tierIndex: number, origin: Vector3?, bonus: number?)
@@ -108,7 +91,8 @@ local function eatModel(player: Player, model: Model, tierIndex: number, origin:
 	else
 		Remotes.event(Remotes.Names.Events.BuildingEaten):FireAllClients(model, player, coins, gems)
 	end
-	addScore(player, Score.forDestroy(tierIndex, ScoreConfig.PointsByTier) * (bonus or 1))
+	-- placar individual: Destroyed + Score só para quem deu o golpe final (uma vez por construção)
+	StatsService.addDestroy(player, Score.forDestroy(tierIndex, ScoreConfig.PointsByTier) * (bonus or 1))
 	MapService.consume(model)
 	PlayerData.addCoins(player, coins)
 	if gems > 0 then

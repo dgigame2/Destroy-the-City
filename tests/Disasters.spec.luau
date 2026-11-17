@@ -28,8 +28,8 @@ return function(t)
 
 	t.test("construção forte: abaixo do poder leva dano, mas bem menos (nada fica travado)", function()
 		local under = StructureConfig.UnderPower
-		local weak = Disasters.hitDamage(meteor, 1.9, TierConfig[3], nil, under)
-		local ok = Disasters.hitDamage(meteor, 2, TierConfig[3], nil, under)
+		local weak = Disasters.hitDamage(tornado, 1.9, TierConfig[3], nil, under)
+		local ok = Disasters.hitDamage(tornado, 2, TierConfig[3], nil, under)
 		t.truthy(weak > 0)
 		t.truthy(weak < ok * 0.5)
 		t.equal(Disasters.underPower(5, TierConfig[5], under), 1)
@@ -43,15 +43,19 @@ return function(t)
 		t.truthy(hp / Disasters.hitDamage(meteor, tier.RequiredScale, tier, nil, under) <= 1)
 	end)
 
-	t.test("meteoro no centro derruba um tier do seu tamanho em 1 acerto", function()
-		for i, tier in TierConfig do
-			local hp = Disasters.structureHp(tier, StructureConfig.HpPerScale)
-			local damage = Disasters.hitDamage(meteor, tier.RequiredScale, tier)
-			if damage < hp then
-				error(`tier {i}: meteoro faz {damage} e o HP é {hp}`)
+	t.test(
+		"meteoro no centro derruba casa ou maior do seu tamanho em 1 acerto (pequeno é papel do tornado)",
+		function()
+			for i = 3, #TierConfig do
+				local tier = TierConfig[i]
+				local hp = Disasters.structureHp(tier, StructureConfig.HpPerScale)
+				local damage = Disasters.hitDamage(meteor, tier.RequiredScale, tier)
+				if damage < hp then
+					error(`tier {i}: meteoro faz {damage} e o HP é {hp}`)
+				end
 			end
 		end
-	end)
+	)
 
 	t.test("tornado moe o que é pequeno e quase não arranha o do seu tamanho", function()
 		local power = 5

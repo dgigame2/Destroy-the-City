@@ -58,7 +58,7 @@ local function slab(
 end
 
 -- tipo de célula -> campo de cor do bioma
-local BIOME_KEY = { Lot = "Ground" }
+local BIOME_KEY = { Lot = "Ground", Wild = "Wild", Bank = "Walk" }
 
 local function colorFor(biome: Biome, kind: string, parity: number): RGB
 	local list = biome[BIOME_KEY[kind] or kind]
@@ -117,13 +117,15 @@ local function cityGround(out: { Slab }, grid: Grid, biome: Biome, cfg: any)
 					end
 				end
 				local kind = grid.Kind[i]
+				-- chão abaixo de 0 (rio rebaixado): lâmina fina no fundo; o resto começa em 0
+				local h = grid.Height[i]
 				local s = slab(
 					kind,
 					(x - w / 2) * size,
-					0,
+					if h < 0 then h - cfg.SunkLayer else 0,
 					(z - d / 2) * size,
 					(x1 + 1 - w / 2) * size,
-					grid.Height[i],
+					h,
 					(z1 + 1 - d / 2) * size,
 					colorFor(biome, kind, parity[i])
 				)
@@ -145,10 +147,32 @@ local function lines(out: { Slab }, grid: Grid, biome: Biome, cfg: any)
 		end
 		return grid.Kind[z * w + x + 1]
 	end
+	-- rua/pista colada no mar não ganha faixa (a parede invisível da costa fica ali)
+	local function nearSea(x: number, z: number): boolean
+		for dx = -1, 1 do
+			for dz = -1, 1 do
+				if kindAt(x + dx, z + dz) == "Sea" then
+					return true
+				end
+			end
+		end
+		return false
+	end
 	local function isRoad(x: number, z: number): boolean
-		return kindAt(x, z) == "Road"
+		return kindAt(x, z) == "Road" and not nearSea(x, z)
 	end
 	local color = biome.RoadLine
+	-- faixa nova nunca encosta por dentro em outra (cruzamentos cortados pela margem natural)
+	local placed: { { number } } = {}
+	local function addLine(x0: number, y0: number, z0: number, x1: number, y1: number, z1: number)
+		for _, r in placed do
+			if x0 < r[2] and x1 > r[1] and z0 < r[4] and z1 > r[3] then
+				return
+			end
+		end
+		table.insert(placed, { x0, x1, z0, z1 })
+		table.insert(out, slab("Line", x0, y0, z0, x1, y1, z1, color))
+	end
 	local top, roadTop = cfg.LineTop, cfg.Heights.Road
 	local every = math.max(1, cfg.LineEvery // size)
 	-- rua que corre em X: a faixa fica na borda entre duas linhas de rua, com rua dos dois lados e
@@ -175,7 +199,7 @@ local function lines(out: { Slab }, grid: Grid, biome: Biome, cfg: any)
 			then
 				local cx, cz = (x + 0.5 - w / 2) * size, (z - d / 2) * size
 				local half = math.min(cfg.LineDash, size) / 2
-				table.insert(out, slab("Line", cx - half, roadTop, cz - 0.4, cx + half, top, cz + 0.4, color))
+				addLine(cx - half, roadTop, cz - 0.4, cx + half, top, cz + 0.4)
 			end
 		end
 	end
@@ -200,7 +224,7 @@ local function lines(out: { Slab }, grid: Grid, biome: Biome, cfg: any)
 			then
 				local cx, cz = (x - w / 2) * size, (z + 0.5 - d / 2) * size
 				local half = math.min(cfg.LineDash, size) / 2
-				table.insert(out, slab("Line", cx - 0.4, roadTop, cz - half, cx + 0.4, top, cz + half, color))
+				addLine(cx - 0.4, roadTop, cz - half, cx + 0.4, top, cz + half)
 			end
 		end
 	end
@@ -217,9 +241,14 @@ local function lines(out: { Slab }, grid: Grid, biome: Biome, cfg: any)
 				while kindAt(x + 1 + runRight, z) == "Runway" do
 					runRight += 1
 				end
-				if runLeft == runRight and kindAt(x, z + 1) == "Runway" then
+				if
+					runLeft == runRight
+					and kindAt(x, z + 1) == "Runway"
+					and not nearSea(x, z)
+					and not nearSea(x, z + 1)
+				then
 					local cx, cz = (x + 0.5 - w / 2) * size, (z + 1 - d / 2) * size
-					table.insert(out, slab("Line", cx - 0.6, runwayTop, cz - 3, cx + 0.6, top, cz + 3, color))
+					addLine(cx - 0.6, runwayTop, cz - 3, cx + 0.6, top, cz + 3)
 				end
 			end
 		end
@@ -327,10 +356,14 @@ local function base(out: { Slab }, grid: Grid, biome: Biome, cfg: any)
 				end
 			end
 		end
-		return if coastal then tostring((x // check + z // check) % 2) else "0"
+		-- embaixo do rio rebaixado a terra para antes (a lâmina de água fica em cima dela)
+		local h = grid.Height[i]
+		local top = if h < 0 then h - cfg.SunkLayer else 0
+		return (if coastal then tostring((x // check + z // check) % 2) else "0") .. "|" .. top
 	end)
 	for _, r in rects do
-		local color = biome.Base[if r[5] == "1" then 2 else 1]
+		local key = string.split(r[5], "|")
+		local color = biome.Base[if key[1] == "1" then 2 else 1]
 		table.insert(
 			out,
 			slab(
@@ -339,7 +372,7 @@ local function base(out: { Slab }, grid: Grid, biome: Biome, cfg: any)
 				-cfg.BaseDepth,
 				(r[2] - d / 2) * size,
 				(r[3] - w / 2) * size,
-				0,
+				tonumber(key[2]) :: number,
 				(r[4] - d / 2) * size,
 				color
 			)

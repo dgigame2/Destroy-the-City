@@ -30,6 +30,8 @@ export type ZoneDef = { Name: string, Rects: { Rect }, Steps: { StepDef } }
 export type Site = { Template: string, X: number, Z: number, Rotation: number?, AnyGround: boolean? }
 -- Litoral: Inset = largura do mar dentro do retângulo; Radius = arredondamento dos cantos;
 -- Amplitude/Wavelength = ondulação da costa; Shore = largura da orla de areia. Tudo em unidades da planta.
+-- Wild = margem natural (grama/areia/neve, sem construções nem ruas) entre a cidade e a costa, com largura
+-- variando de Min a Max: a cidade acaba antes do mar com um contorno irregular, como nas referências.
 export type Coast = {
 	Inset: number,
 	Radius: number,
@@ -37,6 +39,7 @@ export type Coast = {
 	Wavelength: number,
 	Shore: number,
 	Seed: number,
+	Wild: { Min: number, Max: number, Wavelength: number }?,
 }
 -- Grade de ruas automática dentro de Rect: uma rua a cada Every = {x, z}, a partir de Offset;
 -- Skip = chance de pular um trecho (quarteirões maiores e irregulares); Holes = retângulos sem ruas
@@ -124,6 +127,7 @@ type Config = {
 	Gap: number,
 	FrontageTries: number,
 	LampEvery: number,
+	WildChance: number, -- árvores/moitas por célula na margem natural
 	FarLampCap: number,
 	TierSpan: number,
 	PropChance: number,
@@ -146,6 +150,7 @@ export type Fill = {
 	Plaza: { [string]: number }, -- objetos nas praças
 	Boats: { [string]: number }, -- barcos na água do porto
 	BoatChance: number,
+	Wild: { [string]: number }, -- natureza da margem antes do mar (Coast.Wild): destrutível, conta na área
 }
 
 local DIRS = { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } }
@@ -184,6 +189,40 @@ local function paintLine(grid: Grid, line: Line, kind: string, heights: { [strin
 					if i and grid.Kind[i] ~= "Sea" and (bridge or grid.Kind[i] ~= "Road") then
 						grid.Kind[i] = kind
 						grid.Height[i] = heights[kind]
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Rio com cara de rio (referências de rio de cidade): a linha da planta vira uma curva suave (Catmull-Rom)
+-- pintada com pincel redondo, então as margens ficam arredondadas em vez de degraus retos.
+local function paintRiver(grid: Grid, line: Line, heights: { [string]: number })
+	local pts = line.Points
+	local r = line.Width / 2
+	local function at(i: number): { number }
+		return pts[math.clamp(i, 1, #pts)]
+	end
+	for s = 1, #pts - 1 do
+		local p0, p1, p2, p3 = at(s - 1), at(s), at(s + 1), at(s + 2)
+		local length = math.sqrt((p2[1] - p1[1]) ^ 2 + (p2[2] - p1[2]) ^ 2)
+		local steps = math.max(1, math.ceil(length * 3))
+		for k = 0, steps do
+			local t = k / steps
+			local t2, t3 = t * t, t * t * t
+			local function cr(a: number, b: number, c: number, d: number): number
+				return 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3)
+			end
+			local px, pz = cr(p0[1], p1[1], p2[1], p3[1]), cr(p0[2], p1[2], p2[2], p3[2])
+			for cx = math.floor(px - r), math.ceil(px + r) do
+				for cz = math.floor(pz - r), math.ceil(pz + r) do
+					if (cx + 0.5 - px) ^ 2 + (cz + 0.5 - pz) ^ 2 <= r * r then
+						local i = index(grid, cx, cz)
+						if i and grid.Kind[i] ~= "Sea" and grid.Kind[i] ~= "Road" then
+							grid.Kind[i] = "Water"
+							grid.Height[i] = heights.Water
+						end
 					end
 				end
 			end
@@ -365,7 +404,7 @@ local function newGrid(plan: Plan, cfg: Config): (Grid, { StepInfo })
 	end
 	-- 2. rios e ruas (rua por cima do rio = ponte)
 	for _, river in plan.Rivers do
-		paintLine(grid, river, "Water", cfg.Heights, false)
+		paintRiver(grid, river, cfg.Heights)
 	end
 	for _, road in plan.Roads do
 		paintLine(grid, road, "Road", cfg.Heights, true)
@@ -390,6 +429,74 @@ local function newGrid(plan: Plan, cfg: Config): (Grid, { StepInfo })
 	for i in walks do
 		grid.Kind[i] = "Walk"
 		grid.Height[i] = cfg.Heights.Walk
+	end
+	-- 3a. margem de pedra (cais) em volta de rios, lagos e portos: o rio fica mais baixo que o chão
+	-- (CityConfig.Heights.Water) e a margem mais alta, como um canal de cidade
+	local banks = {}
+	for z = 0, grid.Depth - 1 do
+		for x = 0, grid.Width - 1 do
+			local i = index(grid, x, z) :: number
+			local kind = grid.Kind[i]
+			if (kind == "Lot" or kind == "Walk") and grid.Height[i] == cfg.Heights[kind] then
+				for dx = -1, 1 do
+					for dz = -1, 1 do
+						local j = index(grid, x + dx, z + dz)
+						if j and grid.Kind[j] == "Water" then
+							banks[i] = true
+						end
+					end
+				end
+			end
+		end
+	end
+	for i in banks do
+		grid.Kind[i] = "Bank"
+		grid.Height[i] = cfg.Heights.Bank
+	end
+	-- 3b. margem natural: perto da costa (largura sorteada pelo ruído) o chão volta a ser natureza e as ruas
+	-- acabam antes do mar. Rio, orla, pista e pátios ficam (o rio continua até o mar).
+	local wild = plan.Coast.Wild
+	if wild then
+		local dist: { number } = {}
+		local queue = {}
+		for i = 1, grid.Width * grid.Depth do
+			if not land[i] then
+				dist[i] = 0
+				table.insert(queue, i)
+			end
+		end
+		local head = 1
+		while head <= #queue do
+			local i = queue[head]
+			head += 1
+			if dist[i] > wild.Max then
+				continue
+			end
+			local x, z = (i - 1) % grid.Width, (i - 1) // grid.Width
+			for dx = -1, 1 do
+				for dz = -1, 1 do
+					local j = index(grid, x + dx, z + dz)
+					if j and dist[j] == nil then
+						dist[j] = dist[i] + 1
+						table.insert(queue, j)
+					end
+				end
+			end
+		end
+		local natural = { Lot = true, Road = true, Walk = true, Plaza = true }
+		for z = 0, grid.Depth - 1 do
+			for x = 0, grid.Width - 1 do
+				local i = index(grid, x, z) :: number
+				local d = dist[i]
+				local band = wild.Min
+					+ (wild.Max - wild.Min) * CityGen.coastNoise(x, z, wild.Wavelength, plan.Coast.Seed + 5)
+				local flat = grid.Height[i] == cfg.Heights[grid.Kind[i]] -- morro (Lot mais alto) fica
+				if land[i] and d and d <= band and natural[grid.Kind[i]] and flat then
+					grid.Kind[i] = "Wild"
+					grid.Height[i] = cfg.Heights.Wild
+				end
+			end
+		end
 	end
 	-- 4. bairros, zonas e etapas (só na terra)
 	local steps: { StepInfo } = {}
@@ -858,6 +965,10 @@ local function walls(layout: Layout, cfg: Config)
 	local function emit(k: number, x0: number, z0: number, x1: number, z1: number, bottom: number)
 		local isCoast = k < 0
 		local height = if isCoast then cfg.ColliderHeight else cfg.BarrierHeight
+		-- na foz do rio rebaixado a parede da costa começa em 0 (acima do mar; o vão de 0.6 ninguém passa)
+		if isCoast then
+			bottom = math.max(bottom, 0)
+		end
 		local piece = {
 			Size = { x1 - x0, height, z1 - z0 },
 			Pos = { (x0 + x1) / 2, bottom + height / 2, (z0 + z1) / 2 },
@@ -1015,6 +1126,10 @@ local function toCells(plan: Plan, cfg: Config): Plan
 	coast.Amplitude *= f
 	coast.Wavelength *= f
 	coast.Shore = math.floor(coast.Shore * f + 0.5)
+	if plan.Coast.Wild then
+		local w = plan.Coast.Wild
+		coast.Wild = { Min = w.Min * f, Max = w.Max * f, Wavelength = w.Wavelength * f }
+	end
 	result.Coast = coast
 	result.Roads, result.Rivers, result.Areas, result.Districts, result.Zones, result.Sites = {}, {}, {}, {}, {}, {}
 	for _, line in plan.Roads do
@@ -1082,6 +1197,11 @@ local function scalePlan(plan: Plan, k: number): Plan
 	coast.Radius *= k
 	coast.Amplitude *= k
 	coast.Wavelength *= k
+	-- a margem natural fica com a mesma largura (só a ondulação acompanha a cidade maior)
+	if plan.Coast.Wild then
+		local w = plan.Coast.Wild
+		coast.Wild = { Min = w.Min, Max = w.Max, Wavelength = w.Wavelength * k }
+	end
 	result.Coast = coast
 	result.Roads, result.Rivers, result.Areas, result.Districts, result.Zones, result.Sites = {}, {}, {}, {}, {}, {}
 	for _, l in plan.Roads do
@@ -1181,6 +1301,7 @@ function CityGen.generate(
 	scatter(layout, templates, rng, cfg, "Plaza", fill.Plaza, 0.1, nil)
 	scatter(layout, templates, rng, cfg, "Asphalt", fill.Parking, 0.35, "Parking")
 	scatter(layout, templates, rng, cfg, "Water", fill.Boats, fill.BoatChance, "Harbor")
+	scatter(layout, templates, rng, cfg, "Wild", fill.Wild, cfg.WildChance, nil)
 	fillSidewalks(layout, fill, templates, rng, cfg)
 	walls(layout, cfg)
 	spawns(layout, #plan.Zones, rng, cfg)

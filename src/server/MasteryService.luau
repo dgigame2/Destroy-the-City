@@ -50,12 +50,13 @@ function MasteryService.level(player: Player, id: string): number
 end
 
 -- Construção derrubada por `id` (chain = caiu na reação em cadeia que esse desastre começou).
-function MasteryService.record(player: Player, id: string, tier: number, chain: boolean)
+-- `xpMultiplier` = upgrade XP (GrowthService.multiplier "Xp").
+function MasteryService.record(player: Player, id: string, tier: number, chain: boolean, xpMultiplier: number)
 	local entry = stateOf(player)[id]
 	if entry == nil or player.Parent == nil then
 		return
 	end
-	local gained = Mastery.add(entry, Mastery.xp(tier, chain, MasteryConfig), MasteryConfig)
+	local gained = Mastery.add(entry, Mastery.xp(tier, chain, MasteryConfig) * xpMultiplier, MasteryConfig)
 	if gained > 0 then
 		dirty[player] = nil
 		publish(player)

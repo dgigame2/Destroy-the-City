@@ -4,6 +4,7 @@
 -- Ruas e rios: linhas com largura em unidades; ruas passam por cima dos rios (pontes).
 -- Streets: grades de ruas automáticas (Every = distância entre ruas; Skip = trechos pulados; Holes = sem ruas).
 -- Coast: a terra é uma ilha arredondada com a costa ondulada; fora dela é mar (atrás de paredes invisíveis).
+-- Coast.Wild: margem natural entre a cidade e o mar (a cidade acaba antes, com contorno irregular).
 --
 -- Zonas (áreas de progressão), na ordem: a 1 é onde o jogador começa; cada uma só abre quando a anterior
 -- foi toda comida (aos 98% o resto é coletado sozinho). Cada zona tem etapas em ordem (Steps): a região de
@@ -33,7 +34,15 @@ plans.GardenVillage = {
 	Depth = 160,
 	DefaultDistrict = "Suburb",
 	FinalScale = 18,
-	Coast = { Inset = 9, Radius = 30, Amplitude = 8, Wavelength = 34, Shore = 2, Seed = 11 },
+	Coast = {
+		Inset = 6,
+		Radius = 26,
+		Amplitude = 4,
+		Wavelength = 30,
+		Shore = 2,
+		Seed = 11,
+		Wild = { Min = 3, Max = 9, Wavelength = 18 }, -- gramado com árvores antes do mar
+	},
 	Zones = {
 		{
 			Name = "MAPLE GARDENS",
@@ -103,7 +112,7 @@ plans.GardenVillage = {
 		{ Kind = "Plaza", Rect = rect(116, 32, 132, 44) }, -- parque central
 	},
 	Rivers = {
-		road(5, { 98, -1 }, { 102, 12 }, { 116, 22 }, { 140, 34 }, { 181, 40 }),
+		road(7, { 98, -1 }, { 102, 12 }, { 116, 22 }, { 140, 34 }, { 181, 40 }),
 	},
 	Roads = {
 		-- avenidas nas bordas das zonas
@@ -178,7 +187,15 @@ plans.Harbor = {
 	Depth = 196,
 	DefaultDistrict = "Suburb",
 	FinalScale = 18,
-	Coast = { Inset = 10, Radius = 34, Amplitude = 9, Wavelength = 38, Shore = 4, Seed = 23 },
+	Coast = {
+		Inset = 9,
+		Radius = 30,
+		Amplitude = 4,
+		Wavelength = 32,
+		Shore = 4,
+		Seed = 23,
+		Wild = { Min = 3, Max = 9, Wavelength = 20 }, -- ilha de areia com coqueiros, mar aberto em volta
+	},
 	Zones = {
 		{
 			Name = "BEACHFRONT",
@@ -246,7 +263,7 @@ plans.Harbor = {
 		{ Kind = "Asphalt", Rect = rect(100, 98, 112, 106), District = "Parking" },
 	},
 	Rivers = {
-		road(5, { -1, 118 }, { 30, 122 }, { 60, 114 }, { 100, 120 }, { 140, 112 }, { 180, 118 }, { 209, 114 }),
+		road(7, { -1, 118 }, { 30, 122 }, { 60, 114 }, { 100, 120 }, { 140, 112 }, { 180, 118 }, { 209, 114 }),
 	},
 	Roads = {
 		-- avenidas nas bordas das zonas
@@ -317,7 +334,15 @@ plans.Metropolis = {
 	Depth = 196,
 	DefaultDistrict = "Suburb",
 	FinalScale = 18,
-	Coast = { Inset = 10, Radius = 32, Amplitude = 9, Wavelength = 36, Shore = 3, Seed = 37 },
+	Coast = {
+		Inset = 6,
+		Radius = 28,
+		Amplitude = 4,
+		Wavelength = 30,
+		Shore = 3,
+		Seed = 37,
+		Wild = { Min = 3, Max = 9, Wavelength = 20 }, -- neve com pinheiros, num mar congelado
+	},
 	Zones = {
 		{
 			Name = "SNOWY HAMLET",
@@ -386,7 +411,7 @@ plans.Metropolis = {
 	},
 	Rivers = {
 		road(
-			5,
+			7,
 			{ 205, 40 },
 			{ 180, 46 },
 			{ 160, 40 },

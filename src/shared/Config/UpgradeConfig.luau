@@ -1,5 +1,9 @@
 --!strict
--- Upgrades comprados com moedas. Bonus = BonusPerLevel * nível (ex.: 0.06 = +6% por nível).
+-- Upgrades comprados com moedas (valem na run). Bonus = BonusPerLevel * nível (ex.: 0.04 = +4% por nível).
+-- Entram no DisasterService (Logic/Disasters.mods) e no GrowthService:
+--   Cooldown = recarga mais rápida (cooldown / multiplicador); Range = alcance da mira;
+--   Xp = XP dos desastres (sobem de nível mais rápido, MasteryService.record); Coins = dinheiro.
+-- As classes (ClassConfig) ainda podem dar Damage, Magnet (tamanho), Duration e Chain sem upgrade.
 
 export type Upgrade = {
 	Id: string,
@@ -13,30 +17,30 @@ export type Upgrade = {
 
 local upgrades: { Upgrade } = {
 	{
-		Id = "Speed",
-		DisplayName = "Speed",
-		Description = "+6% walk speed",
+		Id = "Cooldown",
+		DisplayName = "Recharge",
+		Description = "+4% recharge speed",
+		BaseCost = 30,
+		CostGrowth = 1.5,
+		BonusPerLevel = 0.04,
+		MaxLevel = 10,
+	},
+	{
+		Id = "Range",
+		DisplayName = "Reach",
+		Description = "+5% cast range",
 		BaseCost = 15,
-		CostGrowth = 1.35,
-		BonusPerLevel = 0.06,
-		MaxLevel = 20,
+		CostGrowth = 1.4,
+		BonusPerLevel = 0.05,
+		MaxLevel = 10,
 	},
 	{
-		Id = "Magnet",
-		DisplayName = "Big Mouth",
-		Description = "+3% eating reach",
-		BaseCost = 20,
-		CostGrowth = 1.45,
-		BonusPerLevel = 0.03,
-		MaxLevel = 10, -- máximo +30% (antes +160%)
-	},
-	{
-		Id = "Growth",
-		DisplayName = "Hunger",
-		Description = "+7% growth",
+		Id = "Xp",
+		DisplayName = "XP",
+		Description = "+10% disaster XP",
 		BaseCost = 30,
 		CostGrowth = 1.45,
-		BonusPerLevel = 0.07,
+		BonusPerLevel = 0.1,
 		MaxLevel = 20,
 	},
 	{

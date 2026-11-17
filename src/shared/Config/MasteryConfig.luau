@@ -13,10 +13,10 @@ return table.freeze({
 	Growth = 1.3,
 	XpByTier = table.freeze({ 1, 2, 4, 7, 12, 20, 35 }),
 	ChainXp = 0.5,
-	-- bônus por nível acima do 1 (0.08 = +8% de dano por nível)
-	PerLevel = table.freeze({ Damage = 0.08, Size = 0.025 }),
+	-- bônus por nível acima do 1 (0.05 = +5% de dano por nível)
+	PerLevel = table.freeze({ Damage = 0.05, Size = 0.012 }),
 	Extras = table.freeze({
-		Lightning = table.freeze({ HopsEvery = 4 }), -- +1 pulo a cada 4 níveis
+		Lightning = table.freeze({ HopsEvery = 10 }), -- +1 pulo a cada 10 níveis (zap continua focado)
 		Tornado = table.freeze({ DurationPerLevel = 0.1 }), -- +0,1 s por nível
 	}),
 })

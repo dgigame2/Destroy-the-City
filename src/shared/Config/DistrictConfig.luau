@@ -128,6 +128,7 @@ local function fill(nature: Mix, yard: Mix, small: Mix, market: Mix, extra: { [s
 		Plaza = { Bench = 3, FlowerPot = 3, FoodCart = 1.5, Lamp = 1, IceCreamStand = 0.6 },
 		Boats = { Boat = 4, Yacht = 1.5 },
 		BoatChance = 0.004,
+		Wild = nature, -- árvores e moitas da margem antes do mar (destrutíveis)
 	})
 end
 

@@ -196,8 +196,9 @@ local function onBuildingDestroyed(model: Model?, destroyer: Player, coins: numb
 	local tier = (model:GetAttribute("Tier") :: number?) or 1
 	local pivot = model:GetPivot()
 	local from = origin or pivot.Position
+	-- arrancado pelo tornado: quem aparece voando é a cópia física do servidor (DebrisService);
 	-- desabou antes (escombros): os escombros afundam e somem; senão, a construção explode para longe
-	if DamageVfx.vanish(model) then
+	if model:GetAttribute("Flung") or DamageVfx.vanish(model) then
 		model.Parent = nil
 	else
 		local copy = model:Clone()

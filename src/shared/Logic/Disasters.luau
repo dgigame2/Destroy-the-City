@@ -35,11 +35,28 @@ function Disasters.underPower(power: number, tier: Tier, under: number): number
 	return under * power / tier.RequiredScale
 end
 
+-- Papel do desastre: multiplicador de dano contra o tier (DisasterConfig Vs por nome do tier; 1 se não tem).
+function Disasters.vs(disaster: Disaster, tier: Tier): number
+	local list = disaster.Vs
+	local name = (tier :: any).Name
+	return if list and name and list[name] then list[name] else 1
+end
+
 -- Dano de um acerto antes da distância. Coisas menores que o seu poder levam mais (TierExponent alto =
 -- ótimo contra pequenos); as maiores levam pouco (underPower). `under` = StructureConfig.UnderPower.
-function Disasters.hitDamage(disaster: Disaster, power: number, tier: Tier, bonus: number?, under: number?): number
-	local size = (power / tier.RequiredScale) ^ disaster.TierExponent
-	local weak = Disasters.underPower(power, tier, under or 0)
+-- `cap` = DisasterConfig.OverkillCap: a vantagem (poder / exigido) conta no máximo até ele (end game).
+function Disasters.hitDamage(
+	disaster: Disaster,
+	power: number,
+	tier: Tier,
+	bonus: number?,
+	under: number?,
+	cap: number?
+): number
+	local size = math.min(power / tier.RequiredScale, cap or math.huge) ^ disaster.TierExponent
+		* Disasters.vs(disaster, tier)
+	-- desastre com UnderPower próprio (meteoro) sofre menos contra o que é maior que você
+	local weak = Disasters.underPower(power, tier, disaster.UnderPower or under or 0)
 	return disaster.Damage * power * size * weak * (bonus or 1)
 end
 
@@ -209,6 +226,25 @@ function Disasters.lightningChain(
 		current = nextNode
 	end
 	return result
+end
+
+-- Bônus de upgrades + classe de um jogador para os desastres (todos multiplicadores, 1 = nada).
+-- `multiplier(stat)` = GrowthService.multiplier (1 + upgrade + classe). Cooldown vira divisor.
+export type Mods = { Damage: number, Size: number, Range: number, Cooldown: number, Duration: number, Chain: number }
+function Disasters.mods(multiplier: (string) -> number): Mods
+	return {
+		Damage = multiplier("Damage"),
+		Size = multiplier("Magnet"),
+		Range = multiplier("Range"),
+		Cooldown = multiplier("Cooldown"),
+		Duration = multiplier("Duration"),
+		Chain = multiplier("Chain"),
+	}
+end
+
+-- Cooldown real com o bônus de recarga (`recharge` = multiplicador; 1.3 = 30% mais rápido).
+function Disasters.cooldown(disaster: Disaster, recharge: number?): number
+	return disaster.Cooldown / math.max(recharge or 1, 1e-6)
 end
 
 -- Cooldown: pode usar de novo? (`last` = quando usou pela última vez; nil = nunca)

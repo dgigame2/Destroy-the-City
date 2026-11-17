@@ -26,7 +26,9 @@ local DisasterVfx = {}
 
 local MAX_EFFECTS = 10
 local MAX_FLASHES = 4
+local MAX_FIRES = require(Shared.Config.ChainConfig).Fire.MaxActive -- mesmo teto do servidor
 local active = 0
+local burning = 0
 local flashes = 0
 
 local folder = Instance.new("Folder")
@@ -390,12 +392,136 @@ local function onCast(cast: { [string]: any })
 	end)
 end
 
--- Elo da cadeia: explosão (laranja, clarão) ou desabamento (poeira cinza). Conta no limite de efeitos.
-local function onChainBlast(blast: { Kind: string, Position: Vector3, Radius: number })
+-- Fogo da cadeia: chamas + fumaça + luz tremendo enquanto queima (Duration s), depois apaga.
+local function fireEffect(blast: { [string]: any })
+	local r = blast.Radius :: number
+	local seconds = (blast.Duration :: number?) or 2.5
+	local base =
+		part({ Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(blast.Position + Vector3.new(0, 1, 0)) })
+	local flames = Instance.new("ParticleEmitter")
+	flames.Texture = "rbxasset://textures/particles/fire_main.dds"
+	flames.Color = ColorSequence.new(Style.rgb(PaletteConfig.Vfx.FireCore), Style.rgb(PaletteConfig.Vfx.Fire))
+	flames.LightEmission = 0.8
+	flames.Size = NumberSequence.new(r * 0.35, r * 0.1)
+	flames.Transparency = NumberSequence.new(0.1, 1)
+	flames.Lifetime = NumberRange.new(0.4, 0.7)
+	flames.Speed = NumberRange.new(r * 0.6, r)
+	flames.SpreadAngle = Vector2.new(25, 25)
+	flames.Shape = Enum.ParticleEmitterShape.Disc
+	flames.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	flames.EmissionDirection = Enum.NormalId.Top
+	flames.Rate = 30
+	flames.Parent = base
+	local smoke = Instance.new("ParticleEmitter")
+	smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	smoke.Color = ColorSequence.new(Style.rgb(PaletteConfig.Vfx.FireSmoke))
+	smoke.Size = NumberSequence.new(r * 0.3, r * 0.8)
+	smoke.Transparency = NumberSequence.new(0.5, 1)
+	smoke.Lifetime = NumberRange.new(1, 1.6)
+	smoke.Speed = NumberRange.new(r * 0.5)
+	smoke.Rate = 6
+	smoke.Parent = base
+	local light = Instance.new("PointLight")
+	light.Range = math.min(r * 1.6, 40)
+	light.Brightness = 3
+	light.Color = Style.rgb(PaletteConfig.Vfx.Fire)
+	light.Parent = base
+	local ends = os.clock() + seconds
+	while os.clock() < ends do
+		light.Brightness = 2.5 + math.random() * 1.5
+		task.wait(0.12)
+	end
+	flames.Enabled = false
+	smoke.Enabled = false
+	tween(light, 0.5, { Brightness = 0 })
+	task.wait(1.6)
+	base:Destroy()
+end
+
+-- Faísca do condutor: raios curtos entre os pontos da mini cadeia.
+local function sparkEffect(blast: { [string]: any })
+	local points = blast.Points :: { Vector3 }?
+	if points == nil or #points < 2 then
+		return
+	end
+	local color = Style.rgb(PaletteConfig.Vfx.Spark)
+	local pieces = {}
+	for i = 2, #points do
+		for _, piece in bolt(points[i - 1] + Vector3.new(0, 2, 0), points[i] + Vector3.new(0, 2, 0), 0.35, color) do
+			table.insert(pieces, piece)
+		end
+	end
+	shakeNear(points[1], 8, 0.3)
+	for _, on in { false, true } do
+		task.wait(0.05)
+		for _, piece in pieces do
+			piece.Transparency = if on then 0 else 0.5
+		end
+	end
+	for _, piece in pieces do
+		tween(piece, 0.15, { Transparency = 1 })
+	end
+	task.wait(0.2)
+	for _, piece in pieces do
+		piece:Destroy()
+	end
+end
+
+-- Batida de objeto que voou: anel de poeira pequeno.
+local function impactEffect(blast: { [string]: any })
+	local r = blast.Radius :: number
+	local ring = part({
+		Shape = Enum.PartType.Cylinder,
+		Material = Enum.Material.SmoothPlastic,
+		Color = Style.rgb(PaletteConfig.Vfx.ImpactDust),
+		Transparency = 0.35,
+		Size = Vector3.new(0.3, r * 0.4, r * 0.4),
+		CFrame = flat(blast.Position + Vector3.new(0, 0.3, 0)),
+	})
+	tween(ring, 0.3, { Size = Vector3.new(0.2, r * 1.8, r * 1.8), Transparency = 1 })
+	shakeNear(blast.Position, r, 0.35)
+	task.wait(0.4)
+	ring:Destroy()
+end
+
+local CHAIN_EFFECTS: { [string]: ({ [string]: any }) -> () } = {
+	Electric = sparkEffect,
+	Impact = impactEffect,
+}
+
+-- Elo da cadeia: explosão (laranja, clarão), desabamento (poeira cinza), fogo, faísca ou batida de destroço.
+-- Conta no limite de efeitos.
+local function onChainBlast(blast: { [string]: any })
+	-- fogo dura alguns segundos: tem o próprio teto para não tomar a vaga dos outros efeitos
+	if blast.Kind == "Fire" then
+		if burning >= MAX_FIRES then
+			return
+		end
+		burning += 1
+		task.spawn(function()
+			local ok, err = pcall(fireEffect, blast)
+			burning -= 1
+			if not ok then
+				warn("[DisasterVfx] Fire", err)
+			end
+		end)
+		return
+	end
 	if active >= MAX_EFFECTS then
 		return
 	end
 	active += 1
+	local special = CHAIN_EFFECTS[blast.Kind]
+	if special then
+		task.spawn(function()
+			local ok, err = pcall(special, blast)
+			active -= 1
+			if not ok then
+				warn("[DisasterVfx]", blast.Kind, err)
+			end
+		end)
+		return
+	end
 	task.spawn(function()
 		local explosion = blast.Kind == "Explosion"
 		local r = blast.Radius

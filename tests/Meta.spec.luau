@@ -195,8 +195,20 @@ return function(t)
 		for _, class in ClassConfig do
 			t.truthy(class.Price > 0)
 			t.truthy(next(class.Buffs) ~= nil)
-			-- só bônus que algum sistema lê (GrowthService.multiplier / startPoints)
-			local known = { Speed = true, Magnet = true, Growth = true, Coins = true, Gems = true, StartPoints = true }
+			-- só bônus que algum sistema lê (GrowthService.multiplier / startPoints / Disasters.mods)
+			local known = {
+				Speed = true,
+				Magnet = true,
+				Growth = true,
+				Coins = true,
+				Gems = true,
+				StartPoints = true,
+				Damage = true,
+				Range = true,
+				Cooldown = true,
+				Duration = true,
+				Chain = true,
+			}
 			for key in class.Buffs do
 				t.truthy(known[key], class.Id .. " tem bônus desconhecido: " .. key)
 			end

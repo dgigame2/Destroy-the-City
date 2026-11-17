@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local StudConfig = require(Shared.Config.StudConfig)
 local MeshKitConfig = require(Shared.Config.MeshKitConfig)
+local MeshModelsConfig = require(Shared.Config.MeshModelsConfig)
 local MeshKit = require(Shared.Logic.MeshKit)
 
 local Builder = {}
@@ -95,6 +96,12 @@ function Builder.shapedPart(b: Box, cframe: CFrame): BasePart
 		part.Size = Vector3.new(sy, sx, sz)
 		part.CFrame = base * CFrame.Angles(0, 0, math.rad(90))
 		return part
+	elseif shape == "CylinderZ" then
+		-- deitado ao longo de Z: o eixo X do cilindro do Roblox gira 90° em Y
+		part.Shape = Enum.PartType.Cylinder
+		part.Size = Vector3.new(sz, sy, sx)
+		part.CFrame = base * CFrame.Angles(0, math.rad(90), 0)
+		return part
 	elseif shape == "Ball" then
 		part.Shape = Enum.PartType.Ball
 		part.Size = Vector3.new(sx, sy, sz)
@@ -135,8 +142,15 @@ function Builder.kitPart(b: Box, cframe: CFrame): BasePart
 		return Builder.shapedPart(b, cframe)
 	end
 	local part = mesh:Clone()
-	part.Size = Vector3.new(b.Size[1], b.Size[2], b.Size[3])
-	part.CFrame = cframe * CFrame.new(b.Pos[1], b.Pos[2], b.Pos[3])
+	local base = cframe * CFrame.new(b.Pos[1], b.Pos[2], b.Pos[3])
+	if b.Shape == "CylinderZ" then
+		-- cilindro do kit (em pé, eixo Y) deitado ao longo de Z: gira 90° em X
+		part.Size = Vector3.new(b.Size[1], b.Size[3], b.Size[2])
+		part.CFrame = base * CFrame.Angles(math.rad(90), 0, 0)
+	else
+		part.Size = Vector3.new(b.Size[1], b.Size[2], b.Size[3])
+		part.CFrame = base
+	end
 	part:SetAttribute("Kit", b.Shape or "Block") -- forma original (a varredura de sobreposição usa)
 	return part
 end
@@ -174,11 +188,72 @@ local function setGroundPivot(model: Model, cframe: CFrame)
 	model:SetAttribute("Ground", cframe.Position.Y)
 end
 
+-- Modelo feito no Blender (Config/MeshModelsConfig): todas as meshes dele já importadas? (nil = usa os blocos)
+local modelCache: { [string]: { MeshPart } | false } = {}
+local function blenderModel(name: string): { MeshPart }?
+	local cached = modelCache[name]
+	if cached ~= nil then
+		return cached or nil
+	end
+	local pieces = MeshModelsConfig.Models[name]
+	local assets = ReplicatedStorage:FindFirstChild(MeshModelsConfig.Folder)
+	local found: { MeshPart } = {}
+	if pieces and assets then
+		for _, piece in pieces do
+			local mesh = assets:FindFirstChild(piece.Mesh, true)
+			if not (mesh and mesh:IsA("MeshPart")) then
+				break
+			end
+			table.insert(found, mesh)
+		end
+	end
+	local ok = pieces ~= nil and #found == #pieces
+	modelCache[name] = if ok then found else false
+	return if ok then found else nil
+end
+
 -- Cria o Model de uma construção já posicionado. Cada papel de cor usa uma variação da semente,
 -- assim paredes e telhados não mudam juntos.
 function Builder.build(template: Template, palette: Palette, variant: number, cframe: CFrame): Model
 	local model = Instance.new("Model")
 	model.Name = template.Name
+	local roleVariant: { [string]: number } = {}
+	local salt = 0
+	local function variantFor(role: string): number
+		local key = VARIANT_GROUP[role] or role
+		if roleVariant[key] == nil then
+			salt += 7
+			roleVariant[key] = variant + salt
+		end
+		return roleVariant[key]
+	end
+	-- modelo do Blender: uma mesh por papel de cor, pintada com a paleta do mapa
+	local meshes = blenderModel(template.Name)
+	if meshes then
+		local biggest = 0
+		for index, piece in MeshModelsConfig.Models[template.Name] do
+			local part = meshes[index]:Clone()
+			part.Name = piece.Role
+			part.Anchored = true
+			part.Size = Vector3.new(piece.Size[1], piece.Size[2], piece.Size[3])
+			part.CFrame = cframe * CFrame.new(piece.Center[1], piece.Center[2], piece.Center[3])
+			part.Color = Builder.color(palette, piece.Role, variantFor(piece.Role))
+			Builder.studify(part, StudConfig.Smooth[piece.Role] == true)
+			part.Material = SPECIAL_MATERIALS[piece.Role] or Enum.Material.SmoothPlastic
+			part.Reflectance = REFLECTIVE[piece.Role] or 0
+			part.Transparency = TRANSPARENT[piece.Role] or 0
+			part.CanCollide = piece.Role ~= "Window" and piece.Role ~= "Light"
+			local volume = part.Size.X * part.Size.Y * part.Size.Z
+			part.CastShadow = volume > 4
+			part.Parent = model
+			if volume > biggest then
+				biggest = volume
+				model.PrimaryPart = part
+			end
+		end
+		setGroundPivot(model, cframe)
+		return model
+	end
 	local mesh = meshFor(template.Mesh)
 	if mesh then
 		local min, max = hull(template)
@@ -191,16 +266,6 @@ function Builder.build(template: Template, palette: Palette, variant: number, cf
 		model.PrimaryPart = part
 		setGroundPivot(model, cframe)
 		return model
-	end
-	local roleVariant: { [string]: number } = {}
-	local salt = 0
-	local function variantFor(role: string): number
-		local key = VARIANT_GROUP[role] or role
-		if roleVariant[key] == nil then
-			salt += 7
-			roleVariant[key] = variant + salt
-		end
-		return roleVariant[key]
 	end
 	for index, b in template.Boxes do
 		local part = Builder.kitPart(b, cframe)

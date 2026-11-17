@@ -143,12 +143,15 @@ end
 
 function CityBuildings.Bungalow(V)
 	local box = V.box
+	-- casa térrea: base, telhado de duas águas com beiral e toldinho na porta
 	local boxes = {
-		box(12, 5, 10, 0, 0, 0, "Wall"),
-		box(2.4, 3.6, 0.4, 0, 0, -5.2, "Door"),
+		box(12.6, 0.6, 10.6, 0, 0, 0, "Stone"),
+		box(12, 5, 10, 0, 0.6, 0, "Wall"),
+		box(2.4, 3.6, 0.4, 0, 0.6, -5.2, "Door"),
+		box(3.4, 0.4, 1.2, 0, 4.4, -5.6, "Awning"),
 	}
-	V.frontWindows(boxes, 10, { -3.5, 3.5 }, 1.6, 2.4, 1.8)
-	V.stepRoof(boxes, 12, 10, 5, 3, 1.2, "Roof")
+	V.frontWindows(boxes, 10, { -3.6, 3.6 }, 2.2, 2.4, 1.8)
+	V.gable(boxes, 12, 10, 0, 0, 5.6, 3.8, 0.5, 0.8, "Roof")
 	return { Name = "Bungalow", Tier = 3, Boxes = boxes }
 end
 
@@ -168,12 +171,15 @@ end
 
 function CityBuildings.SnowCabin(V)
 	local box = V.box
+	-- cabana de madeira: base de pedra, telhado alto de duas águas (neve na cumeeira) e chaminé por fora
 	local boxes = {
-		box(10, 4, 10, 0, 0, 0, "Plank"),
-		box(2.2, 3.2, 0.4, 0, 0, -5.2, "Door"),
+		box(10.4, 0.6, 10.4, 0, 0, 0, "Stone"),
+		box(10, 4.4, 10, 0, 0.6, 0, "Plank"),
+		box(2.2, 3.2, 0.4, 0, 0.6, -5.2, "Door"),
+		box(1.2, 11, 1.4, 6, 0, 2, "Chimney"),
 	}
-	V.frontWindows(boxes, 10, { -3, 3 }, 1.4, 1.8, 1.6)
-	V.stepRoof(boxes, 10, 10, 4, 4, 1.3, "Roof")
+	V.frontWindows(boxes, 10, { -3, 3 }, 2, 1.8, 1.6)
+	V.gable(boxes, 10, 10, 0, 0, 5, 4.6, 0.4, 0.8, "Roof")
 	return { Name = "SnowCabin", Tier = 3, Boxes = boxes }
 end
 
@@ -362,17 +368,24 @@ function CityBuildings.SoccerField(V)
 end
 
 function CityBuildings.ContainerStack(V)
+	-- contêineres de verdade: corpo, nervuras nas laterais de fora e porta com trancas no fundo
 	local box = V.box
-	return {
-		Name = "ContainerStack",
-		Tier = 4,
-		Boxes = {
-			box(3, 3, 7.6, -1.5, 0, 0, "Container"),
-			box(3, 3, 7.6, 1.5, 0, 0, "Accent"),
-			box(3, 3, 7.6, -1.5, 3, 0, "Body"),
-			box(3, 3, 7.6, 1.5, 3, 0, "Bus"),
-		},
-	}
+	local boxes = {}
+	for _, spot in { { -1.5, 0, "Container" }, { 1.5, 0, "Accent" }, { -1.5, 3, "Body" }, { 1.5, 3, "Bus" } } do
+		local x, y, role = spot[1], spot[2], spot[3]
+		local side = if x < 0 then -1 else 1
+		table.insert(boxes, box(3, 3, 7.6, x, y, 0, role))
+		for k = -2, 2 do
+			table.insert(boxes, box(0.2, 2.6, 0.5, x + side * 1.6, y + 0.2, k * 1.4, role))
+		end
+		V.add(
+			boxes,
+			box(2.6, 2.6, 0.2, x, y + 0.2, 3.9, "Metal"),
+			box(0.15, 2.2, 0.15, x - 0.5, y + 0.4, 4.075, "Trim"),
+			box(0.15, 2.2, 0.15, x + 0.5, y + 0.4, 4.075, "Trim")
+		)
+	end
+	return { Name = "ContainerStack", Tier = 4, Boxes = boxes }
 end
 
 function CityBuildings.Yacht(V)
@@ -512,25 +525,30 @@ function CityBuildings.ControlTower(V)
 end
 
 function CityBuildings.Plane(V)
-	local box = V.box
+	-- avião de brinquedo (referências): fuselagem redonda branca, nariz e cauda arredondados, asas,
+	-- turbinas redondas e leme coloridos, fileira de janelas e trem de pouso
+	local box, shaped = V.box, V.shaped
 	return {
 		Name = "Plane",
 		Tier = 5,
 		Boxes = {
-			box(0.6, 1.6, 0.6, 0, 0, -10, "Tire"),
-			box(0.6, 3, 0.6, -4, 0, 1, "Tire"),
-			box(0.6, 3, 0.6, 4, 0, 1, "Tire"),
-			box(4, 4, 26, 0, 1.6, 0, "WallWhite"),
-			box(3, 3, 2, 0, 2, -14, "WallWhite"),
-			box(13, 0.6, 6, -8.5, 3, 1, "WallWhite"),
-			box(13, 0.6, 6, 8.5, 3, 1, "WallWhite"),
-			box(1.6, 1.6, 3, -6, 1.4, 0, "Metal"),
-			box(1.6, 1.6, 3, 6, 1.4, 0, "Metal"),
-			box(0.6, 5, 4, 0, 5.6, 11, "Accent"),
-			box(4, 0.4, 3, -4, 4.4, 11.5, "WallWhite"),
-			box(4, 0.4, 3, 4, 4.4, 11.5, "WallWhite"),
-			box(0.2, 0.8, 20, -2.1, 4, -1, "Window"),
-			box(0.2, 0.8, 20, 2.1, 4, -1, "Window"),
+			shaped(box(4, 4, 22, 0, 2.2, 0, "WallWhite"), "CylinderZ"),
+			shaped(box(4, 4, 4, 0, 2.2, -13, "WallWhite"), "Ball"),
+			shaped(box(3, 3, 4, 0, 3.2, 13, "WallWhite"), "Ball"),
+			box(12, 0.6, 6, -8, 3.2, 1, "WallWhite"),
+			box(12, 0.6, 6, 8, 3.2, 1, "WallWhite"),
+			box(0.6, 1.4, 2, -14.3, 3.2, 2.5, "Accent"),
+			box(0.6, 1.4, 2, 14.3, 3.2, 2.5, "Accent"),
+			shaped(box(2, 2, 4, -6, 1.2, -0.5, "Accent"), "CylinderZ"),
+			shaped(box(2, 2, 4, 6, 1.2, -0.5, "Accent"), "CylinderZ"),
+			shaped(box(0.6, 5, 4, 0, 6.2, 11.5, "Accent"), "Wedge", 0),
+			box(4, 0.4, 3, -4, 4.6, 12, "WallWhite"),
+			box(4, 0.4, 3, 4, 4.6, 12, "WallWhite"),
+			box(0.2, 0.8, 16, -2.1, 4.4, -1, "Window"),
+			box(0.2, 0.8, 16, 2.1, 4.4, -1, "Window"),
+			box(0.6, 2.2, 0.6, 0, 0, -9, "Tire"),
+			box(0.6, 3.2, 0.6, -3, 0, 1, "Tire"),
+			box(0.6, 3.2, 0.6, 3, 0, 1, "Tire"),
 		},
 	}
 end

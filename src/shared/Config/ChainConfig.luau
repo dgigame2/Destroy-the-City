@@ -39,4 +39,65 @@ return table.freeze({
 	}),
 	CollapseFromTier = 5,
 	Collapse = table.freeze({ RadiusPadding = 6, DamageFactor = 0.7 }),
+	-- uma construção que cai pode fazer até isso de reações (ex.: carro explode E solta faísca)
+	MaxPerBuilding = 2,
+	-- Fogo: o que é de madeira/planta pega fogo ao cair e queima as vizinhas por alguns segundos.
+	-- Dano por tique = HP de quem queima x DamageFactor (cai até EdgeDamage na borda); vizinha inflamável
+	-- leva FlammableBonus x isso (o fogo se espalha). MaxActive = focos ao mesmo tempo (celular/servidor).
+	Fire = table.freeze({
+		Radius = 9,
+		Ticks = 5,
+		TickDelay = 0.5,
+		DamageFactor = 0.18,
+		FlammableBonus = 2,
+		MaxActive = 8,
+		-- só desastres quentes acendem fogo (o tornado derruba muita árvore e virava um incêndio)
+		Causes = table.freeze({ Meteor = true, Lightning = true }),
+		Flammable = table.freeze({
+			Tree = true,
+			Pine = true,
+			SnowPine = true,
+			Palm = true,
+			Acacia = true,
+			DeadTree = true,
+			Bush = true,
+			Hedge = true,
+			Fence = true,
+			Bench = true,
+			PicnicTable = true,
+			Umbrella = true,
+			Lifeguard = true,
+			FoodCart = true,
+			IceCreamStand = true,
+			Gazebo = true,
+			Pier = true,
+			Playground = true,
+			House = true,
+			Cottage = true,
+			Bungalow = true,
+			BeachHouse = true,
+			SnowCabin = true,
+			SurfShop = true,
+			BigHouse = true,
+			Townhouse = true,
+			Villa = true,
+			Cafe = true,
+			Shop = true,
+			CornerStore = true,
+			Warehouse = true,
+			SkiLodge = true,
+			GasStation = true, -- explode E pega fogo
+			OilTank = true,
+		}),
+	}),
+	-- Eletricidade: condutor (StructureConfig.Conductors: poste, torre de energia, carro...) que cai solta uma
+	-- faísca que pula para as vizinhas como o raio (Disasters.lightningChain), preferindo outros condutores.
+	-- Dano por pulo = HP do condutor x DamageFactor x força do pulo.
+	Electric = table.freeze({
+		Hops = 3,
+		HopRange = 12,
+		Decay = 0.8,
+		ConductorRange = 1.6,
+		DamageFactor = 0.9,
+	}),
 })

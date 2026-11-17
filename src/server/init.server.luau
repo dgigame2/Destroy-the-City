@@ -53,6 +53,7 @@ if Place.isRun() then
 	local RunSession = require(script.RunSession)
 
 	UpgradeService.init()
+	require(script.StatsService).start() -- placar individual (Score, Damage, Destroyed, Chains)
 	EatService.start()
 	-- desastres (Fase 3); com GameplayConfig.Mode = "Eat" fica desligado e o comer antigo volta
 	if require(ReplicatedStorage.Shared.Config.GameplayConfig).Mode == "Disasters" then
