@@ -48,7 +48,7 @@ local function adjustStride()
 	local velocity = root.AssemblyLinearVelocity
 	local speed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
 	local scale = (localPlayer:GetAttribute("Scale") :: number?) or 1
-	local blend = Stride.blend(Stride.normalized(speed, scale, MovementConfig.WalkSpeed))
+	local blend = Stride.blend(Stride.normalized(speed, scale, MovementConfig.AnimationWalkSpeed))
 	if walk then
 		walk:AdjustWeight(blend.WalkWeight, 0.1)
 		walk:AdjustSpeed(blend.WalkSpeed)

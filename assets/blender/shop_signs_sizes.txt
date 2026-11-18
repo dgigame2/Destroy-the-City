@@ -1,0 +1,7 @@
+Lobby_ShopHouse: 15440 tris, tamanho Roblox 27.00 x 24.65 x 21.83 | centro 0.00, 12.33, -0.89
+Lobby_ShopLetters: 5526 tris, tamanho Roblox 10.40 x 3.03 x 0.58 | centro 0.00, 15.00, -10.94
+Lobby_ShopFence: 17456 tris, tamanho Roblox 33.82 x 6.12 x 27.06 | centro 0.00, 3.06, -0.62
+Lobby_ShopYard: 16252 tris, tamanho Roblox 32.24 x 9.94 x 25.17 | centro -0.05, 4.93, -0.32
+Lobby_SignRewards: 5956 tris, tamanho Roblox 24.20 x 17.40 x 2.71 | centro 0.00, 8.70, -0.25
+Lobby_SignClasses: 5912 tris, tamanho Roblox 24.20 x 17.43 x 3.22 | centro 0.00, 8.71, -0.51
+Lobby_RunGate: 8872 tris, tamanho Roblox 90.60 x 25.20 x 3.65 | centro 0.00, 12.60, -0.52

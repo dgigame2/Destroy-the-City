@@ -1,7 +1,9 @@
 -- Borda dos caminhos de pedra do lobby: contorna todos os caminhos sem cobrir nenhum, sem peças sobrepostas,
--- e não encosta nas placas, loja, roleta, quadrados START A RUN, postes, bancos e floreiras.
+-- e não encosta nas placas, loja, quadrados START A RUN, postes, bancos e floreiras.
 local LobbyPaths = require("../src/shared/Logic/LobbyPaths")
 local LobbyConfig = require("../src/shared/Config/LobbyConfig")
+local RW, CL = LobbyConfig.Stations.Rewards, LobbyConfig.Stations.Classes
+local SH = LobbyConfig.Shop
 
 local TOL = 0.001
 local paths = {}
@@ -21,12 +23,10 @@ end
 
 -- coisas no chão perto dos caminhos (MEDIDAS do LobbyService / LobbyConfig)
 local SOLID = {
-	{ "Mural", box(-56.4, 43.8, -33.6, 46.2) },
-	{ "Classes", box(33.6, 43.8, 56.4, 46.2) },
-	{ "Loja", box(-93, -33, -63, -7) },
-	{ "Roleta", box(63, -32, 93, -8) },
-	{ "Quadrados START A RUN", box(-45, 58, 45, 90) },
-	{ "Placa do título", box(-26, -64, 26, -56) },
+	{ "Mural", box(RW[1] - 12.1, RW[2] - 1.4, RW[1] + 12.1, RW[2] + 1.1) }, -- pé da placa no chão (floreira na frente)
+	{ "Classes", box(CL[1] - 12.1, CL[2] - 1.4, CL[1] + 12.1, CL[2] + 1.1) },
+	{ "Loja", box(SH.X - 13, SH.Z - 17, SH.X + 14, SH.Z + 17) }, -- cerca da loja (LobbyConfig.Shop)
+	{ "Quadrados START A RUN", box(-45.3, 58, 45.3, 90) },
 }
 do
 	local P = LobbyConfig.Props
@@ -72,7 +72,7 @@ return function(t)
 		end
 	end)
 
-	t.test("caminhos: borda não encosta em placas, loja, roleta, quadrados e postes", function()
+	t.test("caminhos: borda não encosta em placas, loja, quadrados e postes", function()
 		for i, b in border do
 			for _, s in SOLID do
 				t.truthy(not overlap(b, s[2]), `borda {i} x {s[1]}`)

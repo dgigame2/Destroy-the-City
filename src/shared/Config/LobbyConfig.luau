@@ -11,15 +11,23 @@ return table.freeze({
 	CenterZ = -(585 + 60 + 90),
 	SpawnRadius = 18,
 	-- Caminhos de pedra do parque (x0, z0, x1, z1 no espaço do lobby; a praça da fonte é o 1º) e a borda de
-	-- lajota mais escura em volta do contorno de todos juntos (Logic/LobbyPaths). Os caminhos do fundo acabam
-	-- antes das placas de recompensas/classes (z 43.8).
+	-- lajota mais escura em volta do contorno de todos juntos (Logic/LobbyPaths). Desenho de praça: largo
+	-- pequeno em volta da fonte, um anel de caminho em volta dele ligado por 4 caminhos em cruz, e do anel
+	-- saem caminhos retos para o portão da loja e para o largo da frente (quadrados START A RUN e placas).
+	-- Só encostam (nenhum entra no outro); x e z em múltiplos de 0.5 (grade da borda).
 	Paths = table.freeze({
-		{ -28, -38, 28, 18 }, -- praça
-		{ -50, -25, -28, -15 }, -- para a loja
-		{ 28, -25, 50, -15 }, -- para a roleta
-		{ -5, 18, 5, 56 }, -- até a área START A RUN
-		{ -65, 34, -5, 42 }, -- recompensas (encosta no caminho do meio; borda acaba em 43.5)
-		{ 5, 34, 65, 42 }, -- classes
+		{ -20, -30, 20, 10 }, -- largo da fonte
+		{ -40, 24, 40, 30 }, -- anel: frente
+		{ -40, -50, 40, -44 }, -- anel: fundo
+		{ -40, -44, -34, 24 }, -- anel: esquerda
+		{ 34, -44, 40, 24 }, -- anel: direita
+		{ -3, 10, 3, 24 }, -- cruz: largo -> anel (frente)
+		{ -3, -44, 3, -30 }, -- cruz: largo -> anel (fundo)
+		{ -34, -13, -20, -7 }, -- cruz: largo -> anel (esquerda)
+		{ 20, -13, 34, -7 }, -- cruz: largo -> anel (direita)
+		{ -62.5, -16, -40, -4 }, -- até o portão da loja, alinhado com a cruz da esquerda (z -10, a fonte)
+		{ -4, 30, 4, 50 }, -- até a área START A RUN
+		{ -67, 50, 67, 56.5 }, -- largo reto na frente dos quadrados e das placas (borda acaba em 58; quadrados em 60)
 	}),
 	PathBorder = table.freeze({ Width = 1.5, Height = 0.45 }),
 	-- sebe de cubinhos por dentro da cerca do parque (fundo e laterais até SideEndZ)
@@ -29,8 +37,8 @@ return table.freeze({
 		Density = 0.55,
 		Size = table.freeze({ 2.6, 4.2 }),
 		Height = table.freeze({ 2.2, 3.6 }),
-		-- sem moita: frente da área START A RUN e as pedras perto dela
-		Skip = table.freeze({ { -50, 60, 50, 90 }, { -71, 64, -53, 90 }, { 53, 64, 71, 90 } }),
+		-- sem moita: frente da área START A RUN
+		Skip = table.freeze({ { -50, 60, 50, 90 } }),
 	}),
 	-- Terreno redondo em volta da cidade (assets/blender/build_land.py -> Lobby_Land): começa onde o gramado
 	-- retangular da cidade acaba, vai até Radius (com ondulação Wobble) e desce suave numa saia de Skirt
@@ -46,7 +54,7 @@ return table.freeze({
 		HousePitch = 42,
 		HouseScale = 1.6,
 		Houses = table.freeze({ "House", "BigHouse", "Cottage", "House", "Cottage" }),
-		TreeScale = 1,
+		TreeScale = 0.86, -- árvores entre as casas: a BigHouse de lado deixa só 10 studs de vão (meia árvore <= 5)
 		Dash = table.freeze({ 6, 0.6, 14 }),
 		Cars = 5,
 		-- floresta de árvores de blocos atrás dos prédios e morros no horizonte (assets/blender/build_nature.py)
@@ -98,18 +106,24 @@ return table.freeze({
 		}),
 	}),
 	FallKillHeight = 300, -- caiu abaixo disso estando no lobby: volta para o lobby
-	WheelRadius = 14, -- raio da roleta física (a janela da roleta usa para encaixar os nomes dos prêmios)
+	WheelRadius = 14, -- raio da roleta (só aparece na janela SPIN; usado para encaixar os nomes dos prêmios)
 	WheelSubSlices = 6, -- cada fatia é feita de 6 triângulos: a borda fica redonda
-	ShopRingRadius = 5, -- anel de traços neon na frente da loja (indicador de compra)
-	ShopRingDashes = 14,
-	ShopRingSpin = 25, -- graus por segundo
-	PromptDistance = 18, -- distância para o "E" das placas, loja e roleta aparecer
+	-- Loja: base no chão do lobby (x, z) girada Yaw graus (a frente da mesh, -Z, olha para a praça).
+	Shop = table.freeze({ X = -78, Z = -10, Yaw = -90 }), -- portão no meio do caminho da loja (z -10)
+	-- Quadrado de compra na escada da loja (coordenadas da loja: x para os lados, z negativo = para a frente):
+	-- moldura neon no chão em volta dos degraus (sem o lado de trás: é a casa); quem entra abre a loja. Encosta na base
+	-- da casa (z -8.8), fica fora dos degraus (x ±3.6) e antes dos postes do portão (z -13).
+	ShopPad = table.freeze({ X = 4.3, Z0 = -12.95, Z1 = -8.8, Strip = 0.5, Height = 0.2, DetectHeight = 8 }),
+	-- Placas DAILY REWARDS e CLASSES: dos lados do portal START A RUN, um pouco à frente dele (x, z da base)
+	Stations = table.freeze({ Rewards = table.freeze({ -61, 72 }), Classes = table.freeze({ 61, 72 }) }),
+	-- Quadrado de cada placa (coordenadas da placa: x para os lados, z negativo = na frente dela): moldura neon
+	-- no chão da largura da placa azul, logo na frente da floreira (z -1.5); quem entra abre a janela da placa.
+	StationPad = table.freeze({ X = 9, Z0 = -10.5, Z1 = -1.5, Strip = 0.5, Height = 0.2, DetectHeight = 8 }),
 	-- Modelos do Blender (assets/blender/build_lobby.py -> LobbyProps.fbx), importados em ReplicatedStorage.Assets.
 	-- Size = caixa da mesh em studs (MEDIDO: assets/blender/lobby_sizes.txt); Center = centro da caixa em relação
 	-- ao ponto de apoio no chão (x, y, z do Roblox). Sem a mesh importada, o lobby usa as peças antigas.
 	Props = table.freeze({
 		Mushroom = { Mesh = "Lobby_Mushroom", Size = { 3.33, 2.78, 3.35 }, Center = { 0.03, 1.39, 0 } },
-		Shop = { Mesh = "Lobby_Shop", Size = { 30, 28, 26.4 }, Center = { 0, 14, -1.2 } },
 		Tree = { Mesh = "Lobby_Tree", Size = { 6.32, 10.73, 6.33 }, Center = { 0, 5.37, 0.09 } },
 		Palm = { Mesh = "Lobby_Palm", Size = { 9.57, 12.6, 9.81 }, Center = { 2.12, 6.3, 0.03 } },
 		Bush = { Mesh = "Lobby_Bush", Size = { 4.8, 2.6, 3.05 }, Center = { 0.03, 1.28, 0.03 } },
@@ -126,8 +140,25 @@ return table.freeze({
 		PlanterWide = { Mesh = "Lobby_PlanterWide", Size = { 7, 2.17, 3.2 }, Center = { 0, 1.09, 0 } },
 		Umbrella = { Mesh = "Lobby_Umbrella", Size = { 8.4, 7.4, 8.4 }, Center = { 0, 3.7, 0 } },
 		Bench = { Mesh = "Lobby_Bench", Size = { 5, 2.6, 1.5 }, Center = { 0, 1.3, 0 } },
-		SignSmall = { Mesh = "Lobby_SignSmall", Size = { 27, 17.2, 2.49 }, Center = { 0, 8.6, -0.14 } },
-		SignBig = { Mesh = "Lobby_SignBig", Size = { 51, 34.2, 2.49 }, Center = { 0, 17.1, -0.14 } },
+		-- loja e placas no estilo das prints de referência (assets/blender/build_shop_signs.py, MEDIDO em
+		-- assets/blender/shop_signs_sizes.txt). Frente = -Z.
+		ShopHouse = { Mesh = "Lobby_ShopHouse", Size = { 27, 24.65, 21.83 }, Center = { 0, 12.33, -0.89 } },
+		ShopLetters = { Mesh = "Lobby_ShopLetters", Size = { 10.4, 3.03, 0.58 }, Center = { 0, 15, -10.94 } },
+		-- cerca de estacas em volta da loja (portão aberto na frente) e os enfeites do quintal
+		ShopFence = { Mesh = "Lobby_ShopFence", Size = { 33.82, 6.12, 27.06 }, Center = { 0, 3.06, -0.62 } },
+		ShopYard = { Mesh = "Lobby_ShopYard", Size = { 32.24, 9.94, 25.17 }, Center = { -0.05, 4.93, -0.32 } },
+		SignRewards = { Mesh = "Lobby_SignRewards", Size = { 24.2, 17.4, 2.71 }, Center = { 0, 8.7, -0.25 } },
+		SignClasses = { Mesh = "Lobby_SignClasses", Size = { 24.2, 17.43, 3.22 }, Center = { 0, 8.71, -0.51 } },
+		-- portal START A RUN: placas de BoardWidth x BoardHeight a cada PadSpacing, apoiado em z = BoardZ
+		RunGate = { Mesh = "Lobby_RunGate", Size = { 90.6, 25.2, 3.65 }, Center = { 0, 12.6, -0.52 } },
+	}),
+	-- Peças invisíveis com o texto (SurfaceGui) na frente das placas do Blender: tamanho { largura, altura } e
+	-- centro { x, y, z } em relação à base da mesh (mesmos números de assets/blender/build_shop_signs.py).
+	SignText = table.freeze({
+		Shop = { Size = { 10.6, 3.6 }, Pos = { 0, 15, -10.86 } }, -- tábua da placa SHOP (só sem a mesh das letras)
+		Station = { Size = { 16.8, 6.2 }, Pos = { 0, 7.1, -0.42 } }, -- embaixo do ícone da placa azul
+		RunBoard = { Inset = 0.6, Front = -0.42 }, -- status de cada quadrado (placa azul menos a margem)
+		RunTitle = { Size = { 72, 10 }, Pos = { 0, 20.2, -1.4 } }, -- título na faixa azul e subtítulo na prancha
 	}),
 	-- Texturas do lobby (profundidade): MaterialVariants estilizados gerados no Studio do lobby
 	-- (MaterialService). Por nome da peça. Tint = cor da peça (multiplica a textura); sem Tint, a cor da paleta.
@@ -137,9 +168,9 @@ return table.freeze({
 	Textured = false,
 	TexturedParts = table.freeze({ Grass = true, TownGrass = true, Plaza = true, Path = true, PathBorder = true }),
 	Materials = table.freeze({
-		-- grama com a textura LobbyGrass (MaterialVariant do place), igual à imagem de referência do usuário
-		Grass = { Material = "Grass", Variant = "LobbyGrass", Tint = { 255, 255, 255 } },
-		TownGrass = { Material = "Grass", Variant = "LobbyGrass", Tint = { 255, 255, 255 } },
+		-- grama cartoon verde-vivo LobbyGrassToon (assets/blender/make_grass.py, MaterialVariant do place)
+		Grass = { Material = "Grass", Variant = "LobbyGrassToon", Tint = { 205, 216, 200 } },
+		TownGrass = { Material = "Grass", Variant = "LobbyGrassToon", Tint = { 205, 216, 200 } },
 		Sand = { Material = "Sand", Variant = "BeachSand", Tint = { 255, 255, 255 } },
 		Dirt = { Material = "Ground", Variant = "IslandDirt", Tint = { 255, 255, 255 } },
 		HangingRock = { Material = "Ground", Variant = "IslandDirt", Tint = { 220, 220, 220 } },
@@ -156,7 +187,7 @@ return table.freeze({
 		FencePost = { Material = "WoodPlanks", Variant = "SignWood" },
 	}),
 	-- prefixos de peças da área START A RUN (placas dos quadrados e postes) que também ficam de madeira
-	WoodPrefixes = table.freeze({ "PadBoard", "PadPost", "RunSign", "SignPost", "SignBeam", "Wheel" }),
+	WoodPrefixes = table.freeze({ "PadBoard", "PadPost", "RunSign", "SignPost", "SignBeam" }),
 	-- Fonte da praça em peças lisas (Logic/Fountain): 3 bacias de pedra, a de baixo é o pé. Raios e alturas
 	-- em studs. Raio total < SpawnRadius (ninguém nasce dentro); testado em tests/Fountain.spec.luau.
 	Fountain = table.freeze({
@@ -210,22 +241,25 @@ return table.freeze({
 	-- postes de luz ao lado dos caminhos e árvores de blocos (Templates.Tree). Testado em LobbyPark.spec.
 	-- MaterialVariant das folhas das árvores de blocos (LeafTexture.png, criado no Studio)
 	LeafVariant = "BlockLeaves",
+	-- MaterialVariant de veio de madeira discreto das partes de madeira das placas (assets/blender/make_wood.py;
+	-- meshes em Config/SignWoodConfig). Sem ele no place, a madeira fica lisa na cor da paleta.
+	WoodVariant = "SignWoodGrain",
 	Park = table.freeze({
 		Planters = table.freeze({ { -88, -80.5, 0 }, { -40, -80.5, 0 }, { 40, -80.5, 0 }, { 88, -80.5, 0 } }),
-		WidePlanters = table.freeze({ { -36, 8, 0 }, { 36, 8, 0 }, { -36, -50, 0 }, { 36, -50, 0 } }),
+		WidePlanters = table.freeze({ { -27, 2, 0 }, { 27, 2, 0 }, { -27, -37, 0 }, { 27, -37, 0 } }),
 		-- tulipas avulsas no gramado { x, z, 1 = vermelha / 2 = rosa } (escala FlowerScale)
 		-- moitas de folha soltas no gramado { x, z, lado do cubo } (altura = 0.8 do lado)
 		Bushes = table.freeze({
-			{ -22, -50, 3 },
-			{ 22, -50, 3.4 },
+			{ -22, -58, 3 },
+			{ 22, -58, 3.4 },
 			{ -52, -40, 3 },
 			{ 52, -40, 2.8 },
 			{ -85, 12, 3.2 },
 			{ 88, 14, 3 },
-			{ -55, 55, 3 },
-			{ 56, 56, 3.2 },
-			{ -36, 22, 2.8 },
-			{ 36, 24, 2.8 },
+			{ -47, 66, 3 },
+			{ 47, 66, 3.2 },
+			{ -27, 14, 2.8 },
+			{ 27, 14, 2.8 },
 			{ -32, -60, 3 },
 			{ 32, -60, 3 },
 		}),
@@ -233,26 +267,26 @@ return table.freeze({
 		Flowers = table.freeze({
 			{ -45, -45, 1 },
 			{ 45, -45, 2 },
-			{ -15, -48, 2 },
-			{ 15, -48, 1 },
+			{ -15, -57, 2 },
+			{ 15, -57, 1 },
 			{ -86, -48, 2 },
 			{ 86, -48, 1 },
-			{ -40, 0, 1 },
-			{ 40, -2, 2 },
-			{ -12, 30, 2 },
-			{ 12, 26, 1 },
-			{ -25, 50, 1 },
-			{ 25, 52, 2 },
-			{ -75, 2, 2 },
+			{ -46, 0, 1 },
+			{ 46, -2, 2 },
+			{ -14, 36, 2 },
+			{ 14, 37, 1 },
+			{ -25, 45, 1 },
+			{ 25, 45, 2 },
+			{ -56, 10, 2 },
 			{ 75, 2, 1 },
 			{ -95, 40, 1 },
 			{ 95, 46, 2 },
-			{ -48, 76, 2 },
-			{ 50, 77, 1 },
+			{ -78, 76, 2 },
+			{ 78, 76, 1 },
 			{ -105, -15, 1 },
 			{ 105, -15, 2 },
-			{ -40, -70, 2 },
-			{ 42, -68, 1 },
+			{ -30, -66, 2 },
+			{ 30, -66, 1 },
 			{ -74, 44, 1 },
 			{ 72, 48, 2 },
 		}),
@@ -262,14 +296,12 @@ return table.freeze({
 			{ 31, 21, 0 },
 			{ -31, -41, 0 },
 			{ 31, -41, 0 },
-			{ -8, 28, 0 },
-			{ 8, 28, 0 },
-			{ -8, 48, 0 },
-			{ 8, 48, 0 },
-			{ -52, -28, 0 },
-			{ 52, -28, 0 },
-			{ -52, -12, 0 },
-			{ 52, -12, 0 },
+			{ -8, 33, 0 },
+			{ 8, 33, 0 },
+			{ -8, 46, 0 },
+			{ 8, 46, 0 },
+			{ -52, -19.5, 0 },
+			{ -52, -0.5, 0 },
 		}),
 		-- árvores de blocos (no lugar das palmeiras e mais algumas para o parque não ficar vazio)
 		Trees = table.freeze({
@@ -296,8 +328,8 @@ return table.freeze({
 		{ -92, 21, 0.7 },
 		{ 94, 27, 1 },
 		{ 90, 31, 0.7 },
-		{ -38, -62, 0.9 },
-		{ 40, -60, 0.9 },
+		{ -50, -62, 0.9 },
+		{ 50, -60, 0.9 },
 		{ -62, 22, 0.8 },
 		{ 64, 25, 0.8 },
 		{ -80, 50, 0.9 },
@@ -337,8 +369,8 @@ return table.freeze({
 		PadZ = 68, -- centro dos quadrados em Z
 		PadHeight = 0.4, -- espessura do piso do quadrado
 		DetectHeight = 14, -- até essa altura acima do quadrado o jogador conta como "em cima"
-		BoardWidth = 14,
-		BoardHeight = 8,
+		BoardWidth = 15,
+		BoardHeight = 11,
 		BoardBottom = 3,
 		BoardZ = 81, -- placa de cada quadrado, atrás dele (lado da borda da ilha)
 		Post = 1.4,

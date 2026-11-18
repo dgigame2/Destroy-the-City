@@ -1,10 +1,10 @@
 --!strict
 -- Lobby: ilha flutuante no estilo voxel com stud (referência da ilha: grama xadrez, borda de areia,
 -- palmeiras, guarda-sóis e flores), alta e de frente para a cidade.
--- Tem loja, roleta da sorte física, mural de recompensas, salão de classes e a área "START A RUN"
+-- Tem loja, mural de recompensas, salão de classes e a área "START A RUN"
 -- (quadrados no chão: pisar num vazio cria uma party; o PartyService cuida do resto).
--- As estações abrem as telas no cliente por ProximityPrompts (nomes fixos: OpenShop, OpenWheel,
--- OpenRewards, OpenClasses).
+-- A loja e as placas DAILY REWARDS e CLASSES abrem as janelas quando o jogador pisa no quadrado neon
+-- do chão na frente delas (LobbyController).
 
 local MaterialService = game:GetService("MaterialService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,6 +25,7 @@ local Templates = require(Shared.Buildings.Templates)
 local PaletteConfig = require(Shared.Config.PaletteConfig)
 local FountainMeshConfig = require(Shared.Config.FountainMeshConfig)
 local FountainWaterMeshConfig = require(Shared.Config.FountainWaterMeshConfig)
+local SignWoodConfig = require(Shared.Config.SignWoodConfig)
 
 local Builder = require(script.Parent.Builder)
 
@@ -132,21 +133,21 @@ local function label(target: BasePart, face: Enum.NormalId, text: string, color:
 	gui.Parent = target
 end
 
--- O "E" aparece dentro da própria placa/prédio: o prompt fica num Attachment na face da peça.
--- offset: posição local na peça (ex.: um pouco à frente da face Front, que é -Z).
-local function prompt(target: BasePart, name: string, action: string, objectText: string, offset: Vector3)
-	local anchor = Instance.new("Attachment")
-	anchor.Name = name .. "Point"
-	anchor.Position = offset
-	anchor.Parent = target
-	local p = Instance.new("ProximityPrompt")
+-- Peça invisível que só segura o texto (SurfaceGui) na frente de uma placa do Blender
+-- (LobbyConfig.SignText). Não colide e fica fora da varredura de sobreposição.
+local function textHolder(parent: Instance, name: string, spec: { Size: { number }, Pos: { number } }, base: CFrame)
+	local p = Instance.new("Part")
 	p.Name = name
-	p.ActionText = action
-	p.ObjectText = objectText
-	p.MaxActivationDistance = LobbyConfig.PromptDistance
-	p.RequiresLineOfSight = false
-	p.HoldDuration = 0
-	p.Parent = anchor
+	p.Size = Vector3.new(spec.Size[1], spec.Size[2], 0.1)
+	p.CFrame = origin * base * CFrame.new(spec.Pos[1], spec.Pos[2], spec.Pos[3])
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Transparency = 1
+	p:SetAttribute("NoAudit", true)
+	p.Parent = parent
+	return p
 end
 
 -- Modelo do Blender do lobby (LobbyConfig.Props) apoiado no chão em `base` (coordenadas locais do lobby).
@@ -166,6 +167,29 @@ local function prop(parent: Instance, kind: string, base: CFrame, scale: number?
 	p.CFrame = origin * base * CFrame.new(spec.Center[1] * k, spec.Center[2] * k, spec.Center[3] * k)
 	p.Parent = parent
 	return p
+end
+
+-- Partes de madeira de uma placa do Blender (Config/SignWoodConfig): uma mesh por tom de madeira, com a cor
+-- da madeira e o veio discreto (LobbyConfig.WoodVariant), na mesma base da placa.
+local function signWood(parent: Instance, kind: string, base: CFrame)
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local variant = MaterialService:FindFirstChild(LobbyConfig.WoodVariant, true) ~= nil
+	for _, spec in SignWoodConfig[kind] or {} do
+		local mesh = assets and assets:FindFirstChild(spec.Mesh, true)
+		if mesh and mesh:IsA("MeshPart") then
+			local p = mesh:Clone()
+			p.Name = kind .. "Wood"
+			p.Anchored = true
+			p.Size = Vector3.new(spec.Size[1], spec.Size[2], spec.Size[3])
+			p.CFrame = origin * base * CFrame.new(spec.Center[1], spec.Center[2], spec.Center[3])
+			p.Color = rgb(spec.Color)
+			p.Material = Enum.Material.Wood
+			if variant then
+				p.MaterialVariant = LobbyConfig.WoodVariant
+			end
+			p.Parent = parent
+		end
+	end
 end
 
 -- O modelo do Blender já foi importado?
@@ -664,107 +688,60 @@ local function buildPlaza(parent: Instance)
 		part(parent, "PathBorder", size, center, COLORS.PathBorder)
 	end
 	buildFountain(parent, CFrame.new(0, PLAZA_TOP, -10))
-	-- placa do título entre dois postes encostados nas laterais (nada atravessa a placa) e viga em cima
-	local signW, signH, signBottom, post = 44, 12, 20, 1.5
-	local sign =
-		part(parent, "TitleSign", Vector3.new(signW, signH, 1), CFrame.new(0, signBottom + signH / 2, -60), COLORS.Gold)
-	label(sign, Enum.NormalId.Back, "DESTROY THE CITY", COLORS.White)
-	-- moldura do Blender (postes, viga com luzinhas e floreiras); a frente dela olha para a praça (+Z)
-	if prop(parent, "SignBig", CFrame.new(0, 0, -60) * CFrame.Angles(0, math.pi, 0)) then
-		return
-	end
-	local postH = signBottom + signH + 1
-	for _, side in { -1, 1 } do
-		part(
-			parent,
-			"SignPost",
-			Vector3.new(post, postH, post),
-			CFrame.new(side * (signW / 2 + post / 2), postH / 2, -60),
-			COLORS.Wood
-		)
-	end
-	part(
-		parent,
-		"SignBeam",
-		Vector3.new(signW + post * 2 + 1, 1.2, post + 1),
-		CFrame.new(0, postH + 0.6, -60),
-		COLORS.Wood
-	)
 end
 
--- Indicador de compra na frente da porta da loja (anel neon no chão + "BUY HERE" flutuando).
-local function buildShopIndicator(parent: Instance, at: (number, number, number) -> CFrame)
-	-- Indicador de compra (referência do "SELL"): anel de traços neon no chão na frente da porta
-	-- e um ícone flutuante. O cliente gira o anel e faz o ícone subir e descer (LobbyController).
-	local ringCenter = at(0, 0, -11 - LobbyConfig.ShopRingRadius - 2)
-	local ring = Instance.new("Model")
-	ring.Name = "ShopRing"
-	local dashes = LobbyConfig.ShopRingDashes
-	for k = 0, dashes - 1 do
-		local angle = k * (2 * math.pi / dashes)
-		local dash = part(
-			ring,
-			"RingDash",
-			Vector3.new(1.8, 0.2, 0.6),
-			ringCenter * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0.1, -LobbyConfig.ShopRingRadius),
-			COLORS.Red
-		)
-		dash.Material = Enum.Material.Neon
-		dash.CanCollide = false
+-- Quadrado no chão (LobbyConfig.ShopPad / StationPad): moldura neon de largura Strip. `at` leva das
+-- coordenadas da loja/placa (z negativo = na frente) para o lobby. back = false deixa sem o lado de trás
+-- (na loja o lado de trás é a casa). Quem entra abre a janela (LobbyController + RunArea.isOnFloorPad).
+local function buildFloorPad(
+	parent: Instance,
+	name: string,
+	pad: { X: number, Z0: number, Z1: number, Strip: number, Height: number },
+	at: (number, number, number) -> CFrame,
+	back: boolean
+)
+	local s, h = pad.Strip, pad.Height
+	local z0, z1 = pad.Z0 + s, if back then pad.Z1 - s else pad.Z1 -- lados entre a frente e o fundo
+	local strips = {
+		{ Vector3.new(s, h, z1 - z0), at(-pad.X + s / 2, h / 2, (z0 + z1) / 2) },
+		{ Vector3.new(s, h, z1 - z0), at(pad.X - s / 2, h / 2, (z0 + z1) / 2) },
+		{ Vector3.new(pad.X * 2, h, s), at(0, h / 2, pad.Z0 + s / 2) },
+	}
+	if back then
+		table.insert(strips, { Vector3.new(pad.X * 2, h, s), at(0, h / 2, pad.Z1 - s / 2) })
 	end
-	ring.WorldPivot = origin * ringCenter
-	ring.Parent = parent
-	local floor = parent:FindFirstChild("ShopFloor") :: BasePart
-	local anchor = Instance.new("Attachment")
-	anchor.Name = "ShopIndicatorPoint"
-	anchor.Parent = floor
-	anchor.WorldPosition = (origin * ringCenter).Position + Vector3.new(0, 7, 0)
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "ShopIndicator"
-	billboard.Size = UDim2.fromScale(10, 4)
-	billboard.LightInfluence = 0
-	billboard.AlwaysOnTop = false
-	billboard.MaxDistance = 140
-	local text = Instance.new("TextLabel")
-	text.BackgroundTransparency = 1
-	text.Size = UDim2.fromScale(1, 1)
-	text.Font = FONT
-	text.TextScaled = true
-	text.Text = "💎 BUY HERE"
-	text.TextColor3 = COLORS.SignText
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 4
-	stroke.Color = INK
-	stroke.Parent = text
-	text.Parent = billboard
-	billboard.Adornee = anchor
-	billboard.Parent = anchor
+	for _, strip in strips do
+		local p = part(parent, name, strip[1], strip[2], COLORS.Neon)
+		p.Material = Enum.Material.Neon
+		p.CanCollide = false
+	end
 end
 
--- Loja: prédio em camadas vermelho e branco com placa azul "SHOP" (referência 8).
+-- Loja: base em LobbyConfig.Shop, frente (-Z local) virada para a praça.
 local function buildShop(parent: Instance)
-	-- frente da loja (-Z local) virada para +X, para a praça
-	local base = CFrame.new(-78, 0, -20) * CFrame.Angles(0, math.rad(-90), 0)
+	local cfg = LobbyConfig.Shop
+	local base = CFrame.new(cfg.X, 0, cfg.Z) * CFrame.Angles(0, math.rad(cfg.Yaw), 0)
 	local function at(x: number, y: number, z: number)
 		return base * CFrame.new(x, y, z)
 	end
-	local floor = part(parent, "ShopFloor", Vector3.new(30, 1, 24), at(0, 0.5, 0), COLORS.Stone)
-	-- loja do Blender: casinha de dois andares, telhado vermelho, toldo listrado, vitrines e floreiras
-	if prop(parent, "Shop", base) then
-		floor.Transparency = 1 -- a calçada é da mesh; esta peça só segura o indicador de compra
-		floor.CanCollide = false
-		floor:SetAttribute("NoAudit", true)
-		local sign = part(parent, "ShopSign", Vector3.new(16, 6, 1), at(0, 26.2 + 3, -3), COLORS.Blue)
-		label(sign, Enum.NormalId.Front, "SHOP", COLORS.White)
-		local door = part(parent, "ShopDoorPoint", Vector3.new(4, 6, 0.2), at(0, 4, -11.8), COLORS.White)
-		door.Transparency = 1
-		door.CanCollide = false
-		door:SetAttribute("NoAudit", true)
-		prompt(door, "OpenShop", "Open Shop", "Gem Shop", Vector3.zero)
-		buildShopIndicator(parent, at)
+	-- loja do Blender (assets/blender/build_shop_signs.py): casa de enxaimel, telhado vermelho, toldo
+	-- listrado, vitrines acesas, placa com as letras SHOP em 3D e o carrinho na empena da frente; em volta,
+	-- cerca de estacas com portão e lanternas, lampiões, barris, caixotes, vasos e canteiros
+	if prop(parent, "ShopHouse", base) then
+		for _, kind in { "ShopFence", "ShopYard" } do
+			prop(parent, kind, base)
+		end
+		-- sem a mesh das letras, o SHOP vira texto na placa
+		if not prop(parent, "ShopLetters", base) then
+			local sign = textHolder(parent, "ShopSign", LobbyConfig.SignText.Shop, base)
+			label(sign, Enum.NormalId.Front, "SHOP", COLORS.White)
+		end
+		buildFloorPad(parent, "ShopPad", LobbyConfig.ShopPad, at, false)
 		return
 	end
-	local body = part(parent, "ShopBody1", Vector3.new(28, 12, 22), at(0, 7, 0), COLORS.Red)
+	-- sem a mesh: prédio em camadas de peças
+	part(parent, "ShopFloor", Vector3.new(30, 1, 24), at(0, 0.5, 0), COLORS.Stone)
+	part(parent, "ShopBody1", Vector3.new(28, 12, 22), at(0, 7, 0), COLORS.Red)
 	part(parent, "ShopTrim1", Vector3.new(30, 1.6, 24), at(0, 13.8, 0), COLORS.White)
 	part(parent, "ShopBody2", Vector3.new(24, 10, 18), at(0, 19.6, 0), COLORS.Red)
 	part(parent, "ShopTrim2", Vector3.new(26, 1.6, 20), at(0, 25.4, 0), COLORS.White)
@@ -775,7 +752,6 @@ local function buildShop(parent: Instance)
 		part(parent, "ShopWindow2", Vector3.new(4, 4, 0.4), at(x, 20, -9.2), COLORS.ShopWindow)
 	end
 	part(parent, "ShopDoor", Vector3.new(5, 8, 0.4), at(0, 5, -11.2), COLORS.Wood)
-	-- toldo listrado
 	for i = 0, 5 do
 		local stripe = Builder.shapedPart(
 			{ Size = { 4, 2, 4 }, Pos = { 0, 0, 0 }, Role = "Awning", Shape = "Wedge", Rot = 0 },
@@ -786,14 +762,11 @@ local function buildShop(parent: Instance)
 		Builder.studify(stripe)
 		stripe.Parent = parent
 	end
-	-- "E" na fachada da loja, na altura da porta
-	prompt(body, "OpenShop", "Open Shop", "Gem Shop", Vector3.new(0, -1, -11.4))
-
-	buildShopIndicator(parent, at)
+	buildFloorPad(parent, "ShopPad", LobbyConfig.ShopPad, at, false)
 end
 
--- Roleta da sorte física (referência 1): fatias coloridas, aro com pinos, ponteiro no topo.
--- A parte que gira fica no Model "Rotor" (o cliente anima).
+-- Roleta da sorte (fatias coloridas, aro com pinos, ponteiro no topo). Não fica no lobby: vai para o
+-- ReplicatedStorage e o cliente copia para dentro da janela SPIN. A parte que gira é o Model "Rotor".
 local function buildWheel(parent: Instance)
 	local radius = LobbyConfig.WheelRadius
 	local center = Vector3.new(78, 22, -20)
@@ -889,15 +862,6 @@ local function buildWheel(parent: Instance)
 	back.Anchored = true
 	back.Color = COLORS.Board
 	back.Parent = wheelModel
-	-- pernas retas: em cima da base e encostadas atrás do disco
-	for _, side in { -1, 1 } do
-		local leg = Instance.new("Part")
-		leg.Size = Vector3.new(2, 21, 2)
-		leg.CFrame = frame * CFrame.new(side * 8, -8.5, 2.5)
-		leg.Anchored = true
-		leg.Color = COLORS.Wood
-		leg.Parent = wheelModel
-	end
 	-- suporte do ponteiro em cima do disco de trás
 	local mount = Instance.new("Part")
 	mount.Name = "PointerMount"
@@ -922,22 +886,15 @@ local function buildWheel(parent: Instance)
 		pointerPart.Color = COLORS.Red
 		pointerPart.Parent = wheelModel
 	end
-	local base = Instance.new("Part")
-	base.Name = "WheelBase"
-	base.Size = Vector3.new(24, 3, 10)
-	base.CFrame = frame * CFrame.new(0, -20.5, 2)
-	base.Anchored = true
-	base.Color = COLORS.Wood
-	base.Parent = wheelModel
-	local sign = Instance.new("Part")
-	sign.Name = "WheelSign"
-	sign.Size = Vector3.new(22, 4, 1)
-	sign.CFrame = frame * CFrame.new(0, -17, -1)
-	sign.Anchored = true
-	sign.Color = COLORS.Purple
-	sign.Parent = wheelModel
-	label(sign, Enum.NormalId.Front, "LUCKY WHEEL")
-	prompt(sign, "OpenWheel", "Spin", "Lucky Wheel", Vector3.new(0, 0, -0.8))
+	for _, p in wheelModel:GetDescendants() do
+		if p:IsA("BasePart") and p.Material == Enum.Material.Plastic then
+			p.Material = Enum.Material.SmoothPlastic
+		end
+	end
+	local old = parent:FindFirstChild(wheelModel.Name)
+	if old then
+		old:Destroy()
+	end
 	wheelModel.Parent = parent
 end
 
@@ -948,21 +905,26 @@ local function buildStation(
 	z: number,
 	color: Color3,
 	title: string,
-	promptName: string,
-	action: string
+	mesh: string
 )
-	-- placa entre dois postes, sem nada atravessando: postes encostados nas laterais e viga em cima
+	-- placa do Blender (placa azul com ícone, moldura de madeira, arco e floreira); o texto fica numa peça
+	-- invisível na frente da placa azul. Na frente dela, o quadrado neon que abre a janela (como na loja).
+	local base = CFrame.new(x, 0, z)
+	buildFloorPad(parent, name .. "Pad", LobbyConfig.StationPad, function(px: number, py: number, pz: number)
+		return base * CFrame.new(px, py, pz)
+	end, true)
+	if prop(parent, mesh, base) then
+		signWood(parent, mesh, base)
+		local holder = textHolder(parent, name .. "Board", LobbyConfig.SignText.Station, base)
+		label(holder, Enum.NormalId.Front, title)
+		return
+	end
+	-- sem a mesh: placa entre dois postes, postes encostados nas laterais e viga em cima
 	local boardW, boardH, thick = 20, 12, 1.4
 	local bottom, post = 3, 1.4
 	local board =
 		part(parent, name .. "Board", Vector3.new(boardW, boardH, thick), CFrame.new(x, bottom + boardH / 2, z), color)
 	label(board, Enum.NormalId.Front, title)
-	-- "E" no meio da placa, um pouco à frente da face com o texto
-	prompt(board, promptName, action, title, Vector3.new(0, -1, -(thick / 2 + 0.3)))
-	-- moldura do Blender (postes listrados, viga com luzinhas, floreiras); sem ela, postes e viga em peças
-	if prop(parent, "SignSmall", CFrame.new(x, 0, z)) then
-		return
-	end
 	local postH = bottom + boardH + 1
 	for _, side in { -1, 1 } do
 		part(
@@ -1011,7 +973,6 @@ local function statusBoard(target: BasePart): (TextLabel, TextLabel)
 end
 
 local RUN_AREA_COLORS: { [string]: Color3 } = {
-	Floor = COLORS.Floor,
 	Border = COLORS.Neon,
 	Board = COLORS.Board,
 	Wood = COLORS.Wood,
@@ -1022,7 +983,38 @@ local RUN_AREA_COLORS: { [string]: Color3 } = {
 local function buildRunArea(parent: Instance)
 	local cfg = LobbyConfig.RunArea
 	local byPad: { [number]: { Border: { BasePart }, Board: BasePart? } } = {}
+	-- portal do Blender (placas azuis entre postes, prancha em arco com a faixa do título): substitui as
+	-- placas, postes e vigas em peças; os textos ficam em peças invisíveis na frente das placas azuis
+	local gateBase = CFrame.new(0, 0, cfg.BoardZ)
+	local gate = prop(parent, "RunGate", gateBase) ~= nil
+	if gate then
+		signWood(parent, "RunGate", gateBase)
+	end
+	local text = LobbyConfig.SignText
 	for _, b in RunArea.boxes(cfg, PartyConfig.Pads) do
+		if gate and b.Kind == "Wood" then
+			continue
+		end
+		if gate and (b.Kind == "Board" or b.Kind == "Sign") then
+			local spec = if b.Kind == "Sign"
+				then text.RunTitle
+				else {
+					Size = { cfg.BoardWidth - text.RunBoard.Inset * 2, cfg.BoardHeight - text.RunBoard.Inset * 2 },
+					Pos = { b.Pos[1], b.Pos[2], text.RunBoard.Front },
+				}
+			local holder = textHolder(parent, b.Name, spec, gateBase)
+			if b.Kind == "Sign" then
+				local title, line = statusBoard(holder)
+				title.Text = "Start a Run"
+				line.Text = "Step on a pad - play solo or bring up to 3 friends!"
+				line.TextColor3 = COLORS.White
+			elseif b.Pad then
+				local entry = byPad[b.Pad] or { Border = {} }
+				byPad[b.Pad] = entry
+				entry.Board = holder
+			end
+			continue
+		end
 		local color = RUN_AREA_COLORS[b.Kind]
 		local p = part(
 			parent,
@@ -1035,7 +1027,7 @@ local function buildRunArea(parent: Instance)
 			p.Material = Enum.Material.Neon
 		elseif b.Kind == "Sign" then
 			local title, line = statusBoard(p)
-			title.Text = "START A RUN"
+			title.Text = "Start a Run"
 			line.Text = "Step on a pad - play solo or bring up to 3 friends"
 			line.TextColor3 = COLORS.White
 		end
@@ -1078,10 +1070,8 @@ local function buildNature(parent: Instance)
 	local spots = {
 		{ "Umbrella", -84, 30, 1.6 },
 		{ "Umbrella", 86, 40, 1.6 },
-		{ "Rock", -62, 75, 1.4 },
-		{ "Rock", 62, 75, 1.2 },
-		{ "Bench", -24, -32, 1, PLAZA_TOP },
-		{ "Bench", 24, -32, 1, PLAZA_TOP },
+		{ "Bench", -14, -26, 1, PLAZA_TOP },
+		{ "Bench", 14, -26, 1, PLAZA_TOP },
 	}
 	for _, spot in spots do
 		decor(parent, spot[1] :: string, spot[2] :: number, spot[3] :: number, spot[4] :: number, spot[5] :: number?)
@@ -1142,9 +1132,11 @@ function LobbyService.build()
 	buildTown(model)
 	buildPlaza(model)
 	buildShop(model)
-	buildWheel(model)
-	buildStation(model, "Rewards", -45, 45, COLORS.Gold, "DAILY REWARDS", "OpenRewards", "Claim")
-	buildStation(model, "Classes", 45, 45, COLORS.Purple, "CLASSES", "OpenClasses", "Choose")
+	buildWheel(ReplicatedStorage)
+	local stations = LobbyConfig.Stations
+	local rewards, classes = stations.Rewards, stations.Classes
+	buildStation(model, "Rewards", rewards[1], rewards[2], COLORS.Gold, "DAILY REWARDS", "SignRewards")
+	buildStation(model, "Classes", classes[1], classes[2], COLORS.Purple, "CLASSES", "SignClasses")
 	buildRunArea(model)
 	buildNature(model)
 	-- lobby liso igual à run: o Plastic (modelos do Blender, roleta) tem granulado, vira SmoothPlastic

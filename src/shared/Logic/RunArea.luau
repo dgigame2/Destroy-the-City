@@ -39,7 +39,7 @@ local function box(list: { Box }, name: string, kind: string, size: { number }, 
 	table.insert(list, { Name = name, Kind = kind, Size = size, Pos = pos, Pad = pad })
 end
 
--- Kind: "Floor" (piso de madeira), "Border" (neon), "Board" (placa de status), "Wood" (postes e vigas),
+-- Kind: "Border" (moldura neon; sem piso no meio), "Board" (placa de status), "Wood" (postes e vigas),
 -- "Sign" (placa grande).
 function RunArea.boxes(cfg: Config, count: number): { Box }
 	local list: { Box } = {}
@@ -47,7 +47,6 @@ function RunArea.boxes(cfg: Config, count: number): { Box }
 	local inner = s - b * 2
 	for _, pad in RunArea.pads(cfg, count) do
 		local x, z, i = pad.X, pad.Z, pad.Index
-		box(list, "PadFloor", "Floor", { inner, h, inner }, { x, h / 2, z }, i)
 		-- borda: faixas inteiras em X, faixas entre elas em Z (nenhuma entra na outra)
 		for _, side in { -1, 1 } do
 			box(list, "PadBorder", "Border", { s, h, b }, { x, h / 2, z + side * (s / 2 - b / 2) }, i)
@@ -83,6 +82,14 @@ end
 -- O jogador (posição do HumanoidRootPart em coordenadas locais do lobby) está em cima do quadrado?
 function RunArea.isOnPad(pad: Pad, x: number, y: number, z: number, detectHeight: number): boolean
 	return math.abs(x - pad.X) <= pad.Half and math.abs(z - pad.Z) <= pad.Half and y >= 0 and y <= detectHeight
+end
+
+export type FloorPad = { X: number, Z0: number, Z1: number, DetectHeight: number }
+
+-- O jogador (posição em coordenadas da loja ou da placa: x para os lados, z negativo = para a frente, y =
+-- altura acima do chão) está dentro do quadrado do chão (X = meia largura, de Z0 a Z1)?
+function RunArea.isOnFloorPad(pad: FloorPad, x: number, y: number, z: number): boolean
+	return math.abs(x) <= pad.X and z >= pad.Z0 and z <= pad.Z1 and y >= 0 and y <= pad.DetectHeight
 end
 
 -- Duas caixas alinhadas aos eixos se interpenetram (encostar não conta)?

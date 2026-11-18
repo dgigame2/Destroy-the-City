@@ -13,6 +13,7 @@ local WheelController = require(script.Controllers.WheelController)
 local RewardsController = require(script.Controllers.RewardsController)
 local CameraController = require(script.Controllers.CameraController)
 local MovementController = require(script.Controllers.MovementController)
+local CharacterSoundsController = require(script.Controllers.CharacterSoundsController)
 
 Feedback.init()
 EatEffects.init()
@@ -22,6 +23,7 @@ WheelController.init()
 RewardsController.init()
 CameraController.init()
 MovementController.init()
+CharacterSoundsController.init() -- sem som de passos
 
 if Place.isRun() then
 	require(script.Controllers.UpgradesController).init()

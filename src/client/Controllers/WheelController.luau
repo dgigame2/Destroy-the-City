@@ -1,12 +1,11 @@
 --!strict
--- Roleta: gira a roda física do lobby (todos veem) e uma cópia dentro da janela (ViewportFrame).
--- O servidor sorteia; aqui só animamos até parar na fatia sorteada.
+-- Roleta: a roda só existe dentro da janela SPIN (cópia do modelo que o servidor deixa no
+-- ReplicatedStorage). O servidor sorteia; aqui só animamos até parar na fatia sorteada.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Wheel = require(Shared.Logic.Wheel)
@@ -32,7 +31,6 @@ local PREVIEW_FOV = UiConfig.WheelCamera.Fov
 local PREVIEW_DISTANCE = UiConfig.WheelCamera.Distance
 local PREVIEW_LIFT = UiConfig.WheelCamera.Lift
 
-local world: Spinner? = nil
 local preview: Spinner? = nil
 local spinning = false
 
@@ -71,22 +69,19 @@ local function spin(spinner: Spinner, index: number, duration: number)
 	end)
 end
 
-local function findWorldWheel(): Spinner?
-	local lobby = Workspace:WaitForChild("Lobby", 30)
-	local wheelModel = lobby and lobby:WaitForChild("LuckyWheel", 30)
+-- Modelo da roda que o LobbyService monta no ReplicatedStorage (com o cubo central já chegado).
+local function findWheelModel(): Model?
+	local wheelModel = ReplicatedStorage:WaitForChild("LuckyWheel", 30) :: Model?
 	local rotor = wheelModel and wheelModel:WaitForChild("Rotor", 30) :: Model?
 	if rotor == nil then
 		return nil
 	end
-	-- o giro é em volta do cubo central: espera ele chegar (sem ele o pivô fica no lugar errado e a roda some)
+	-- o giro é em volta do cubo central: espera ele chegar (sem ele o pivô fica no lugar errado)
 	local deadline = os.clock() + 30
 	while rotor.PrimaryPart == nil and os.clock() < deadline do
 		task.wait(0.1)
 	end
-	if rotor.PrimaryPart == nil then
-		return nil
-	end
-	return { Rotor = rotor, Rest = rotor:GetPivot(), Angle = 0, Token = 0 }
+	return if rotor.PrimaryPart then wheelModel else nil
 end
 
 -- Copia a roda inteira para dentro da janela, com uma câmera de frente.
@@ -215,16 +210,11 @@ function WheelController.init()
 	end
 
 	task.spawn(function()
-		world = findWorldWheel()
-		if world then
-			preview = buildPreview(refs.WheelViewport, world.Rotor.Parent :: Model)
+		local wheelModel = findWheelModel()
+		if wheelModel then
+			preview = buildPreview(refs.WheelViewport, wheelModel)
 		end
 		refresh()
-	end)
-	Remotes.event(Remotes.Names.Events.WheelSpun).OnClientEvent:Connect(function(_player: Player, index: number)
-		if world then
-			spin(world, index, WheelConfig.SpinSeconds - 0.3)
-		end
 	end)
 	-- contagem regressiva do giro grátis
 	local elapsed = 0

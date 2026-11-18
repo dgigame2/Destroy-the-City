@@ -112,7 +112,7 @@ return table.freeze({
 		-- cidadezinha em volta do parque: asfalto azulado, calçada clara e faixa amarela
 		Hedge = { 84, 186, 60 },
 		-- árvores de blocos: folha (multiplica a textura) e tronco
-		Leaves = { 150, 214, 110 },
+		Leaves = { 196, 240, 150 }, -- clara: a textura BlockLeaves escurece (menos contraste com a grama)
 		Trunk = { 122, 82, 50 },
 		PathBorder = { 196, 186, 166 },
 		Road = { 78, 84, 98 },

@@ -2,7 +2,10 @@
 -- Todos os números de movimento do jogador ficam aqui.
 
 return table.freeze({
-	WalkSpeed = 16, -- studs/s em tamanho 1 (padrão Roblox)
+	WalkSpeed = 24, -- studs/s em tamanho 1 (padrão Roblox 16 + 50%)
+	-- velocidade em que a animação padrão de andar/correr do Roblox (ritmo 1) tem o pé parado no chão: a
+	-- animação toca na proporção velocidade real / isso (MovementController), sem parecer que desliza
+	AnimationWalkSpeed = 16,
 	-- Pulo só no lobby. Na run não tem pulo (o botão de pulo do celular some com 0).
 	-- Os mesmos valores vão para o StarterPlayer nos arquivos do Rojo (default.project.json e run.project.json).
 	LobbyJumpPower = 50, -- padrão Roblox (UseJumpPower = true)

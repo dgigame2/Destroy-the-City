@@ -1,6 +1,8 @@
 -- Enfeites do parque do lobby (LobbyConfig.Park): floreiras, bancos, postes e árvores não encostam em nada
 -- (praça, caminhos, estações, sebe, natureza, cogumelos) nem uns nos outros, e ficam dentro do parque.
 local LobbyConfig = require("../src/shared/Config/LobbyConfig")
+local RW, CL = LobbyConfig.Stations.Rewards, LobbyConfig.Stations.Classes
+local SH = LobbyConfig.Shop
 local BlockTrees = require("../src/shared/Logic/BlockTrees")
 
 local TOL = 0.001
@@ -21,32 +23,38 @@ end
 
 -- áreas ocupadas (MEDIDAS do LobbyService)
 local AREAS = {
-	{ "Praça", { -28, -38, 28, 18 } },
-	{ "Caminho esq.", { -50, -25, -28, -15 } },
-	{ "Caminho dir.", { 28, -25, 50, -15 } },
-	{ "Caminho START", { -5, 18, 5, 56 } },
-	{ "Caminho fundo esq.", { -66.5, 32.5, -5, 43.5 } },
-	{ "Caminho fundo dir.", { 5, 32.5, 66.5, 43.5 } },
-	{ "Quadrados START A RUN", { -45, 58, 45, 90 } },
-	{ "Mural", { -57, 40, -33, 50 } },
-	{ "Classes", { 33, 40, 57, 50 } },
-	{ "Loja", { -93, -33, -63, -7 } },
-	{ "Roleta", { 63, -32, 93, -8 } },
-	{ "Placa do título", { -26, -64, 26, -56 } },
+	{ "Quadrados START A RUN", { -45.3, 58, 45.3, 90 } },
+	{ "Mural", { RW[1] - 12.2, RW[2] - 5, RW[1] + 12.2, RW[2] + 5 } },
+	{ "Classes", { CL[1] - 12.2, CL[2] - 5, CL[1] + 12.2, CL[2] + 5 } },
+	-- quadrados neon na frente das placas (LobbyConfig.StationPad)
+	{
+		"Quadrado recompensas",
+		{ RW[1] - 9, RW[2] + LobbyConfig.StationPad.Z0, RW[1] + 9, RW[2] + LobbyConfig.StationPad.Z1 },
+	},
+	{
+		"Quadrado classes",
+		{ CL[1] - 9, CL[2] + LobbyConfig.StationPad.Z0, CL[1] + 9, CL[2] + LobbyConfig.StationPad.Z1 },
+	},
+	{ "Loja", { SH.X - 13, SH.Z - 17, SH.X + 14, SH.Z + 17 } }, -- cerca da loja (LobbyConfig.Shop)
 	-- cerca em volta do parque todo (a 2 da borda, 1.2 de grossura): nada encosta nela
 	{ "Cerca do fundo", { -W / 2, -D / 2, W / 2, -D / 2 + 2.7 } },
 	{ "Cerca da frente", { -W / 2, D / 2 - 2.7, W / 2, D / 2 } },
 	{ "Cerca esq.", { -W / 2, -D / 2, -W / 2 + 2.7, D / 2 } },
 	{ "Cerca dir.", { W / 2 - 2.7, -D / 2, W / 2, D / 2 } },
 }
+-- caminhos de pedra (LobbyConfig.Paths) com a borda de lajota em volta
+do
+	local b = LobbyConfig.PathBorder.Width
+	for i, p in LobbyConfig.Paths do
+		table.insert(AREAS, { "Caminho " .. i, { p[1] - b, p[2] - b, p[3] + b, p[4] + b } })
+	end
+end
 -- natureza do buildNature (x, z, raio) e flores
 local NATURE = {
 	{ -84, 30, 5.5 },
 	{ 86, 40, 5.5 },
-	{ -62, 75, 8.5 },
-	{ 62, 75, 7.5 },
-	{ -24, -32, 2.6 },
-	{ 24, -32, 2.6 },
+	{ -14, -26, 2.6 },
+	{ 14, -26, 2.6 },
 }
 
 local function items()

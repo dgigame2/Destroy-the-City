@@ -36,4 +36,14 @@ return function(t)
 		t.equal(Stride.normalized(0, 3, base), 0)
 		t.equal(Stride.normalized(10, 0, base), 0)
 	end)
+
+	t.test(
+		"andando na velocidade do jogo: a animação toca mais rápido na mesma proporção (sem deslizar)",
+		function()
+			local anim = MovementConfig.AnimationWalkSpeed
+			local blend = Stride.blend(Stride.normalized(MovementConfig.WalkSpeed, 1, anim))
+			t.near(blend.RunSpeed, MovementConfig.WalkSpeed / anim)
+			t.near(blend.RunWeight, 1)
+		end
+	)
 end

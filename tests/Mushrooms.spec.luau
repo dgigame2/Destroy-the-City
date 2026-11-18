@@ -1,6 +1,8 @@
 -- Cogumelos de enfeite do lobby (LobbyConfig.Mushrooms): dentro da ilha, fora da praça, dos caminhos e das
 -- áreas das estações, e sem encostar um no outro nem nas árvores/palmeiras/guarda-sóis.
 local LobbyConfig = require("../src/shared/Config/LobbyConfig")
+local RW, CL = LobbyConfig.Stations.Rewards, LobbyConfig.Stations.Classes
+local SH = LobbyConfig.Shop
 
 local MUSHROOM = LobbyConfig.Props.Mushroom
 -- raio de um cogumelo de escala k (meia largura do chapéu)
@@ -10,26 +12,23 @@ end
 
 -- áreas ocupadas (retângulos x0, z0, x1, z1 no espaço do lobby; MEDIDAS do LobbyService)
 local AREAS = {
-	{ "Praça", -28, -38, 28, 18 },
-	{ "Caminho esq.", -50, -25, -28, -15 },
-	{ "Caminho dir.", 28, -25, 50, -15 },
-	{ "Caminho START", -5, 18, 5, 56 },
-	{ "Caminho fundo esq.", -66.5, 32.5, -5, 43.5 },
-	{ "Caminho fundo dir.", 5, 32.5, 66.5, 43.5 },
-	{ "Quadrados START A RUN", -45, 58, 45, 90 },
-	{ "Mural de recompensas", -57, 40, -33, 50 },
-	{ "Salão de classes", 33, 40, 57, 50 },
-	{ "Loja", -93, -33, -63, -7 },
-	{ "Roleta", 63, -32, 93, -8 },
-	{ "Placa do título", -26, -64, 26, -56 },
+	{ "Quadrados START A RUN", -45.3, 58, 45.3, 90 },
+	{ "Mural de recompensas", RW[1] - 12.2, RW[2] - 5, RW[1] + 12.2, RW[2] + 5 },
+	{ "Salão de classes", CL[1] - 12.2, CL[2] - 5, CL[1] + 12.2, CL[2] + 5 },
+	{ "Loja", SH.X - 13, SH.Z - 17, SH.X + 14, SH.Z + 17 }, -- cerca da loja (LobbyConfig.Shop)
 }
+-- caminhos de pedra (LobbyConfig.Paths) com a borda de lajota em volta
+do
+	local b = LobbyConfig.PathBorder.Width
+	for i, p in LobbyConfig.Paths do
+		table.insert(AREAS, { "Caminho " .. i, p[1] - b, p[2] - b, p[3] + b, p[4] + b })
+	end
+end
 
 -- natureza do buildNature (x, z, raio aproximado já com a escala)
 local NATURE = {
 	{ -84, 30, 5.5 },
 	{ 86, 40, 5.5 },
-	{ -62, 75, 8.5 },
-	{ 62, 75, 7.5 },
 }
 
 return function(t)
