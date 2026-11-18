@@ -22,7 +22,7 @@ ROOT = os.path.abspath(os.path.join(OUT, "..", ".."))
 with open(os.path.join(OUT, "fountain_layout.json"), encoding="utf-8") as f:
     L = json.load(f)
 
-FRAMES = 4
+FRAMES = 12
 SEG = 64  # fatias em volta
 THICK = 0.08  # espessura da lâmina de água
 TEXW, TEXH = 64, 128

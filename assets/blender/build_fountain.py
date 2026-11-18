@@ -5,9 +5,10 @@
 #   lune run fountain
 #   blender -b --factory-startup --python assets/blender/build_fountain.py
 # Saída (assets/blender/):
-#   Fountain.fbx          -> mesh "Lobby_FountainMesh" (pedra; a água fica nas peças do Roblox). Importe no Studio
-#                            do lobby em ReplicatedStorage.Assets.
-#   FountainPalette.png   -> textura das 2 cores (pedra e detalhe)
+#   Fountain.fbx          -> meshes "Lobby_FountainMesh" (pedra em blocos) e "Lobby_FountainTrim" (bordas e
+#                            detalhes). Importe no Studio do lobby em ReplicatedStorage.Assets.
+#   FountainStone*.png, FountainTrim*.png -> cor e normal map de cada uma (SurfaceAppearance no Studio)
+#   src/shared/Config/FountainMeshConfig.luau -> base (altura) de cada mesh, gerado aqui
 #   Fountain.blend        -> arquivo editável
 #   fountain_preview.png  -> render de conferência
 #   fountain_size.txt     -> triângulos e tamanho em studs
@@ -27,28 +28,94 @@ SEG = 48  # fatias do torno
 COLORS = ["Stone", "Trim", "Shade"]  # Shade = pedra um tom abaixo (fundo das bacias)
 
 
-def palette_image():
-    stone = L["Colors"]["Stone"]
-    trim = L["Colors"]["Trim"]
-    shade = [c * 0.88 for c in stone]
-    cells = [stone, trim, shade]
-    size = 4 * len(cells)
-    img = bpy.data.images.new("FountainPalette", size, 4, alpha=False)
-    px = []
-    for _y in range(4):
-        for x in range(size):
-            r, g, b = (c / 255 for c in cells[x // 4])
-            px += [r, g, b, 1.0]
-    img.pixels = px
-    img.filepath_raw = os.path.join(OUT, "FountainPalette.png")
+TEX = 512  # lado das texturas (emendam nos 4 lados)
+TILE = {"Stone": 4.0, "Trim": 3.0}  # studs que 1 repetição da textura cobre
+KINDS = ["Stone", "Trim"]  # 1 mesh (e 1 textura) por tipo; Shade vai na de pedra
+
+
+def noise(rng, scale, size=TEX):
+    """Ruído suave que emenda nos lados (filtro passa-baixa na FFT do ruído branco)."""
+    import numpy as np
+
+    f = np.fft.fftfreq(size)
+    fx, fy = np.meshgrid(f, f)
+    k = np.exp(-(fx**2 + fy**2) * (scale**2))
+    n = np.real(np.fft.ifft2(np.fft.fft2(rng.standard_normal((size, size))) * k))
+    return (n - n.mean()) / (n.std() + 1e-9)
+
+
+def save(name, rgb):
+    import numpy as np
+
+    h, w, _ = rgb.shape
+    img = bpy.data.images.new(name, w, h, alpha=False)
+    rgba = np.concatenate([np.clip(rgb, 0, 1), np.ones((h, w, 1))], axis=2)
+    img.pixels = rgba.astype(np.float32).ravel()
+    img.filepath_raw = os.path.join(OUT, name + ".png")
     img.file_format = "PNG"
     img.save()
     return img
 
 
-def uv_for(color):
-    i = COLORS.index(color)
-    return ((i + 0.5) / len(COLORS), 0.5)
+def normal_map(height, strength):
+    """Normal map (formato OpenGL, +Y em cima, como o Roblox usa) a partir da altura."""
+    import numpy as np
+
+    dx = (np.roll(height, -1, axis=1) - np.roll(height, 1, axis=1)) * strength
+    dy = (np.roll(height, -1, axis=0) - np.roll(height, 1, axis=0)) * strength
+    n = np.stack([-dx, -dy, np.ones_like(height)], axis=2)
+    n /= np.linalg.norm(n, axis=2, keepdims=True)
+    return n * 0.5 + 0.5
+
+
+def stone_textures():
+    """Pedra: blocos grandes desencontrados com rejunte, cada um num tom, cantos gastos, grão e manchas.
+    Detalhe: pedra lisa entalhada (grão fino e veios). Linhas de baixo para cima (como o Blender guarda)."""
+    import numpy as np
+
+    rng = np.random.default_rng(7)
+    y, x = np.mgrid[0:TEX, 0:TEX] / TEX  # 0..1 (y para cima)
+    grain = noise(rng, 2.0)
+    blotch = noise(rng, 40.0)
+    soft = noise(rng, 12.0)
+
+    # --- pedra: 3 fileiras, 2 blocos por fileira (desencontrados), rejunte meio afundado
+    rows, cols, mortar = 3, 2, 0.018
+    row = np.floor(y * rows)
+    shift = (row % 2) * 0.5 / cols
+    bx = (x + shift) % 1 * cols
+    col = np.floor(bx)
+    fy, fx = y * rows - row, bx - col
+    edge = np.minimum(np.minimum(fx, 1 - fx) / cols, np.minimum(fy, 1 - fy) / rows)  # dist. à borda (tile)
+    wob = 0.005 * blotch
+    bevel = np.clip((edge + wob - mortar / 2) / 0.03, 0, 1)
+    bevel = bevel * bevel * (3 - 2 * bevel)
+    ids = (row * cols + col % cols).astype(int)
+    tint = rng.uniform(0.9, 1.06, size=rows * cols)[ids]
+    height = bevel + 0.025 * grain + 0.05 * blotch * bevel
+    base = np.array(L["Colors"]["Stone"]) / 255
+    shade = 0.7 + 0.3 * bevel  # rejunte escuro, borda do bloco um pouco mais escura
+    light = 1 + 0.03 * grain + 0.06 * blotch
+    color = base[None, None, :] * (shade * tint * light)[:, :, None]
+    # pintinhas (pedra calcária)
+    dots = (noise(rng, 0.7) > 2.4) * 0.12
+    color = color * (1 - dots[:, :, None])
+    stone = (save("FountainStone", color), save("FountainStoneNormal", normal_map(height, 6.0)))
+
+    # --- detalhe: pedra lisa, veios finos e grão
+    vein = np.abs(noise(rng, 6.0) + 0.6 * np.sin((x + 0.3 * soft) * math.tau * 2))
+    vein = np.clip(1 - vein / 0.12, 0, 1) * 0.5
+    base = np.array(L["Colors"]["Trim"]) / 255
+    light = 1 + 0.045 * grain + 0.06 * blotch - 0.08 * vein
+    color = base[None, None, :] * light[:, :, None]
+    color = color * (1 - dots[:, :, None] * 0.7)
+    height = 0.05 * grain + 0.08 * blotch - 0.05 * vein
+    trim = (save("FountainTrim", color), save("FountainTrimNormal", normal_map(height, 6.0)))
+    return {"Stone": stone, "Trim": trim}
+
+
+def kind_of(color):
+    return "Trim" if color == "Trim" else "Stone"
 
 
 # --- torno ------------------------------------------------------------------------------------
@@ -69,13 +136,21 @@ def lathe(profile, name):
             rr = r + (wave(a) if wave else 0.0)
             row.append(bm.verts.new((math.cos(a) * rr, math.sin(a) * rr, z)))
         rows.append(row)
+    # v = comprimento ao longo do perfil; u = volta, com um nº inteiro de repetições (emenda certinho)
+    length = [0.0]
+    for i in range(1, len(profile)):
+        length.append(length[-1] + math.hypot(profile[i][0] - profile[i - 1][0], profile[i][1] - profile[i - 1][1]))
     for i in range(len(profile) - 1):
-        color = profile[i + 1][2]
+        kind = kind_of(profile[i + 1][2])
+        tile = TILE[kind]
+        r_mid = max((profile[i][0] + profile[i + 1][0]) / 2, 0.3)
+        reps = max(1, round(math.tau * r_mid / tile))
         for s in range(SEG):
             t = (s + 1) % SEG
             f = bm.faces.new((rows[i][s], rows[i][t], rows[i + 1][t], rows[i + 1][s]))
-            for loop in f.loops:
-                loop[uv].uv = uv_for(color)
+            f.material_index = KINDS.index(kind)
+            for loop, (ss, ii) in zip(f.loops, ((s, i), (s + 1, i), (s + 1, i + 1), (s, i + 1))):
+                loop[uv].uv = (ss / SEG * reps, length[ii] / tile)
     # pontos no eixo (r = 0) viram um só
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
     bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=1e-4)
@@ -222,7 +297,10 @@ def build():
     return obj
 
 
-def preview(obj, img):
+NAMES = {"Stone": "Lobby_FountainMesh", "Trim": "Lobby_FountainTrim"}
+
+
+def preview(objs):
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x, scene.render.resolution_y = 900, 900
@@ -232,7 +310,7 @@ def preview(obj, img):
     cam_data = bpy.data.cameras.new("cam")
     cam = bpy.data.objects.new("cam", cam_data)
     scene.collection.objects.link(cam)
-    cam.location = (0, -42, 16)
+    cam.location = (0, -34, 14)
     cam.rotation_euler = (math.radians(80), 0, 0)
     scene.camera = cam
     sun_data = bpy.data.lights.new("sun", "SUN")
@@ -246,34 +324,82 @@ def preview(obj, img):
         bpy.data.objects.remove(o, do_unlink=True)
 
 
+def material(kind, images):
+    color, normal = images
+    mat = bpy.data.materials.new(NAMES[kind])
+    mat.use_nodes = True
+    nodes, links = mat.node_tree.nodes, mat.node_tree.links
+    bsdf = nodes["Principled BSDF"]
+    bsdf.inputs["Roughness"].default_value = 0.8
+    tex = nodes.new("ShaderNodeTexImage")
+    tex.image = color
+    links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    ntex = nodes.new("ShaderNodeTexImage")
+    ntex.image = normal
+    ntex.image.colorspace_settings.name = "Non-Color"
+    nmap = nodes.new("ShaderNodeNormalMap")
+    links.new(ntex.outputs["Color"], nmap.inputs["Color"])
+    links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
+    return mat
+
+
 def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    img = palette_image()
-    mat = bpy.data.materials.new("FountainPalette")
-    mat.use_nodes = True
-    nodes = mat.node_tree.nodes
-    tex = nodes.new("ShaderNodeTexImage")
-    tex.image = img
-    tex.interpolation = "Closest"
-    bsdf = nodes["Principled BSDF"]
-    bsdf.inputs["Roughness"].default_value = 0.7
-    mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
-
+    images = stone_textures()
     obj = build()
-    obj.data.materials.append(mat)
-    tris = sum(len(p.vertices) - 2 for p in obj.data.polygons)
-    dims = obj.dimensions
-    info = f"Lobby_FountainMesh: {tris} tris, tamanho Roblox {dims.x:.2f} x {dims.z:.2f} x {dims.y:.2f}"
+    for kind in KINDS:
+        obj.data.materials.append(material(kind, images[kind]))
+    # 1 mesh por tipo de pedra (cada MeshPart do Roblox tem 1 textura)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.separate(type="MATERIAL")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    objs = []
+    for o in [o for o in bpy.context.scene.objects if o.type == "MESH"]:
+        idx = o.data.polygons[0].material_index
+        mat = o.data.materials[idx]
+        kind = next(k for k in KINDS if NAMES[k] == mat.name)
+        o.name = o.data.name = "tmp_" + kind
+        # só o material desse tipo
+        o.data.materials.clear()
+        o.data.materials.append(mat)
+        for poly in o.data.polygons:
+            poly.material_index = 0
+        objs.append((kind, o))
+    for kind, o in objs:
+        o.name = o.data.name = NAMES[kind]
+
+    lines = [
+        "--!strict",
+        "-- GERADO por assets/blender/build_fountain.py: não edite à mão (rode o script de novo).",
+        "-- Meshes da pedra da fonte (ReplicatedStorage.Assets) e a altura da base de cada uma em relação à base",
+        "-- da fonte (studs). O LobbyService posiciona; giradas em volta do eixo (centro X/Z no eixo).",
+        "",
+        "return table.freeze({",
+        "\tBottom = table.freeze({",
+    ]
+    info = []
+    for kind, o in sorted(objs, key=lambda k: k[1].name):
+        low = min(v.co.z for v in o.data.vertices)
+        lines.append(f"\t\t{o.name} = {low:.4f},")
+        tris = sum(len(p.vertices) - 2 for p in o.data.polygons)
+        d = o.dimensions
+        info.append(f"{o.name}: {tris} tris, tamanho Roblox {d.x:.2f} x {d.z:.2f} x {d.y:.2f}, base {low:.3f}")
+    lines += ["\t}),", "})", ""]
+    root = os.path.abspath(os.path.join(OUT, "..", ".."))
+    with open(os.path.join(root, "src", "shared", "Config", "FountainMeshConfig.luau"), "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lines))
     with open(os.path.join(OUT, "fountain_size.txt"), "w", encoding="utf-8") as f:
-        f.write(info + "\n")
-    print(info)
+        f.write("\n".join(info) + "\n")
+    print("\n".join(info))
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "Fountain.blend"))
     try:
-        preview(obj, img)
+        preview(objs)
     except Exception as err:
         print("preview falhou:", err)
     bpy.ops.object.select_all(action="DESELECT")
-    obj.select_set(True)
+    for _kind, o in objs:
+        o.select_set(True)
     bpy.ops.export_scene.fbx(
         filepath=os.path.join(OUT, "Fountain.fbx"),
         use_selection=True,

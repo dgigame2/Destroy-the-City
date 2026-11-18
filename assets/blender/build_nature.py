@@ -370,4 +370,5 @@ def main():
     print("Nature pronto")
 
 
-main()
+if __name__ == "__main__":
+    main()

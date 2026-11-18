@@ -5,7 +5,7 @@ local BlockTrees = require("../src/shared/Logic/BlockTrees")
 
 local TOL = 0.001
 local W, D = LobbyConfig.Width, LobbyConfig.Depth
-local hedge = LobbyConfig.Hedge
+local Hedges = require("../src/shared/Logic/Hedges")
 
 -- caixa no chão (x0, z0, x1, z1) de um objeto com meia largura hx / meia profundidade hz girado em 90° passos
 local function rect(x: number, z: number, hx: number, hz: number, yaw: number)
@@ -25,37 +25,26 @@ local AREAS = {
 	{ "Caminho esq.", { -50, -25, -28, -15 } },
 	{ "Caminho dir.", { 28, -25, 50, -15 } },
 	{ "Caminho START", { -5, 18, 5, 56 } },
-	{ "Caminho fundo esq.", { -65, 35, -15, 44 } },
-	{ "Caminho fundo dir.", { 15, 35, 65, 44 } },
+	{ "Caminho fundo esq.", { -66.5, 32.5, -5, 43.5 } },
+	{ "Caminho fundo dir.", { 5, 32.5, 66.5, 43.5 } },
 	{ "Quadrados START A RUN", { -45, 58, 45, 90 } },
 	{ "Mural", { -57, 40, -33, 50 } },
 	{ "Classes", { 33, 40, 57, 50 } },
 	{ "Loja", { -93, -33, -63, -7 } },
 	{ "Roleta", { 63, -32, 93, -8 } },
 	{ "Placa do título", { -26, -64, 26, -56 } },
-	{ "Sebe do fundo", { -W / 2, -D / 2, W / 2, -D / 2 + hedge.Inset + hedge.Size / 2 } },
-	{ "Sebe esq.", { -W / 2, -D / 2, -W / 2 + hedge.Inset + hedge.Size / 2, hedge.SideEndZ + hedge.Size } },
-	{ "Sebe dir.", { W / 2 - hedge.Inset - hedge.Size / 2, -D / 2, W / 2, hedge.SideEndZ + hedge.Size } },
+	-- cerca em volta do parque todo (a 2 da borda, 1.2 de grossura): nada encosta nela
+	{ "Cerca do fundo", { -W / 2, -D / 2, W / 2, -D / 2 + 2.7 } },
+	{ "Cerca da frente", { -W / 2, D / 2 - 2.7, W / 2, D / 2 } },
+	{ "Cerca esq.", { -W / 2, -D / 2, -W / 2 + 2.7, D / 2 } },
+	{ "Cerca dir.", { W / 2 - 2.7, -D / 2, W / 2, D / 2 } },
 }
 -- natureza do buildNature (x, z, raio) e flores
 local NATURE = {
-	{ -100, -66, 6 },
-	{ -100, -40, 5 },
-	{ -102, 62, 6 },
 	{ -84, 30, 5.5 },
-	{ 100, -66, 6 },
-	{ 102, 62, 5.5 },
 	{ 86, 40, 5.5 },
-	{ -30, -75, 4 },
-	{ 30, -75, 4 },
 	{ -62, 75, 8.5 },
 	{ 62, 75, 7.5 },
-	{ -60, -72, 4.5 },
-	{ 60, -72, 4.5 },
-	{ -18, 24, 2.2 },
-	{ 18, 24, 2.2 },
-	{ -55, -5, 2 },
-	{ 60, 5, 2 },
 	{ -24, -32, 2.6 },
 	{ 24, -32, 2.6 },
 }
@@ -82,6 +71,17 @@ local function items()
 	for i, s in park.Trees do
 		local hx, hz = BlockTrees.half(BlockTrees.pick(i), s[3])
 		add("Árvore", { s[1], s[2], 0 }, hx, hz)
+	end
+	for _, b in park.Bushes do
+		add("Moita solta", { b[1], b[2], 0 }, b[3] / 2, b[3] / 2)
+	end
+	for _, fl in park.Flowers do
+		local spec = if fl[3] == 2 then P.TulipPink else P.TulipRed
+		local r = math.max(spec.Size[1], spec.Size[3]) / 2 * park.FlowerScale // 1 + 1 -- gira: usa um quadrado folgado
+		add("Tulipas", { fl[1], fl[2], 0 }, r, r)
+	end
+	for _, c in Hedges.build(W, D, LobbyConfig.Hedge) do
+		add("Moita", { c.X, c.Z, 0 }, c.Size / 2, c.Size / 2)
 	end
 	local r = math.max(P.Mushroom.Size[1], P.Mushroom.Size[3]) / 2
 	for _, m in LobbyConfig.Mushrooms do

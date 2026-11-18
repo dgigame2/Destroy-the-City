@@ -1,1 +1,2 @@
-Lobby_FountainMesh: 17664 tris, tamanho Roblox 24.36 x 19.45 x 24.36
+Lobby_FountainMesh: 10080 tris, tamanho Roblox 23.08 x 18.85 x 23.08, base 0.600
+Lobby_FountainTrim: 7584 tris, tamanho Roblox 24.36 x 19.01 x 24.36, base 0.000

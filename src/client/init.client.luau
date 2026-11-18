@@ -42,4 +42,5 @@ else
 	require(script.Controllers.LobbyController).init()
 	require(script.Controllers.PartyController).init()
 	require(script.Controllers.FountainController).init() -- água animada da fonte
+	require(script.Controllers.NoclipController).init() -- /noclip (só admins e Studio)
 end

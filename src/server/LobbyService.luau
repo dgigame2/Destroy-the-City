@@ -19,9 +19,11 @@ local Fountain = require(Shared.Logic.Fountain)
 local LobbyTown = require(Shared.Logic.LobbyTown)
 local LobbyPaths = require(Shared.Logic.LobbyPaths)
 local BlockTrees = require(Shared.Logic.BlockTrees)
+local Hedges = require(Shared.Logic.Hedges)
 local WheelConfig = require(Shared.Config.WheelConfig)
 local Templates = require(Shared.Buildings.Templates)
 local PaletteConfig = require(Shared.Config.PaletteConfig)
+local FountainMeshConfig = require(Shared.Config.FountainMeshConfig)
 local FountainWaterMeshConfig = require(Shared.Config.FountainWaterMeshConfig)
 
 local Builder = require(script.Parent.Builder)
@@ -211,28 +213,45 @@ local function buildFence(parent: Instance, w: number, d: number)
 		end
 		return
 	end
-	-- trecho apoiado com o poste em `post` e os trilhos indo na direção `dir` (o +X do trecho)
-	local function run(from: Vector3, dir: Vector3, length: number)
-		local yaw = math.atan2(-dir.Z, dir.X)
-		local steps = math.floor(length / 8)
-		for i = 0, steps - 1 do
-			local post = from + dir * (i * 8)
-			prop(parent, "Fence", CFrame.new(post + dir * 4) * CFrame.Angles(0, yaw, 0))
+	-- Cerca fechada em volta do parque todo (é o limite de onde o jogador pode ir): um poste em cada canto e,
+	-- entre eles, trechos esticados para caber certinho (sem vão nas pontas).
+	local fence = LobbyConfig.Props.Fence
+	local post = 1.2
+	local cx, cz = w / 2 - 2, d / 2 - 2 -- linha da cerca
+	for _, sx in { -1, 1 } do
+		for _, sz in { -1, 1 } do
+			local corner = part(
+				parent,
+				"FencePost",
+				Vector3.new(post, fence.Size[2] + 0.2, post),
+				CFrame.new(sx * cx, (fence.Size[2] + 0.2) / 2, sz * cz),
+				COLORS.Wood
+			)
+			corner.Material = Enum.Material.SmoothPlastic
 		end
-		-- poste do fim encostado na última tábua (meio poste para fora, não entra nela)
-		local last = from + dir * (steps * 8 + 0.45)
-		local cap = part(
-			parent,
-			"FencePost",
-			Vector3.new(0.9, 6.6, 0.9),
-			CFrame.new(last + Vector3.new(0, 3.3, 0)),
-			COLORS.Wood
-		)
-		cap.Material = Enum.Material.SmoothPlastic
 	end
-	run(Vector3.new(-w / 2 + 4, 0, -d / 2 + 2), Vector3.xAxis, w - 8)
-	for _, side in { -1, 1 } do
-		run(Vector3.new(side * (w / 2 - 2), 0, -d / 2 + 6), Vector3.zAxis, d - 20)
+	-- de `a` até `b` (pontos na linha da cerca, já descontando os postes dos cantos)
+	local function run(a: Vector3, b: Vector3)
+		local length = (b - a).Magnitude
+		local dir = (b - a).Unit
+		local yaw = math.atan2(-dir.Z, dir.X)
+		local count = math.max(1, math.floor(length / 8 + 0.5))
+		local each = length / count
+		for i = 0, count - 1 do
+			local section = prop(parent, "Fence", CFrame.new(a + dir * (each * (i + 0.5))) * CFrame.Angles(0, yaw, 0))
+			if section then
+				-- estica o trecho para ter o comprimento exato do espaço: os trechos e os postes dos cantos só encostam
+				section.Size = Vector3.new(each, section.Size.Y, section.Size.Z)
+				section.CFrame = origin
+					* CFrame.new(a + dir * (each * (i + 0.5)) + Vector3.new(0, fence.Center[2], 0))
+					* CFrame.Angles(0, yaw, 0)
+			end
+		end
+	end
+	local g = post / 2
+	for _, s in { -1, 1 } do
+		run(Vector3.new(-cx + g, 0, s * cz), Vector3.new(cx - g, 0, s * cz)) -- fundo e frente
+		run(Vector3.new(s * cx, 0, -cz + g), Vector3.new(s * cx, 0, cz - g)) -- laterais
 	end
 end
 local function buildIsland(parent: Instance)
@@ -243,10 +262,11 @@ local function buildIsland(parent: Instance)
 	-- paredes invisíveis na borda
 	for _, spec in
 		{
-			{ Vector3.new(w, 80, 2), CFrame.new(0, 40, -d / 2) },
-			{ Vector3.new(w, 80, 2), CFrame.new(0, 40, d / 2) },
-			{ Vector3.new(2, 80, d), CFrame.new(-w / 2, 40, 0) },
-			{ Vector3.new(2, 80, d), CFrame.new(w / 2, 40, 0) },
+			-- logo atrás da cerca (que fica a 2 da borda): ninguém sobe nela para sair
+			{ Vector3.new(w, 120, 2), CFrame.new(0, 60, -d / 2 + 1) },
+			{ Vector3.new(w, 120, 2), CFrame.new(0, 60, d / 2 - 1) },
+			{ Vector3.new(2, 120, d - 4), CFrame.new(-w / 2 + 1, 60, 0) },
+			{ Vector3.new(2, 120, d - 4), CFrame.new(w / 2 - 1, 60, 0) },
 		}
 	do
 		local wall = part(parent, "Boundary", spec[1], spec[2], COLORS.White)
@@ -254,25 +274,19 @@ local function buildIsland(parent: Instance)
 		wall.CastShadow = false
 	end
 	buildFence(parent, w, d)
-	-- sebe de cubinhos por dentro da cerca (fundo e laterais), com um vão entre eles
-	local hedge = LobbyConfig.Hedge
-	local s, gap, inset = hedge.Size, hedge.Gap, hedge.Inset
-	local step = s + gap
-	local function cube(x: number, z: number)
-		part(parent, "Hedge", Vector3.new(s, hedge.Height, s), CFrame.new(x, hedge.Height / 2, z), COLORS.Hedge)
-	end
-	local backZ = -d / 2 + inset
-	local sideX = w / 2 - inset
-	local x = -sideX + step
-	while x <= sideX - step do
-		cube(x, backZ)
-		x += step
-	end
-	local z = backZ
-	while z <= hedge.SideEndZ do
-		cube(-sideX, z)
-		cube(sideX, z)
-		z += step
+	-- moitas de folhas por dentro da cerca, em grupinhos com falhas (Logic/Hedges), com a textura das árvores
+	for _, c in Hedges.build(w, d, LobbyConfig.Hedge) do
+		local p = part(
+			parent,
+			"Hedge",
+			Vector3.new(c.Size, c.Height, c.Size),
+			CFrame.new(c.X, c.Height / 2, c.Z),
+			COLORS.Leaves
+		)
+		p.Material = Enum.Material.Grass
+		if MaterialService:FindFirstChild(LobbyConfig.LeafVariant, true) then
+			p.MaterialVariant = LobbyConfig.LeafVariant
+		end
 	end
 end
 
@@ -306,6 +320,23 @@ local function blockTree(parent: Instance, x: number, z: number, scale: number, 
 	return model
 end
 
+-- Moita de folha (cubo com a textura das árvores) apoiada no chão.
+local function leafCube(parent: Instance, x: number, z: number, size: number, height: number)
+	local p = Instance.new("Part")
+	p.Name = "Bush"
+	p.Anchored = true
+	p.Size = Vector3.new(size, height, size)
+	p.CFrame = origin * CFrame.new(x, height / 2, z)
+	Builder.studify(p, true)
+	p.Color = COLORS.Leaves
+	p.Material = Enum.Material.Grass
+	if MaterialService:FindFirstChild(LobbyConfig.LeafVariant, true) then
+		p.MaterialVariant = LobbyConfig.LeafVariant
+	end
+	p.Parent = parent
+	return p
+end
+
 -- Cidadezinha em volta do parque (Logic/LobbyTown + LobbyConfig.Town): calçadas um degrau acima da rua,
 -- rua com faixa amarela, casas dos Templates de frente para a rua, árvores, carros e gramado até o horizonte.
 -- Só enfeite: as paredes invisíveis do parque não deixam ninguém sair.
@@ -335,6 +366,14 @@ local function buildTown(parent: Instance)
 	for _, b in town.Buildings do
 		table.insert(houses, b) -- prédios do fundo: mesmo jeito de montar
 	end
+	for _, s in town.Suburb do
+		table.insert(houses, s) -- casas e prédios sortidos no meio da floresta
+	end
+	for _, o in town.Outskirts do
+		if o.Template ~= "BlockTree" then
+			table.insert(houses, o) -- casinhas dos arredores
+		end
+	end
 	for i, item in houses do
 		local template = Templates[item.Template]
 		local at = origin * CFrame.new(item.X, 0, item.Z) * CFrame.Angles(0, math.rad(item.Yaw), 0)
@@ -348,14 +387,34 @@ local function buildTown(parent: Instance)
 		model:ScaleTo(item.Scale)
 		model.Parent = folder
 	end
-	for _, group in { town.Trees, town.Forest } do
+	for _, group in { town.Trees, town.Forest, town.Outskirts } do
 		for _, item in group do
+			if item.Template ~= "BlockTree" then
+				continue
+			end
 			blockTree(folder, item.X, item.Z, item.Scale, item.Variant or 1)
 		end
 	end
+	for _, b in town.Bushes do
+		leafCube(folder, b.X, b.Z, b.Scale, b.Variant or 2)
+	end
+	-- terreno redondo em volta de tudo (borda do mundo some no horizonte), com o material de grama
+	local land = prop(folder, "Land", CFrame.new(0, 0, 0))
+	if land then
+		land.Name = "Land"
+		land.Color = COLORS.Grass
+		land.CanCollide = false
+		land.CanQuery = false
+		land.CastShadow = false
+		texture(land, "TownGrass")
+	end
 	-- morros do horizonte (mesh do Blender com o material de grama do lobby)
 	local assets = ReplicatedStorage:FindFirstChild("Assets")
-	for _, item in town.Hills do
+	local hills = table.clone(town.Hills)
+	for _, m in town.Mountains do
+		table.insert(hills, m)
+	end
+	for _, item in hills do
 		local source = assets and assets:FindFirstChild("Lobby_" .. item.Template, true)
 		if source and source:IsA("MeshPart") then
 			local hill = source:Clone()
@@ -477,17 +536,28 @@ local function addFountainWater(host: BasePart, center: Vector3, pieces: { Fount
 end
 
 -- Fonte da praça (Logic/Fountain + LobbyConfig.Fountain): 3 bacias de pedra, a de baixo é o pé, com água
--- azul animada. A pedra é a mesh do Blender (assets/blender/build_fountain.py, LobbyConfig.FountainMesh) quando
+-- azul animada. A pedra são as meshes do Blender (assets/blender/build_fountain.py, FountainMeshConfig) quando
 -- ela já foi importada; sem ela, a mesma fonte em peças lisas. A água é sempre peça do Roblox (transparente).
 local FOUNTAIN_COLORS: { [string]: Color3 } = {
 	Stone = COLORS.FountainStone,
 	Trim = COLORS.FountainTrim,
 	Water = COLORS.FountainWater,
 }
-local function fountainMesh(): MeshPart?
+-- meshes da pedra (FountainMeshConfig: nome -> base); nil se faltar alguma
+local function fountainMeshes(): { [string]: MeshPart }?
 	local assets = ReplicatedStorage:FindFirstChild("Assets")
-	local mesh = assets and assets:FindFirstChild(LobbyConfig.FountainMesh, true)
-	return if mesh and mesh:IsA("MeshPart") then mesh else nil
+	if not assets then
+		return nil
+	end
+	local found = {}
+	for name in FountainMeshConfig.Bottom do
+		local mesh = assets:FindFirstChild(name, true)
+		if not (mesh and mesh:IsA("MeshPart")) then
+			return nil
+		end
+		found[name] = mesh
+	end
+	return found
 end
 
 -- Quadros da água do Blender (FW_<Grupo>_<n>, assets/blender/build_fountain_water.py) numa pasta WaterFrames;
@@ -531,17 +601,19 @@ local function buildFountain(parent: Instance, base: CFrame)
 	model.Name = "Fountain"
 	local center = (origin * base).Position
 	local pieces = Fountain.pieces(LobbyConfig.Fountain)
-	local source = fountainMesh()
+	local source = fountainMeshes()
 	local host: BasePart? = nil
 	if source then
-		local stone = source:Clone()
-		stone.Name = "Stone"
-		stone.Anchored = true
-		-- origem da mesh no centro da base: a caixa sobe metade da altura
-		stone.CFrame = origin * base * CFrame.new(0, stone.Size.Y / 2, 0)
-		stone:SetAttribute("NoAudit", true) -- a água encosta na pedra curva; a caixa da mesh não é a forma real
-		stone.Parent = model
-		host = stone
+		for name, mesh in source do
+			local stone = mesh:Clone()
+			stone.Name = if name == "Lobby_FountainMesh" then "Stone" else "Trim"
+			stone.Anchored = true
+			-- giradas em volta do eixo: centro X/Z no eixo, base na altura gerada pelo Blender
+			stone.CFrame = origin * base * CFrame.new(0, FountainMeshConfig.Bottom[name] + stone.Size.Y / 2, 0)
+			stone:SetAttribute("NoAudit", true) -- a água encosta na pedra curva; a caixa da mesh não é a forma real
+			stone.Parent = model
+			host = host or stone
+		end
 	end
 	local hasFrames = addWaterFrames(model, base)
 	for _, piece in pieces do
@@ -1004,24 +1076,10 @@ end
 
 local function buildNature(parent: Instance)
 	local spots = {
-		{ "Palm", -100, -66, 1.8 }, -- longe da sebe do fundo
-		{ "Palm", -100, -40, 1.5 },
-		{ "Palm", -102, 62, 1.8 },
 		{ "Umbrella", -84, 30, 1.6 },
-		{ "Flowers", -70, 62, 1.6 },
-		{ "Palm", 100, -66, 1.8 },
-		{ "Palm", 102, 62, 1.6 },
 		{ "Umbrella", 86, 40, 1.6 },
-		{ "Bush", -30, -75, 2 },
-		{ "Bush", 30, -75, 2 },
 		{ "Rock", -62, 75, 1.4 },
 		{ "Rock", 62, 75, 1.2 },
-		{ "Flowers", -18, 24, 1.4 },
-		{ "Flowers", 18, 24, 1.4 },
-		{ "Flowers", -55, -5, 1.2 },
-		{ "Flowers", 60, 5, 1.2 },
-		{ "Palm", -60, -72, 1.4 },
-		{ "Palm", 60, -72, 1.4 },
 		{ "Bench", -24, -32, 1, PLAZA_TOP },
 		{ "Bench", 24, -32, 1, PLAZA_TOP },
 	}
@@ -1037,6 +1095,14 @@ local function buildNature(parent: Instance)
 		if not prop(parent, "PlanterLong", at(spot)) then
 			prop(parent, "Planter", at(spot))
 		end
+	end
+	for _, b in park.Bushes do
+		leafCube(parent, b[1], b[2], b[3], b[3] * 0.8)
+	end
+	-- tulipas avulsas espalhadas no gramado (mesmo modelo das floreiras, sem o canteiro)
+	for i, f in park.Flowers do
+		local kind = if f[3] == 2 then "TulipPink" else "TulipRed"
+		prop(parent, kind, CFrame.new(f[1], 0, f[2]) * CFrame.Angles(0, math.rad(i * 47 % 360), 0), park.FlowerScale)
 	end
 	for _, spot in park.WidePlanters do
 		if not prop(parent, "PlanterWide", at(spot)) then

@@ -14,8 +14,8 @@ local AREAS = {
 	{ "Caminho esq.", -50, -25, -28, -15 },
 	{ "Caminho dir.", 28, -25, 50, -15 },
 	{ "Caminho START", -5, 18, 5, 56 },
-	{ "Caminho fundo esq.", -65, 35, -15, 44 },
-	{ "Caminho fundo dir.", 15, 35, 65, 44 },
+	{ "Caminho fundo esq.", -66.5, 32.5, -5, 43.5 },
+	{ "Caminho fundo dir.", 5, 32.5, 66.5, 43.5 },
 	{ "Quadrados START A RUN", -45, 58, 45, 90 },
 	{ "Mural de recompensas", -57, 40, -33, 50 },
 	{ "Salão de classes", 33, 40, 57, 50 },
@@ -26,21 +26,10 @@ local AREAS = {
 
 -- natureza do buildNature (x, z, raio aproximado já com a escala)
 local NATURE = {
-	{ -100, -66, 6 },
-	{ -100, -40, 5 },
-	{ -105, 10, 4.5 },
-	{ -102, 62, 6 },
 	{ -84, 30, 5.5 },
-	{ 100, -66, 6 },
-	{ 100, 20, 4.5 },
-	{ 102, 62, 5.5 },
 	{ 86, 40, 5.5 },
-	{ -30, -75, 4 },
-	{ 30, -75, 4 },
 	{ -62, 75, 8.5 },
 	{ 62, 75, 7.5 },
-	{ -60, -72, 4.5 },
-	{ 60, -72, 4.5 },
 }
 
 return function(t)

@@ -4,7 +4,7 @@
 -- cada grupo em relação à base da fonte (studs). O LobbyService posiciona; o FountainController anima.
 
 return table.freeze({
-	Frames = 4,
+	Frames = 12,
 	Bottom = table.freeze({
 		Curtain2 = 3.2800,
 		Curtain3 = 11.3800,

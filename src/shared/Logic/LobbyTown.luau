@@ -31,8 +31,20 @@ export type Config = {
 	ForestPitch: number,
 	ForestDensity: number, -- 0..1: quantas casas da grade têm árvore
 	ForestScale: { number }, -- escala mínima e máxima das árvores da floresta
-	HillGap: number,
+	HillRing: number, -- raio do círculo dos morros
 	HillPitch: number,
+	SuburbChance: number, -- 0..1: blocos da floresta que viram casa/prédio
+	SuburbScale: number,
+	YardBush: { number }, -- { lado do cubo, altura, distância para o lado do meio da casa }
+	Suburbs: { string }, -- modelos dos Templates sorteados nos arredores
+	Outskirts: {
+		Pitch: number,
+		HillMargin: number,
+		HouseChance: number,
+		TreeChance: number,
+		TreeScale: { number },
+		Mountains: { { number } }, -- { x, z, qual morro }
+	},
 	Hills: { { number } }, -- tamanho (X, Z) de cada morro (Lobby_Hill1..3)
 }
 export type Town = {
@@ -46,6 +58,10 @@ export type Town = {
 	Buildings: { Item },
 	Forest: { Item },
 	Hills: { Item }, -- Template = "Hill" .. n
+	Mountains: { Item }, -- morros menores entre a cidade e o horizonte
+	Outskirts: { Item }, -- casas e árvores espalhadas nos arredores
+	Suburb: { Item }, -- casas e prédios sortidos no meio da floresta
+	Bushes: { Item }, -- moitas de folha (Scale = lado do cubo, Variant = altura)
 	Outer: { number }, -- meia-largura e meia-profundidade de onde acabam os lotes
 	Outer2: { number }, -- até onde vão os prédios do fundo
 }
@@ -85,6 +101,10 @@ function LobbyTown.build(width: number, depth: number, cfg: Config): Town
 		Buildings = {},
 		Forest = {},
 		Hills = {},
+		Mountains = {},
+		Outskirts = {},
+		Suburb = {},
+		Bushes = {},
 		Outer = {},
 		Outer2 = {},
 	}
@@ -187,13 +207,38 @@ function LobbyTown.build(width: number, depth: number, cfg: Config): Town
 	end
 	local gx = math.floor(f1x / pitch)
 	local gz = math.floor(f1z / pitch)
+	-- só no anel da floresta (fora da caixa dos prédios + vão, dentro da caixa de fora)
+	local function inRing(i: number, j: number): boolean
+		local x, z = i * pitch, j * pitch
+		local outside = math.abs(x) > f0x + pitch / 2 or math.abs(z) > f0z + pitch / 2
+		local inBand = math.abs(x) <= f1x - pitch / 2 and math.abs(z) <= f1z - pitch / 2
+		return outside and inBand
+	end
+	-- casas e prédios sortidos no meio da floresta: blocos de 2x2 casas da grade sorteados viram um lote
+	local taken: { [string]: boolean } = {}
+	local suburbCount = 0
+	for bi = -gx // 2 - 1, gx // 2 + 1 do
+		for bj = -gz // 2 - 1, gz // 2 + 1 do
+			local i0, j0 = bi * 2, bj * 2
+			local all = inRing(i0, j0) and inRing(i0 + 1, j0) and inRing(i0, j0 + 1) and inRing(i0 + 1, j0 + 1)
+			if all and hash(bi + 101, bj - 77) < cfg.SuburbChance then
+				local x, z = (i0 + 0.5) * pitch, (j0 + 0.5) * pitch
+				local yaw = if math.abs(x) - f0x > math.abs(z) - f0z
+					then (if x > 0 then 90 else -90)
+					else (if z > 0 then 0 else 180)
+				suburbCount += 1
+				local template = cfg.Suburbs[math.floor(hash(bi, bj + 13) * #cfg.Suburbs) + 1]
+				table.insert(town.Suburb, { Template = template, X = x, Z = z, Yaw = yaw, Scale = cfg.SuburbScale })
+				for _, c in { { i0, j0 }, { i0 + 1, j0 }, { i0, j0 + 1 }, { i0 + 1, j0 + 1 } } do
+					taken[c[1] .. ":" .. c[2]] = true
+				end
+			end
+		end
+	end
 	for i = -gx, gx do
 		for j = -gz, gz do
 			local x, z = i * pitch, j * pitch
-			-- só no anel da floresta (fora da caixa dos prédios + vão, dentro da caixa de fora)
-			local outside = math.abs(x) > f0x + pitch / 2 or math.abs(z) > f0z + pitch / 2
-			local inBand = math.abs(x) <= f1x - pitch / 2 and math.abs(z) <= f1z - pitch / 2
-			if outside and inBand and hash(i, j) < cfg.ForestDensity then
+			if inRing(i, j) and not taken[i .. ":" .. j] and hash(i, j) < cfg.ForestDensity then
 				local jx = (hash(j, i) - 0.5) * pitch * 0.2
 				local jz = (hash(i + 7, j - 3) - 0.5) * pitch * 0.2
 				local s = cfg.ForestScale[1] + (cfg.ForestScale[2] - cfg.ForestScale[1]) * hash(i - 5, j + 9)
@@ -206,25 +251,86 @@ function LobbyTown.build(width: number, depth: number, cfg: Config): Town
 		end
 	end
 
-	-- morros em volta de tudo (horizonte), um do lado do outro sem se cruzar
-	local biggest = 0
-	for _, h in cfg.Hills do
-		biggest = math.max(biggest, h[1], h[2])
-	end
-	local hx2, hz2 = f1x + cfg.HillGap + biggest / 2, f1z + cfg.HillGap + biggest / 2
-	local hillCount = 0
-	local function hillAt(x: number, z: number)
-		hillCount += 1
-		local n = (hillCount - 1) % #cfg.Hills + 1
+	-- morros em círculo em volta de tudo (horizonte redondo), um do lado do outro sem se cruzar; ficam em cima
+	-- do terreno redondo do Blender (Lobby_Land), que começa onde o gramado retangular acaba
+	local hillCount = math.floor(2 * math.pi * cfg.HillRing / cfg.HillPitch)
+	for k = 0, hillCount - 1 do
+		local a = k / hillCount * 2 * math.pi
+		local n = k % #cfg.Hills + 1
+		local x, z = math.cos(a) * cfg.HillRing, math.sin(a) * cfg.HillRing
 		table.insert(town.Hills, { Template = "Hill" .. n, X = x, Z = z, Yaw = 0, Scale = 1, Variant = n })
 	end
-	for _, x in along(2 * hx2 + cfg.HillPitch, cfg.HillPitch) do
-		hillAt(x, -hz2)
-		hillAt(x, hz2)
+
+	-- arredores (no terreno redondo, entre o gramado da cidade e os morros): montanhas menores e uma grade com
+	-- casinhas e árvores sorteadas (sempre igual), para o horizonte não ficar vazio
+	local gx1, gz1 = town.Ground[2].X1, town.Ground[2].Z1
+	local out = cfg.Outskirts
+	local limit = cfg.HillRing - out.HillMargin -- até onde vai (antes dos morros do horizonte)
+	for _, m in out.Mountains do
+		table.insert(
+			town.Mountains,
+			{ Template = "Hill" .. m[3], X = m[1], Z = m[2], Yaw = 0, Scale = 1, Variant = m[3] }
+		)
 	end
-	for _, z in along(2 * hz2 - cfg.HillPitch, cfg.HillPitch) do
-		hillAt(-hx2, z)
-		hillAt(hx2, z)
+	local function nearMountain(x: number, z: number, r: number): boolean
+		for _, m in town.Mountains do
+			local s = cfg.Hills[m.Variant :: number]
+			if math.sqrt((x - m.X) ^ 2 + (z - m.Z) ^ 2) < r + math.max(s[1], s[2]) / 2 + 2 then
+				return true
+			end
+		end
+		return false
+	end
+	local op = out.Pitch
+	local n = math.ceil(limit / op)
+	for i = -n, n do
+		for j = -n, n do
+			local x = i * op + (hash(i + 31, j) - 0.5) * op * 0.15
+			local z = j * op + (hash(i, j + 31) - 0.5) * op * 0.15
+			local roll = hash(i + 11, j + 17)
+			local item: Item? = nil
+			if roll < out.HouseChance then
+				-- casa de frente para a cidade (lado onde ela está mais para fora)
+				local yaw = if math.abs(x) - gx1 > math.abs(z) - gz1
+					then (if x > 0 then 90 else -90)
+					else (if z > 0 then 0 else 180)
+				local template = cfg.Suburbs[math.floor(hash(i + 5, j - 5) * #cfg.Suburbs) + 1]
+				item = { Template = template, X = x, Z = z, Yaw = yaw, Scale = cfg.SuburbScale }
+			elseif roll < out.HouseChance + out.TreeChance then
+				local s = out.TreeScale[1] + (out.TreeScale[2] - out.TreeScale[1]) * hash(i - 2, j + 5)
+				item = { Template = "BlockTree", X = x, Z = z, Yaw = 0, Scale = s, Variant = (i + j) % 3 + 1 }
+			end
+			if item then
+				local half = op / 2 -- raio folgado (a casa e a árvore cabem na casa da grade)
+				local outsideTown = math.abs(x) - half > gx1 or math.abs(z) - half > gz1
+				local inside = math.sqrt(x * x + z * z) + half * 1.42 < limit
+				if outsideTown and inside and not nearMountain(x, z, half * 1.42) then
+					table.insert(town.Outskirts, item)
+				end
+			end
+		end
+	end
+
+	-- moitas de folha no jardim da frente das casas da rua e das casas/prédios do meio da floresta
+	local function yard(item: Item, front: number)
+		local a = math.rad(item.Yaw)
+		local fx, fz = -math.sin(a), -math.cos(a) -- frente do modelo (-Z girado)
+		local ax, az = fz, -fx -- lado
+		for k, side in { -1, 1 } do
+			local s = cfg.YardBush[1] + (k - 1) * 0.5
+			local x = item.X + fx * front + ax * side * cfg.YardBush[3]
+			local z = item.Z + fz * front + az * side * cfg.YardBush[3]
+			table.insert(
+				town.Bushes,
+				{ Template = "Bush", X = x, Z = z, Yaw = 0, Scale = s, Variant = cfg.YardBush[2] }
+			)
+		end
+	end
+	for _, h in town.Houses do
+		yard(h, cfg.Lot / 2 - 3.5)
+	end
+	for _, s in town.Suburb do
+		yard(s, pitch - 6.5)
 	end
 
 	-- carros parados na rua, encostados na calçada de fora, nos lados compridos
@@ -239,6 +345,10 @@ end
 -- Caixa no chão de qualquer item da cidade: árvore de blocos, morro (tamanho em cfg.Hills) ou modelo dos
 -- Templates (footprint = Templates[nome].Footprint).
 function LobbyTown.box(item: Item, cfg: Config, templates: { [string]: any }): Rect
+	if item.Template == "Bush" then
+		local h = item.Scale / 2
+		return { X0 = item.X - h, Z0 = item.Z - h, X1 = item.X + h, Z1 = item.Z + h }
+	end
 	if item.Template == "BlockTree" then
 		local hx, hz = BlockTrees.half(BlockTrees.pick(item.Variant or 1), item.Scale)
 		return { X0 = item.X - hx, Z0 = item.Z - hz, X1 = item.X + hx, Z1 = item.Z + hz }
