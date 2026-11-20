@@ -115,7 +115,8 @@ function LodManager.add(id: number, model: Model, x: number, z: number, makeImpo
 	local details = {}
 	for _, part in model:GetDescendants() do
 		if
-			part:IsA("BasePart") and Quality.isDetail(part.Size.X, part.Size.Y, part.Size.Z, QualityConfig.DetailVolume)
+			part:IsA("BasePart")
+			and Quality.isDetail(part.Size.X, part.Size.Y, part.Size.Z, QualityConfig.DetailVolume)
 		then
 			table.insert(details, { Part = part, Parent = part.Parent :: Instance })
 		end
@@ -175,6 +176,26 @@ function LodManager.markDead(id: number, wreck: Instance?, wreckBox: BasePart?, 
 	if reveal then
 		apply(rec, LodManager.band(id))
 	end
+end
+
+-- A construção voltou (regeneração): some com os destroços e o modelo novo entra no LOD.
+function LodManager.revive(id: number, model: Model, x: number, z: number, makeImpostor: (() -> BasePart?)?)
+	local rec = records[id]
+	if rec then
+		if rec.Wreck then
+			rec.Wreck:Destroy()
+		end
+		if rec.WreckBox then
+			rec.WreckBox:Destroy()
+		end
+		local chunk = chunks[rec.Chunk]
+		local index = chunk and table.find(chunk.Ids, id)
+		if chunk and index then
+			table.remove(chunk.Ids, index)
+		end
+		records[id] = nil
+	end
+	LodManager.add(id, model, x, z, makeImpostor)
 end
 
 function LodManager.reveal(id: number)

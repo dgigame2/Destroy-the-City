@@ -1,15 +1,14 @@
 --!strict
--- Partida (lugar "Run"): carrega a party, monta a cidade em DADOS (CityService), deixa todo mundo destruir
--- e paga as recompensas. Fluxo: primeiro jogador chega com o RunId -> carrega o registro (RunStore) ->
+-- Partida: monta a cidade em DADOS (CityService), deixa todo mundo destruir e paga as recompensas.
+-- Um place só, sem lobby: qualquer jogador que entra joga na cidade de RunConfig.City.
 -- "Playing" -> marcos 25/50/75% (gemas extras, uma vez por jogador) -> CompleteAt derruba o resto ->
--- 100% = vitória (gemas + 1 vitória) -> todos voltam para o lobby.
+-- 100% = vitória (gemas + 1 vitória).
 -- Estado para o cliente (atributos do ReplicatedStorage): MatchState ("Loading" | "Playing" | "Victory"),
 -- MatchMap (id), MatchMapName, MatchScale (tamanho da cidade da dificuldade), MatchDifficulty, MatchProgress
 -- (0..1), MatchWinGems. O cliente monta a cidade com MatchMap + MatchScale (mesmo layout do servidor).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CityState = require(Shared.Logic.CityState)
@@ -22,8 +21,6 @@ local CityWorld = require(Shared.City.CityWorld)
 local Remotes = require(Shared.Remotes)
 
 local PlayerData = require(script.Parent.Parent.PlayerData)
-local RunStore = require(script.Parent.Parent.RunStore)
-local Teleporter = require(script.Parent.Parent.Teleporter)
 local LightingService = require(script.Parent.Parent.LightingService)
 local CosmeticService = require(script.Parent.Parent.CosmeticService)
 local CityService = require(script.Parent.CityService)
@@ -31,7 +28,7 @@ local ElementService = require(script.Parent.ElementService)
 
 local MatchService = {}
 
-local record: RunStore.Record? = nil
+local ready = false
 local finished = false
 local winGems = 0
 local paidMilestones: { [Player]: { [number]: boolean } } = {}
@@ -39,15 +36,6 @@ local pocket: { [Player]: number } = {} -- dinheiro fracionário ainda não pago
 
 local function setState(state: string)
 	ReplicatedStorage:SetAttribute("MatchState", state)
-end
-
-local function notice(player: Player, text: string)
-	Remotes.event(Remotes.Names.Events.Notice):FireClient(player, text)
-end
-
-local function isMember(player: Player): boolean
-	local current = record
-	return current ~= nil and (current.Temporary == true or table.find(current.Members, player.UserId) ~= nil)
 end
 
 local function playing(): { Player }
@@ -84,24 +72,12 @@ local function victory()
 	end
 	finished = true
 	setState("Victory")
-	local current = record :: RunStore.Record
 	for _, player in playing() do
-		if isMember(player) then
-			PlayerData.addGems(player, winGems)
-			PlayerData.addWin(player)
-			task.spawn(PlayerData.save, player)
-		end
+		PlayerData.addGems(player, winGems)
+		PlayerData.addWin(player)
+		task.spawn(PlayerData.save, player)
 	end
-	if not current.Temporary then
-		task.spawn(RunStore.remove, current.Id)
-	end
-	task.wait(MatchConfig.VictorySeconds)
-	local ok, why = Teleporter.toLobby(Players:GetPlayers())
-	if not ok then
-		for _, player in Players:GetPlayers() do
-			notice(player, `Victory! ({why})`)
-		end
-	end
+	-- caminho antigo (ElementService): o tornado não termina a partida e a cidade se regenera (CityService)
 end
 
 -- Marcos: cada um sai uma vez na partida; cada jogador recebe uma vez (quem entrou depois não recebe os antigos).
@@ -165,6 +141,14 @@ local function spawnPoint(): Vector3
 	return Vector3.new(0, 20, 0)
 end
 
+-- Leva o personagem ao ponto de nascimento (usado no rebirth).
+function MatchService.toSpawn(player: Player)
+	local character = player.Character
+	if character then
+		character:PivotTo(CFrame.new(spawnPoint()))
+	end
+end
+
 local function onCharacter(player: Player, character: Model)
 	local root = character:WaitForChild("HumanoidRootPart", 5) :: BasePart?
 	if root == nil then
@@ -188,22 +172,11 @@ local function onCharacter(player: Player, character: Model)
 end
 
 local function onPlayerReady(player: Player)
-	while record == nil and player.Parent do
+	while not ready and player.Parent do
 		task.wait(0.2)
 	end
-	local current = record
-	if current == nil or player.Parent == nil then
+	if player.Parent == nil then
 		return
-	end
-	if not isMember(player) then
-		if not Teleporter.toLobby({ player }) then
-			player:Kick("This match belongs to another party.")
-		end
-		return
-	end
-	if current.Temporary and table.find(current.Members, player.UserId) == nil then
-		table.insert(current.Members, player.UserId)
-		table.insert(current.Names, player.DisplayName)
 	end
 	PlayerData.setRunState(player, 0) -- dinheiro da partida começa do zero em toda partida
 	player:SetAttribute("InMatch", true)
@@ -211,38 +184,6 @@ local function onPlayerReady(player: Player)
 		onCharacter(player, character)
 	end)
 	player:LoadCharacter()
-end
-
-local function loadRecord(): RunStore.Record?
-	local first = Players:GetPlayers()[1] or Players.PlayerAdded:Wait()
-	local runId = Teleporter.runIdOf(first)
-	if runId then
-		for _ = 1, 3 do
-			local found = RunStore.get(runId)
-			if found then
-				return found
-			end
-			task.wait(2)
-		end
-		return nil
-	end
-	if RunService:IsStudio() then
-		local temporary = RunStore.new(RunConfig.Studio.Map, RunConfig.Studio.Difficulty, {}, {})
-		temporary.Temporary = true
-		return temporary
-	end
-	return nil
-end
-
-local function leave(player: Player)
-	if finished then
-		return
-	end
-	PlayerData.save(player)
-	local ok, why = Teleporter.toLobby({ player })
-	if not ok then
-		notice(player, why or "Could not go back to the lobby")
-	end
 end
 
 function MatchService.init()
@@ -256,7 +197,6 @@ function MatchService.init()
 			and ReplicatedStorage:GetAttribute("MatchState") == "Playing"
 	end)
 	ElementService.onDestroyed(onDestroyed)
-	Remotes.event(Remotes.Names.Events.LeaveMatch).OnServerEvent:Connect(leave)
 	Players.PlayerRemoving:Connect(function(player)
 		paidMilestones[player] = nil
 		pocket[player] = nil
@@ -265,16 +205,8 @@ function MatchService.init()
 end
 
 function MatchService.run()
-	local loaded = loadRecord()
-	if loaded == nil then
-		for _, player in Players:GetPlayers() do
-			notice(player, "This match could not be loaded")
-		end
-		Teleporter.toLobby(Players:GetPlayers())
-		return
-	end
-	local map = CityWorld.map(loaded.Map) or MapConfig[1]
-	local difficulty = findDifficulty(loaded.Difficulty)
+	local map = CityWorld.map(RunConfig.City.Map) or MapConfig[1]
+	local difficulty = findDifficulty(RunConfig.City.Difficulty)
 	winGems = Runs.winGems(RunConfig.WinGems, difficulty.Reward)
 	LightingService.applyBiome(map.Biome.Lighting)
 	CityService.load(map, difficulty.MapScale)
@@ -285,7 +217,7 @@ function MatchService.run()
 	ReplicatedStorage:SetAttribute("MatchDifficulty", difficulty.Name)
 	ReplicatedStorage:SetAttribute("MatchWinGems", winGems)
 	ReplicatedStorage:SetAttribute("MatchProgress", 0)
-	record = loaded
+	ready = true
 	setState("Playing")
 end
 

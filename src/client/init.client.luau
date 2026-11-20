@@ -1,9 +1,5 @@
 --!strict
--- Ponto de entrada do cliente do Eat City (o mesmo nos dois lugares; cada um liga só o que usa).
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Place = require(ReplicatedStorage:WaitForChild("Shared").Place)
+-- Ponto de entrada do cliente do Disaster Evolution (um place só: a cidade).
 
 local Feedback = require(script.Feedback)
 
@@ -21,15 +17,11 @@ RewardsController.init()
 CameraController.init()
 MovementController.init()
 
-if Place.isRun() then
-	-- partida: a cidade é montada AQUI pela semente; do servidor só chegam dados (ids + vida)
-	require(script.City.CityClient).init()
-	require(script.City.ElementInput).init()
-	require(script.City.ElementFx).init()
-	require(script.City.ElementCasts).init() -- golpes por nível (plano igual ao do servidor)
-	require(script.Controllers.AmbienceController).init()
-else
-	require(script.Controllers.LobbyController).init()
-	require(script.Controllers.PartyController).init()
-	require(script.Controllers.FountainController).init() -- água animada da fonte
-end
+-- a cidade é montada AQUI pela semente; do servidor só chegam dados (ids + vida)
+require(script.City.CityClient).init()
+require(script.City.TornadoClient).init() -- o jogador é o tornado (visual, colisão e barra de XP)
+require(script.City.PvpClient).init() -- rajada, Q, vida e escudo (o servidor decide)
+require(script.City.SkillFx).init() -- efeitos das skills (Q) de todos
+require(script.City.ElementFx).init()
+require(script.City.ElementCasts).init() -- golpes por nível (plano igual ao do servidor)
+require(script.Controllers.AmbienceController).init()

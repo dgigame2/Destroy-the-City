@@ -1,7 +1,5 @@
 local Physics = require("../src/shared/Logic/Physics")
 local MovementConfig = require("../src/shared/Config/MovementConfig")
-local GrowthConfig = require("../src/shared/Config/GrowthConfig")
-local LobbyConfig = require("../src/shared/Config/LobbyConfig")
 
 return function(t)
 	local g = MovementConfig.Gravity
@@ -62,13 +60,5 @@ return function(t)
 			t.equal(props.CharacterJumpPower, expected)
 			t.equal(props.CharacterUseJumpPower, true)
 		end
-	end)
-
-	t.test("lobby fora do alcance de qualquer jogador na cidade (pulo + altura do corpo)", function()
-		-- VALOR CALCULADO: maior escala possível, corpo ~5 studs por escala (e pulo, se um dia voltar)
-		local s = GrowthConfig.MaxScale
-		local jumpHeight = MovementConfig.RunJumpPower ^ 2 / (2 * g)
-		local reach = jumpHeight + 5 * s
-		t.truthy(reach < LobbyConfig.FloorHeight)
 	end)
 end

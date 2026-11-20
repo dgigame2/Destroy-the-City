@@ -73,12 +73,12 @@ end
 local function updateHud()
 	local hud = openWindow == nil
 	local state = runState()
-	refs.CashHolder.Visible = hud and isRun
-	refs.GemsHolder.Visible = hud
+	refs.CashHolder.Visible = false -- dinheiro e gemas do Destroy the City: fora até a fase 5 (monetização)
+	refs.GemsHolder.Visible = false
 	refs.WinsHolder.Visible = hud and not isRun
 	refs.Icons.Visible = hud and not isRun
 	refs.TimerHolder.Visible = hud and isRun and state ~= "Loading"
-	refs.MatchBar.Visible = hud and isRun and state == "Playing"
+	refs.MatchBar.Visible = false -- UPGRADES/LOBBY do Destroy the City: fora do Disaster Evolution (a vida fica aí)
 end
 InterfaceController.updateHud = updateHud
 

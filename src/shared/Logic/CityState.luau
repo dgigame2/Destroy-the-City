@@ -1,7 +1,8 @@
 --!strict
 -- Estado da cidade da partida (puro). O servidor é a única fonte: vida, destruição e progresso.
 -- Ids são densos (1..N, cabem em u16). Progresso = valor destruído / valor total (prédio grande vale mais).
--- Cada construção é destruída UMA vez; 4 jogadores batendo juntos somam no máximo a vida dela.
+-- Cada construção é destruída UMA vez por vida; 4 jogadores batendo juntos somam no máximo a vida dela.
+-- A cidade se regenera: construção destruída volta inteira (revive) depois de MatchConfig.RegenSeconds.
 -- Mudanças ficam marcadas (Dirty) até o servidor juntar tudo num lote (Logic/Protocol).
 -- O cliente usa o mesmo estado como espelho (apply), sem decidir nada.
 
@@ -56,6 +57,19 @@ local function kill(state: State, id: number)
 	state.DestroyedValue += state.Value[id]
 	state.DestroyedCount += 1
 	state.Dirty[id] = true
+end
+
+-- A construção volta inteira (regeneração). Devolve false se não estava destruída.
+function CityState.revive(state: State, id: number): boolean
+	if not valid(state, id) or not state.Dead[id] then
+		return false
+	end
+	state.Dead[id] = false
+	state.Hp[id] = state.MaxHp[id]
+	state.DestroyedValue -= state.Value[id]
+	state.DestroyedCount -= 1
+	state.Dirty[id] = true
+	return true
 end
 
 -- Aplica dano. Devolve (dano que realmente entrou, destruiu agora?).
@@ -119,17 +133,25 @@ function CityState.takeDirty(state: State): { number }
 	return ids
 end
 
--- Espelho do cliente: aplica o que o servidor mandou. Devolve true se a construção acabou de cair.
-function CityState.apply(state: State, id: number, hpByte: number, levels: number): boolean
-	if not valid(state, id) or state.Dead[id] then
-		return false
+-- Espelho do cliente: aplica o que o servidor mandou. Devolve (acabou de cair?, acabou de voltar?).
+function CityState.apply(state: State, id: number, hpByte: number, levels: number): (boolean, boolean)
+	if not valid(state, id) then
+		return false, false
+	end
+	if state.Dead[id] then
+		if hpByte > 0 then
+			CityState.revive(state, id)
+			state.Hp[id] = state.MaxHp[id] * math.clamp(hpByte, 1, levels) / levels
+			return false, true
+		end
+		return false, false
 	end
 	if hpByte <= 0 then
 		kill(state, id)
-		return true
+		return true, false
 	end
 	state.Hp[id] = state.MaxHp[id] * math.clamp(hpByte, 1, levels) / levels
-	return false
+	return false, false
 end
 
 return CityState

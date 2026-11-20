@@ -4,6 +4,6 @@
 
 return table.freeze({
 	WinGems = 50, -- gemas da vitória (multiplicadas pela dificuldade). PROVISÓRIO (AUDITORIA §11)
-	-- No Studio não existe teleporte: a partida começa direto com estas opções (e não é salva)
-	Studio = table.freeze({ Map = "GardenVillage", Difficulty = "Normal" }),
+	-- Cidade de todo servidor (um place só, sem lobby)
+	City = table.freeze({ Map = "GardenVillage", Difficulty = "Normal" }),
 })

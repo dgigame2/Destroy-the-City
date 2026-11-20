@@ -17,6 +17,7 @@ return table.freeze({
 	Milestones = table.freeze({ 0.25, 0.5, 0.75, 1 }),
 	CompleteAt = 0.985,
 	DeltaInterval = 0.1,
+	RegenSeconds = 60, -- construção destruída volta inteira depois disto (a cidade nunca acaba)
 	HpLevels = 255,
 	Cast = table.freeze({ Rate = 8, Burst = 12 }),
 	GridCell = 32,

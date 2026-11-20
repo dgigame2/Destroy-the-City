@@ -12,6 +12,8 @@ return table.freeze({
 		PartyPrompt = "PartyPrompt", -- servidor -> dono do quadrado: (padIndex) abrir CREATE PARTY
 		PartyClosed = "PartyClosed", -- servidor -> dono: () fechar CREATE PARTY (saiu do quadrado / tempo)
 		Notice = "Notice", -- servidor -> cliente: (texto) aviso na tela
+		Burst = "Burst", -- cliente -> servidor: (dirX, dirZ) rajada do tornado; recarga e alvo conferidos no servidor
+		Knock = "Knock", -- servidor -> vítima: (vx, vz, segundos) empurrão (sucção); o cliente move o próprio tornado
 	}),
 	-- UnreliableRemoteEvent: só cosmético (perder um não muda o estado da cidade)
 	Unreliable = table.freeze({
@@ -20,6 +22,10 @@ return table.freeze({
 		CastFx = "CastFx",
 		ChainFx = "ChainFx", -- servidor -> todos: (casterUserId, pontos: { Vector3 }) saltos do raio em cadeia
 		BurnFx = "BurnFx", -- servidor -> todos: (ids: { number }, segundos) construções que pegaram fogo
+		BurstFx = "BurstFx", -- servidor -> todos: (origem: Vector3, dirX, dirZ, alcance) efeito da rajada
+		-- servidor -> todos: (skill, userId, início, ox, oy, oz, dirX, dirZ, raio) Q começou; o cliente calcula as zonas
+		SkillFx = "SkillFx",
+		SkillEndFx = "SkillEndFx", -- servidor -> todos: (userId, x, z, raio, força) explosão final do Q
 	}),
 	Functions = table.freeze({
 		CitySnapshot = "CitySnapshot", -- cliente -> servidor: () -> buffer Protocol.Snapshot (entrada/seq perdido)
@@ -27,6 +33,9 @@ return table.freeze({
 		EquipItem = "EquipItem", -- (itemId) -> sucesso
 		ClaimDaily = "ClaimDaily", -- () -> sucesso
 		ClaimWeekly = "ClaimWeekly", -- () -> sucesso
+		Rebirth = "Rebirth", -- () -> sucesso (o servidor confere nível máximo, barra cheia e rebirths)
+		Evolve = "Evolve", -- () -> sucesso (sobe 1 nível com a barra cheia; o servidor confere)
+		Special = "Special", -- (dirX, dirZ) -> nome da skill ou nil (Q; o servidor confere vida, forma e recarga)
 		CreateParty = "CreateParty", -- (padIndex, {Map, Difficulty, Size}) -> (sucesso, motivo)
 		CancelParty = "CancelParty", -- (padIndex) -> () botão BACK
 	}),

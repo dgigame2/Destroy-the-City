@@ -1,6 +1,8 @@
 --!strict
 -- Estado de cada jogador.
--- Salvos na conta (DataStore): gemas (moeda permanente), vitórias, cosméticos, equipados e recompensas.
+-- Salvos na conta (DataStore): tornado (nível, XP, rebirths), gemas, vitórias, cosméticos, equipados e recompensas.
+-- Segurança do save (fwjelaa-datastore-safety): UpdateAsync com trava de sessão (Logic/Lease), save só de quem
+-- carregou com sucesso (load que falhou NUNCA grava por cima do save real), schema versionado, Studio em store separado.
 -- Dinheiro (Coins) é DA PARTIDA: zera em toda partida e nunca vai para a conta.
 -- Campos de saves antigos (roleta, boosts, runs salvas, classes) são ignorados ao carregar e somem no próximo save.
 -- O cliente recebe tudo o que precisa mostrar por atributos do Player.
@@ -9,12 +11,25 @@ local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local EconomyConfig = require(Shared.Config.EconomyConfig)
+local TornadoConfig = require(Shared.Config.TornadoConfig)
+local Lease = require(Shared.Logic.Lease)
+local Tornado = require(Shared.Logic.Tornado)
 
-local STORE_NAME = "EatCity_PlayerData_v1"
+local IS_STUDIO = RunService:IsStudio()
+-- Studio grava em outro store: teste nunca mexe no save dos jogadores de verdade.
+local STORE_NAME = if IS_STUDIO then "DisasterEvolution_PlayerData_Studio" else "DisasterEvolution_PlayerData_v1"
+local SCHEMA = 2 -- 1 = saves sem Schema (base antiga); 2 = + tornado. Save com Schema maior é recusado.
 local MAX_RECEIPTS = 50
+local LEASE_SECONDS = 90 -- menos de ~30 s é inseguro (relógio dos servidores)
+local AUTOSAVE_SECONDS = 30 -- no máximo LEASE / 3 (o autosave também renova a trava)
+local CLAIM_ATTEMPTS = 6 -- 6 x 1,5 s = ~7,5 s esperando outro servidor soltar o save
+local CLAIM_RETRY_SECONDS = 1.5
+local SAVE_ATTEMPTS = 3
+local SHUTDOWN_DEADLINE = 25 -- o servidor espera no máximo 30 s no BindToClose
 
 export type Data = {
 	Coins: number,
@@ -26,11 +41,16 @@ export type Data = {
 	Receipts: { string }, -- compras com Robux já entregues (evita entregar duas vezes)
 	Wins: number, -- cidades comidas inteiras (liberam capítulos e dificuldades)
 	Points: number, -- da run, não vai para a conta
+	Level: number, -- tornado
+	Xp: number, -- XP na barra do nível atual
+	Rebirths: number,
 }
 
 local PlayerData = {}
 
 local data: { [Player]: Data } = {}
+-- Token da trava de quem carregou com sucesso. Sem token = sem save (load falhou ou trava perdida).
+local tokens: { [Player]: string } = {}
 local store: DataStore? = nil
 do
 	local ok, result = pcall(function()
@@ -54,6 +74,9 @@ local function fresh(): Data
 		Receipts = {},
 		Wins = 0,
 		Points = 0,
+		Level = 1,
+		Xp = 0,
+		Rebirths = 0,
 	}
 end
 
@@ -63,6 +86,8 @@ local function merge(entry: Data, saved: any)
 		return
 	end
 	entry.Gems = tonumber(saved.Gems) or entry.Gems
+	entry.Level, entry.Xp, entry.Rebirths =
+		Tornado.sanitize(TornadoConfig :: Tornado.Config, saved.Level, saved.Xp, saved.Rebirths)
 	entry.Wins = math.max(0, math.floor(tonumber(saved.Wins) or 0))
 	if type(saved.Owned) == "table" then
 		for id, owned in saved.Owned do
@@ -109,26 +134,65 @@ function PlayerData.publish(player: Player)
 	player:SetAttribute("DailyStreak", entry.Daily.Streak)
 	player:SetAttribute("WeeklyLastWeek", entry.Weekly.LastWeek)
 	player:SetAttribute("Wins", entry.Wins)
+	player:SetAttribute("TornadoLevel", entry.Level)
+	player:SetAttribute("TornadoXp", entry.Xp)
+	player:SetAttribute("Rebirths", entry.Rebirths)
 end
 
-local function load(player: Player): Data
-	local entry = fresh()
-	if store then
-		local ok, saved = pcall(function()
-			return (store :: DataStore):GetAsync(tostring(player.UserId))
+local function keyOf(player: Player): string
+	return tostring(player.UserId)
+end
+
+-- Erro que não adianta repetir (Studio sem acesso à API, sem permissão).
+local function permanent(err: any): boolean
+	local text = tostring(err)
+	return text:find("NotAllowed") ~= nil or text:find("403") ~= nil
+end
+
+type LoadStatus = "ready" | "locked" | "newer" | "failed"
+
+-- Lê o save e trava a sessão no MESMO UpdateAsync. "ready" com saved == nil = jogador novo de verdade.
+local function claim(player: Player, token: string): (LoadStatus, any)
+	local status: LoadStatus, saved: any = "failed", nil
+	for attempt = 1, CLAIM_ATTEMPTS do
+		local now = os.time()
+		local ok, err = pcall(function()
+			(store :: DataStore):UpdateAsync(keyOf(player), function(old: any, keyInfo: DataStoreKeyInfo?)
+				-- sem yield aqui dentro
+				if type(old) == "table" and (tonumber(old.Schema) or 1) > SCHEMA then
+					status = "newer"
+					return nil
+				end
+				if type(old) == "table" and not Lease.canClaim(old.Session, token, now) then
+					status = "locked"
+					return nil
+				end
+				status, saved = "ready", old
+				local new = if type(old) == "table" then table.clone(old) else {}
+				new.Session = Lease.new(token, game.JobId, now, LEASE_SECONDS)
+				return new, { player.UserId }, keyInfo and keyInfo:GetMetadata()
+			end)
 		end)
-		if ok then
-			merge(entry, saved)
-		else
-			warn("[PlayerData] failed to load", player.Name, saved)
+		if not ok then
+			status = "failed"
+			warn("[PlayerData] failed to load", player.Name, err)
+			if permanent(err) then
+				break
+			end
+		elseif status ~= "locked" then
+			break
+		end
+		if attempt < CLAIM_ATTEMPTS and player.Parent then
+			task.wait(CLAIM_RETRY_SECONDS)
 		end
 	end
-	return entry
+	return status, saved
 end
 
-function PlayerData.save(player: Player): boolean
-	local entry = data[player]
-	if entry == nil or store == nil then
+-- Grava o save (e renova ou solta a trava). Só grava se a trava ainda é deste servidor.
+local function write(player: Player, release: boolean): boolean
+	local entry, token = data[player], tokens[player]
+	if entry == nil or token == nil or store == nil then
 		return false
 	end
 	local snapshot = table.clone(entry) :: any
@@ -136,13 +200,45 @@ function PlayerData.save(player: Player): boolean
 	snapshot.Points = nil
 	snapshot.Coins = nil
 	snapshot.Upgrades = nil -- saves antigos
-	local ok, err = pcall(function()
-		(store :: DataStore):SetAsync(tostring(player.UserId), snapshot)
-	end)
-	if not ok then
+	snapshot.Schema = SCHEMA
+	snapshot.Session = if release then nil else Lease.new(token, game.JobId, os.time(), LEASE_SECONDS)
+	for attempt = 1, SAVE_ATTEMPTS do
+		local lost = false
+		local ok, err = pcall(function()
+			(store :: DataStore):UpdateAsync(keyOf(player), function(old: any, keyInfo: DataStoreKeyInfo?)
+				if type(old) ~= "table" or not Lease.owns(old.Session, token) then
+					lost = true
+					return nil
+				end
+				return snapshot, { player.UserId }, keyInfo and keyInfo:GetMetadata()
+			end)
+		end)
+		if ok and lost then
+			-- outro servidor pegou o save: este para de gravar para sempre
+			tokens[player] = nil
+			warn("[PlayerData] lost the session lock for", player.Name)
+			player:Kick("Your progress was opened on another server. Please rejoin.")
+			return false
+		end
+		if ok then
+			if release then
+				tokens[player] = nil
+			end
+			return true
+		end
 		warn("[PlayerData] failed to save", player.Name, err)
+		if permanent(err) then
+			break
+		end
+		if attempt < SAVE_ATTEMPTS then
+			task.wait(0.5 * 2 ^ attempt + math.random())
+		end
 	end
-	return ok
+	return false
+end
+
+function PlayerData.save(player: Player): boolean
+	return write(player, false)
 end
 
 function PlayerData.get(player: Player): Data?
@@ -195,6 +291,18 @@ function PlayerData.setRunState(player: Player, coins: number)
 	PlayerData.publish(player)
 end
 
+-- Progresso do tornado (só o TornadoService chama). Atualiza o save e os atributos que o cliente lê.
+function PlayerData.setTornado(player: Player, level: number, xp: number, rebirths: number)
+	local entry = data[player]
+	if entry == nil then
+		return
+	end
+	entry.Level, entry.Xp, entry.Rebirths = level, xp, rebirths
+	player:SetAttribute("TornadoLevel", level)
+	player:SetAttribute("TornadoXp", xp)
+	player:SetAttribute("Rebirths", rebirths)
+end
+
 function PlayerData.addWin(player: Player)
 	local entry = data[player]
 	if entry then
@@ -233,13 +341,52 @@ local function runBeforeSave(players: { Player })
 	end
 end
 
+local function autosave(player: Player)
+	task.wait(math.random() * AUTOSAVE_SECONDS) -- espalha: os jogadores não salvam no mesmo segundo
+	while tokens[player] and player.Parent do
+		write(player, false)
+		task.wait(AUTOSAVE_SECONDS)
+	end
+end
+
+local FAIL_MESSAGE = {
+	locked = "Your progress is still saving on another server. Please rejoin in a minute.",
+	newer = "This server is out of date. Please rejoin to get a newer server.",
+	failed = "We could not load your progress. Nothing was changed. Please rejoin.",
+}
+
 function PlayerData.init(onReady: (Player) -> ())
 	local function added(player: Player)
-		local entry = load(player)
+		local entry = fresh()
+		local token: string? = nil
+		if store then
+			local candidate = HttpService:GenerateGUID(false)
+			local status, saved = claim(player, candidate)
+			if status == "ready" then
+				merge(entry, saved)
+				token = candidate
+			elseif IS_STUDIO then
+				-- Studio sem acesso à API: joga com o padrão, sem salvar nada
+				warn("[PlayerData] Studio: playing without saving (" .. status .. ")")
+			else
+				player:Kick(FAIL_MESSAGE[status])
+				return
+			end
+		end
 		if player.Parent == nil then
+			if token then
+				-- saiu enquanto carregava: devolve a trava sem mudar os dados
+				data[player], tokens[player] = entry, token
+				write(player, true)
+				data[player] = nil
+			end
 			return
 		end
 		data[player] = entry
+		if token then
+			tokens[player] = token
+			task.spawn(autosave, player)
+		end
 		PlayerData.publish(player)
 		onReady(player)
 	end
@@ -248,23 +395,29 @@ function PlayerData.init(onReady: (Player) -> ())
 		task.spawn(added, player)
 	end
 	Players.PlayerRemoving:Connect(function(player)
+		if data[player] == nil then
+			return -- ainda carregando: `added` devolve a trava
+		end
 		runBeforeSave({ player })
-		PlayerData.save(player)
+		write(player, true)
 		data[player] = nil
+		tokens[player] = nil
 	end)
 	game:BindToClose(function()
 		runBeforeSave(Players:GetPlayers())
+		local pending = 0
 		for _, player in Players:GetPlayers() do
-			PlayerData.save(player)
-		end
-	end)
-	-- salvamento automático a cada 3 minutos
-	task.spawn(function()
-		while true do
-			task.wait(180)
-			for _, player in Players:GetPlayers() do
-				PlayerData.save(player)
+			if tokens[player] then
+				pending += 1
+				task.spawn(function()
+					write(player, true)
+					pending -= 1
+				end)
 			end
+		end
+		local deadline = os.clock() + SHUTDOWN_DEADLINE
+		while pending > 0 and os.clock() < deadline do
+			task.wait(0.1)
 		end
 	end)
 end

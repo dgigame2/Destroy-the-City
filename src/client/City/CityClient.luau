@@ -35,6 +35,7 @@ local state: CityState.State? = nil
 local models: { [number]: Model } = {}
 local placements: { any } = {}
 local infos: { MatchCity.Info } = {}
+local cityMap: CityWorld.MapInfo? = nil -- guardado no build() para remontar o que regenera
 local lastSeq = -1
 local ready = false
 local pending: { Protocol.Delta } = {}
@@ -106,11 +107,28 @@ local function destroyBuilding(id: number, animate: boolean)
 	end
 end
 
+-- A construção voltou (regeneração): tira os destroços e monta o modelo de novo.
+local function restoreBuilding(id: number)
+	if models[id] ~= nil or cityMap == nil then
+		return
+	end
+	local placement = placements[id]
+	local model = CityWorld.building(cityMap :: CityWorld.MapInfo, placement, id)
+	models[id] = model
+	local info = infos[id]
+	LodManager.revive(id, model, placement.X, placement.Z, function()
+		return impostor(model, info, placement.Y)
+	end)
+end
+
 local function applyEntries(entries: { Protocol.Entry }, animate: boolean)
 	local s = state :: CityState.State
 	for _, e in entries do
-		if CityState.apply(s, e.Id, e.Hp, L) then
+		local fell, revived = CityState.apply(s, e.Id, e.Hp, L)
+		if fell then
 			destroyBuilding(e.Id, animate)
+		elseif revived then
+			restoreBuilding(e.Id)
 		end
 	end
 end
@@ -139,6 +157,9 @@ local function resync()
 			if snap.Dead[id] and not s.Dead[id] then
 				CityState.apply(s, id, 0, L)
 				destroyBuilding(id, false)
+			elseif not snap.Dead[id] and s.Dead[id] then
+				CityState.revive(s, id)
+				restoreBuilding(id)
 			end
 		end
 		applyEntries(snap.Damaged, false)
@@ -195,6 +216,7 @@ end
 local function build()
 	local mapId = ReplicatedStorage:GetAttribute("MatchMap") :: string
 	local map = CityWorld.map(mapId) :: CityWorld.MapInfo
+	cityMap = map
 	local scale = (ReplicatedStorage:GetAttribute("MatchScale") :: number?) or 1
 	local layout = CityWorld.layout(map, scale)
 	placements = layout.Placements

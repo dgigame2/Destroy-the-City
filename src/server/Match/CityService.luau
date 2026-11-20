@@ -29,6 +29,9 @@ local grid: SpatialGrid.Grid? = nil
 local infos: { MatchCity.Info } = {}
 local layout: any = nil
 local seq = 0
+-- regeneração: construções destruídas, em ordem de quando voltam
+local regen: { { Id: number, At: number } } = {}
+local regenHead = 1
 
 function CityService.load(map: CityWorld.MapInfo, mapScale: number)
 	layout = CityWorld.layout(map, mapScale)
@@ -41,6 +44,8 @@ function CityService.load(map: CityWorld.MapInfo, mapScale: number)
 	end
 	grid = g
 	seq = 0
+	table.clear(regen)
+	regenHead = 1
 end
 
 function CityService.state(): CityState.State?
@@ -79,6 +84,7 @@ function CityService.hit(id: number, damage: number): (number, boolean)
 	local dealt, killed = CityState.hit(s, id, damage)
 	if killed then
 		SpatialGrid.remove(grid :: SpatialGrid.Grid, id)
+		table.insert(regen, { Id = id, At = os.clock() + MatchConfig.RegenSeconds })
 	end
 	return dealt, killed
 end
@@ -96,6 +102,46 @@ local function flush()
 		Remotes.event(Remotes.Names.Events.CityDelta)
 			:FireAllClients(Protocol.encodeDelta(seq, s, chunk, MatchConfig.HpLevels))
 	end
+end
+
+-- Volta as construções cujo tempo passou (a fila está em ordem: todas esperam o mesmo tempo).
+local function regenerate()
+	local s, g = state, grid
+	if s == nil or g == nil then
+		return
+	end
+	local now = os.clock()
+	while regenHead <= #regen and regen[regenHead].At <= now do
+		local id = regen[regenHead].Id
+		regenHead += 1
+		if CityState.revive(s, id) then
+			local b = infos[id].Box
+			SpatialGrid.insert(g, id, b[1], b[2], b[3], b[4])
+		end
+	end
+	if regenHead > 512 then -- compacta a fila de vez em quando
+		regen = table.move(regen, regenHead, #regen, 1, {})
+		regenHead = 1
+	end
+end
+
+-- Comando de teste (/regen): tudo que está destruído volta agora. Devolve quantas voltaram.
+function CityService.reviveAll(): number
+	local s, g = state, grid
+	if s == nil or g == nil then
+		return 0
+	end
+	local count = 0
+	for id = 1, s.Count do
+		if CityState.revive(s, id) then
+			local b = infos[id].Box
+			SpatialGrid.insert(g, id, b[1], b[2], b[3], b[4])
+			count += 1
+		end
+	end
+	table.clear(regen)
+	regenHead = 1
+	return count
 end
 
 function CityService.flushNow()
@@ -125,6 +171,7 @@ function CityService.start()
 		acc += dt
 		if acc >= MatchConfig.DeltaInterval then
 			acc = 0
+			regenerate()
 			flush()
 		end
 	end)
