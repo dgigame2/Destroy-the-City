@@ -1,0 +1,42 @@
+{
+	"name": "disaster-evolution",
+	"servePort": 34874,
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"Shared": {
+				"$path": "src/shared"
+			},
+			"PlaceRole": {
+				"$className": "StringValue",
+				"$properties": {
+					"Value": "Run"
+				}
+			}
+		},
+		"ServerScriptService": {
+			"Server": {
+				"$path": "src/server"
+			}
+		},
+		"StarterPlayer": {
+			"$properties": {
+				"CharacterUseJumpPower": true,
+				"CharacterJumpPower": 0
+			},
+			"StarterPlayerScripts": {
+				"Client": {
+					"$path": "src/client"
+				},
+				"RbxCharacterSounds": {
+					"$path": "src/overrides/RbxCharacterSounds.client.luau"
+				}
+			}
+		},
+		"Workspace": {
+			"$properties": {
+				"StreamingEnabled": false
+			}
+		}
+	}
+}

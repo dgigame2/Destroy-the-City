@@ -1,0 +1,9 @@
+# Gerados pelo Rojo / Studio
+build.rbxl
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+sourcemap.json
+# Logs
+check-log.txt
