@@ -4,7 +4,7 @@ Jogo Roblox: o jogador é um **tornado** que destrói a cidade, sobe de nível, 
 Responda em português, simples e direto.
 
 ## Leia primeiro
-- Status e histórico de tudo que foi feito: `C:\Users\Win11-User\Documents\DestroytheCity\fwjelaa-vault-0.1.0-new\fwjelaa\fwjelaa vault\90 Nosso Estudio\Contexto - Disaster Evolution.md`
+- Status e histórico de tudo que foi feito: `C:\Users\Win11-User\Documents\DisasterEvolution\fwjelaa-vault-0.1.0-new\fwjelaa\fwjelaa vault\90 Nosso Estudio\Contexto - Disaster Evolution.md`
 - Design: `Design - Disaster Evolution (Tornado).md` na mesma pasta. Monetização (ainda em discussão): `Monetizacao - Disaster Evolution.md`.
 - Ao terminar um trabalho, **acrescente uma seção nessa nota de Contexto** (o que mudou, arquivos, como testar, nº de testes).
 
