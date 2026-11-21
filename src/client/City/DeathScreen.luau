@@ -1,6 +1,6 @@
 --!strict
 -- Tela de morte que motiva (estudo GMTK/Cuphead: mostrar o quão perto você estava) e comemoração de quem matou.
---   Died (servidor -> vítima): "DESTROYED BY X" + "você estava a 82% do LV 9" (ou "já dava para EVOLVE!").
+--   Died (servidor -> vítima): "DESTROYED BY X (LV N)" + "você estava a 82% do LV 9" (ou "já dava para EVOLVE!").
 --   Killed (servidor -> quem matou): som forte + tremida + "+N XP".
 
 local Players = game:GetService("Players")
@@ -45,6 +45,10 @@ local function build()
 	title.Position = UDim2.fromOffset(10, 8)
 	title.Size = UDim2.new(1, -20, 0, 34)
 	title.TextColor3 = Color3.fromRGB(255, 110, 110)
+	title.TextScaled = true
+	local titleSize = Instance.new("UITextSizeConstraint")
+	titleSize.MaxTextSize = 24
+	titleSize.Parent = title
 	title.Parent = face
 	line = Style.label("Line", "", 18)
 	line.Position = UDim2.fromOffset(10, 48)
@@ -53,12 +57,14 @@ local function build()
 	line.Parent = face
 end
 
-local function onDied(killer: any, level: any, lost: any)
+local function onDied(killer: any, level: any, lost: any, killerLevel: any)
 	if type(killer) ~= "string" or type(level) ~= "number" or type(lost) ~= "number" then
 		return
 	end
 	local pct, could = Pvp.deathProgress(tcfg, level, lost)
-	title.Text = `DESTROYED BY {string.upper(killer)}`
+	title.Text = if type(killerLevel) == "number"
+		then `DESTROYED BY {string.upper(killer)} (LV {killerLevel})`
+		else `DESTROYED BY {string.upper(killer)}`
 	line.Text = if could
 		then "You already had enough XP to EVOLVE! Press R sooner."
 		else `You were {pct}% of the way to LV {level + 1}!`

@@ -73,8 +73,9 @@ local function kill(victim: Player, killer: Player)
 	if entry then
 		local lost, gain = entry.Xp, Pvp.killXp(pcfg, tcfg, entry.Level)
 		PlayerData.setTornado(victim, entry.Level, 0, entry.Rebirths) -- só a barra zera; o nível fica
+		local killerLevel = levelOf(killer)
 		TornadoService.give(killer, gain)
-		Remotes.event(Remotes.Names.Events.Died):FireClient(victim, killer.DisplayName, entry.Level, lost)
+		Remotes.event(Remotes.Names.Events.Died):FireClient(victim, killer.DisplayName, entry.Level, lost, killerLevel)
 		Remotes.event(Remotes.Names.Events.Killed):FireClient(killer, victim.DisplayName, gain)
 	end
 	local humanoid = victim.Character and victim.Character:FindFirstChildOfClass("Humanoid")
