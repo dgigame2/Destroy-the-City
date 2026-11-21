@@ -22,6 +22,7 @@ Responda em português, simples e direto.
 - Lógica nova não trivial → função pura em `Logic` + teste. Número novo → `Config`.
 - Mudança mínima que resolve; não adicionar features fora da lista. Ideias novas vão para a lista "Pendente / próximo" da nota.
 - **Não commitar sem o usuário pedir.** Branch atual: `evolution`. Sem remote.
+- O Codex não consegue escrever em `.git` (proteção do sandbox). Para commitar: escreva a mensagem em `mensagem-commit.txt` na raiz e peça ao usuário para dar dois cliques em `commitar.bat` (faz `git add -A` + commit e apaga a mensagem). Confira antes com `git status` que só entram arquivos desta tarefa.
 - Save de jogador (`server/PlayerData.luau`): trava de sessão e "load que falhou nunca salva" — não quebrar isso.
 - UI: nada encostando, cabe em celular curto; área do analógico e do pulo livres. Sem número "+1" em clique.
 - Seja crítico: aponte riscos e dê recomendação, não só concorde. Avise antes de tarefas caras.
