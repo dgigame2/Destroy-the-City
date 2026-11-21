@@ -20,6 +20,9 @@ local COIN = "rbxassetid://135483737426662"
 local TIER_UP = "rbxassetid://134821092416328"
 -- estouro de bolha do resgate (Creator Store "bubble-pop-100784"), outro que o POP de comer
 local BUBBLE = "rbxassetid://137273815815490"
+-- vêm no cliente do Roblox (content/sounds), sem upload
+local BOOM = "rbxasset://sounds/impact_explosion_03.mp3"
+local OUCH = "rbxasset://sounds/impact_water.mp3"
 
 local function sound(id: string, volume: number, pitch: number, jitter: number, minGap: number): Sound
 	return { Id = id, Volume = volume, Pitch = pitch, Jitter = jitter, MinGap = minGap }
@@ -122,6 +125,49 @@ local kinds: { [string]: Kind } = {
 		Shake = { Camera = 1.2, Seconds = 0.6 },
 		Number = { Color = { 120, 220, 255 }, Format = "+%d 💎", Merge = 0 },
 	},
+	-- ===== tornado (client/City/TornadoJuice) =====
+	-- o tornado quebrou algo pequeno perto de você (tom sobe na sequência: Pitch vem do TornadoJuice)
+	Smash = {
+		Sound = sound(POP, 0.3, 0.9, 0.03, 0.05),
+		Shake = { Camera = 0.08, Seconds = 0.12 },
+		Number = { Color = { 255, 255, 255 }, Format = "%d", Merge = 0 },
+	},
+	-- construção grande desabou perto de você: estrondo grave
+	Crash = {
+		Sound = sound(BOOM, 0.55, 0.7, 0.08, 0.15),
+		Shake = { Camera = 0.45, Seconds = 0.35 },
+		Number = { Color = { 255, 255, 255 }, Format = "%d", Merge = 0 },
+	},
+	-- XP ganho (somado em sequência, sai do tornado)
+	Xp = {
+		Sound = sound(COIN, 0.08, 1.2, 0.05, 0.3),
+		Shake = { Camera = 0.02, Seconds = 0.1 },
+		Number = { Color = { 255, 227, 107 }, Format = "+%d XP", Merge = 0.6 },
+	},
+	-- EVOLVE: subiu de nível (número = nível novo)
+	Evolve = {
+		Sound = sound(TIER_UP, 0.6, 1, 0, 0.2),
+		Shake = { Camera = 0.7, Seconds = 0.4 },
+		Number = { Color = { 125, 255, 138 }, Format = "LV %d!", Merge = 0 },
+	},
+	-- REBIRTH feito (número = total de rebirths)
+	Rebirth = {
+		Sound = sound(TIER_UP, 0.8, 0.75, 0, 1),
+		Shake = { Camera = 1.2, Seconds = 0.7 },
+		Number = { Color = { 255, 214, 70 }, Format = "REBIRTH %d!", Merge = 0 },
+	},
+	-- você destruiu outro tornado (número = XP ganho)
+	Kill = {
+		Sound = sound(BOOM, 0.8, 1.1, 0.03, 0.2),
+		Shake = { Camera = 1, Seconds = 0.45 },
+		Number = { Color = { 255, 214, 70 }, Format = "+%d XP", Merge = 0 },
+	},
+	-- levou dano de outro tornado (número = vida perdida)
+	Hurt = {
+		Sound = sound(OUCH, 0.35, 0.8, 0.08, 0.15),
+		Shake = { Camera = 0.3, Seconds = 0.2 },
+		Number = { Color = { 255, 110, 110 }, Format = "-%d", Merge = 0.5 },
+	},
 }
 
 return table.freeze({
@@ -130,4 +176,16 @@ return table.freeze({
 	NumberSeconds = 0.8, -- número sobe e some em menos de 1 segundo
 	NumberRise = 40, -- pixels que o número sobe na tela
 	NumberSize = 26, -- altura do número (px, na escala da UI)
+	-- juice do tornado (client/City/TornadoJuice)
+	Tornado = table.freeze({
+		HearReach = 3, -- só toca o que quebrou a até 3x o seu raio (+ Margin): a destruição dos outros longe fica muda
+		HearMargin = 20, -- studs
+		BigHeight = 24, -- construção com essa altura (studs) ou mais = estrondo (Crash) em vez de pop
+		StreakWindow = 0.8, -- segundos entre quebras para a sequência continuar
+		StreakStep = 0.04, -- o tom sobe 4% por quebra seguida...
+		StreakCap = 12, -- ...até 12 quebras (+48%)
+		WindId = "rbxasset://sounds/action_falling.ogg", -- vento em loop (vem no cliente do Roblox)
+		WindVolume = { Base = 0.12, Step = 0.012, Max = 0.45 }, -- cresce com o nível
+		WindPitch = { Base = 1.15, Step = -0.015, Min = 0.7 }, -- fica mais grave com o nível
+	}),
 })

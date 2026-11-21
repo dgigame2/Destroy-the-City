@@ -22,6 +22,8 @@ require(script.City.CityClient).init()
 require(script.City.TornadoClient).init() -- o jogador é o tornado (visual, colisão e barra de XP)
 require(script.City.PvpClient).init() -- rajada, Q, vida e escudo (o servidor decide)
 require(script.City.SkillFx).init() -- efeitos das skills (Q) de todos
+require(script.City.TornadoJuice).init() -- som e tremida do seu tornado (quebrar, XP, evoluir, dano)
+require(script.City.DeathScreen).init() -- "você estava a X% do próximo nível" e comemoração de quem matou
 require(script.City.ElementFx).init()
 require(script.City.ElementCasts).init() -- golpes por nível (plano igual ao do servidor)
 require(script.Controllers.AmbienceController).init()

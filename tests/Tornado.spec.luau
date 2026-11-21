@@ -91,4 +91,28 @@ return function(t)
 		t.near(x, 3)
 		t.equal(r, 1)
 	end)
+
+	t.test("cor do rebirth: nenhuma sem rebirth, muda nos degraus e cobre todos os rebirths", function()
+		t.equal(Tornado.aura(cfg, 0), nil)
+		t.truthy(Tornado.aura(cfg, 1) ~= nil)
+		t.truthy(Tornado.aura(cfg, 2) == Tornado.aura(cfg, 1))
+		t.truthy(Tornado.aura(cfg, 3) ~= Tornado.aura(cfg, 2))
+		t.truthy(Tornado.aura(cfg, Tornado.maxRebirths(cfg)) ~= nil)
+	end)
+
+	t.test("coroa: maior nível, desempate por rebirth, ninguém se empatar ou estiver sozinho", function()
+		t.equal(Tornado.biggest({ { Id = 1, Level = 9, Rebirths = 0 } }), nil)
+		t.equal(Tornado.biggest({ { Id = 1, Level = 1, Rebirths = 0 }, { Id = 2, Level = 1, Rebirths = 0 } }), nil)
+		t.equal(Tornado.biggest({ { Id = 1, Level = 3, Rebirths = 0 }, { Id = 2, Level = 5, Rebirths = 0 } }), 2)
+		t.equal(Tornado.biggest({ { Id = 1, Level = 5, Rebirths = 2 }, { Id = 2, Level = 5, Rebirths = 1 } }), 1)
+		-- empate no topo depois de um maior aparecer antes
+		t.equal(
+			Tornado.biggest({
+				{ Id = 1, Level = 2, Rebirths = 0 },
+				{ Id = 2, Level = 6, Rebirths = 0 },
+				{ Id = 3, Level = 6, Rebirths = 0 },
+			}),
+			nil
+		)
+	end)
 end

@@ -32,4 +32,17 @@ function Shake.merge(previous: number, previousAt: number, amount: number, now: 
 	return amount
 end
 
+-- Sequência de golpes (tom que sobe, tipo moedas do Mario): conta se o golpe veio dentro da janela.
+function Shake.streak(count: number, lastAt: number, now: number, window: number): number
+	if now - lastAt <= window then
+		return count + 1
+	end
+	return 1
+end
+
+-- Tom do golpe n da sequência: sobe `step` por golpe até `cap` golpes, depois fica no topo.
+function Shake.streakPitch(count: number, step: number, cap: number): number
+	return 1 + math.clamp(count - 1, 0, cap) * step
+end
+
 return Shake

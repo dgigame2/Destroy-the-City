@@ -39,4 +39,14 @@ return table.freeze({
 		table.freeze({ From = 23, Name = "Firenado", Color = { 255, 120, 40 } }),
 		table.freeze({ From = 27, Name = "Void Storm", Color = { 120, 60, 170 } }),
 	}),
+
+	-- Cor das fitas do tornado por rebirth (status: todos veem de longe). Vale a partir de From rebirths.
+	RebirthAuras = table.freeze({
+		table.freeze({ From = 1, Color = { 90, 230, 110 } }), -- verde
+		table.freeze({ From = 3, Color = { 70, 160, 255 } }), -- azul
+		table.freeze({ From = 6, Color = { 190, 90, 255 } }), -- roxo
+		table.freeze({ From = 10, Color = { 255, 200, 40 } }), -- dourado
+		table.freeze({ From = 15, Color = { 255, 60, 90 } }), -- vermelho (todos os rebirths)
+	}),
+	AuraMix = 0.65, -- quanto da cor do rebirth entra na fita (o resto é a cor da forma)
 })

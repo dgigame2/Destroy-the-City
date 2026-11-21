@@ -21,7 +21,16 @@ local localPlayer = Players.LocalPlayer
 local Feedback = {}
 
 -- NoNumber: só som e tremor, sem o texto flutuando (ex.: giro grátis da roleta, pedido do usuário)
-export type Target = { Gui: GuiObject?, World: Vector3?, Amount: number?, Text: string?, NoNumber: boolean? }
+-- Pitch: multiplica o tom do som (sequência de golpes subindo); Strength: multiplica o tremor da câmera
+export type Target = {
+	Gui: GuiObject?,
+	World: Vector3?,
+	Amount: number?,
+	Text: string?,
+	NoNumber: boolean?,
+	Pitch: number?,
+	Strength: number?,
+}
 
 local lastSound: { [string]: number } = {}
 local cameraShake = 0
@@ -44,7 +53,7 @@ local function rgb(c: { number }): Color3
 	return Color3.fromRGB(c[1], c[2], c[3])
 end
 
-local function playSound(kind: string, spec: FeedbackConfig.Sound)
+local function playSound(kind: string, spec: FeedbackConfig.Sound, pitch: number)
 	local now = os.clock()
 	if now - (lastSound[kind] or 0) < spec.MinGap then
 		return
@@ -53,7 +62,7 @@ local function playSound(kind: string, spec: FeedbackConfig.Sound)
 	local sound = Instance.new("Sound")
 	sound.SoundId = spec.Id
 	sound.Volume = spec.Volume
-	sound.PlaybackSpeed = spec.Pitch + (math.random() * 2 - 1) * spec.Jitter
+	sound.PlaybackSpeed = spec.Pitch * pitch + (math.random() * 2 - 1) * spec.Jitter
 	sound.Parent = soundFolder
 	sound:Play()
 	sound.Ended:Once(function()
@@ -192,9 +201,9 @@ function Feedback.play(kind: string, target: Target)
 		warn("[Feedback] tipo desconhecido:", kind)
 		return
 	end
-	playSound(kind, spec.Sound)
+	playSound(kind, spec.Sound, target.Pitch or 1)
 	if spec.Shake.Camera then
-		shakeCamera(spec.Shake.Camera, spec.Shake.Seconds)
+		shakeCamera(spec.Shake.Camera * (target.Strength or 1), spec.Shake.Seconds)
 	end
 	if spec.Shake.Ui and target.Gui then
 		if onScreen(target.Gui) then

@@ -36,6 +36,7 @@ local tcfg = TornadoConfig :: Tornado.Config
 local localPlayer = Players.LocalPlayer
 local nextBurst = 0
 local nextSpecial = 0 -- só para mostrar a recarga; quem confere é o servidor
+local crownLabel: TextLabel? = nil -- "👑 BIGGEST TORNADO" acima da vida quando o maior é você
 
 local function myRoot(): BasePart?
 	local character = localPlayer.Character
@@ -217,6 +218,14 @@ local function buildHud(): () -> ()
 	local hpText = Style.label("HpText", "HP", 18)
 	hpText.Size = UDim2.fromScale(1, 1)
 	hpText.Parent = hpFace
+	local crown = Style.label("Crown", "👑 BIGGEST TORNADO", 16)
+	crown.AnchorPoint = Vector2.new(0.5, 1)
+	crown.Position = UDim2.new(0.5, 0, 0, -4)
+	crown.Size = UDim2.new(1, 0, 0, 20)
+	crown.TextColor3 = Color3.fromRGB(255, 214, 70)
+	crown.Visible = false
+	crown.Parent = hpHolder
+	crownLabel = crown
 
 	-- botões junto do pulo (o pulo do Roblox fica no canto de baixo à direita)
 	local touch = UserInputService.TouchEnabled
@@ -283,6 +292,18 @@ end
 
 local function updateTags()
 	local mine = (localPlayer:GetAttribute("TornadoLevel") :: number?) or 1
+	local entries = {}
+	for _, player in Players:GetPlayers() do
+		table.insert(entries, {
+			Id = player.UserId,
+			Level = (player:GetAttribute("TornadoLevel") :: number?) or 1,
+			Rebirths = (player:GetAttribute("Rebirths") :: number?) or 0,
+		})
+	end
+	local king = Tornado.biggest(entries)
+	if crownLabel then
+		crownLabel.Visible = king == localPlayer.UserId
+	end
 	for _, player in Players:GetPlayers() do
 		if player == localPlayer then
 			continue
@@ -298,7 +319,7 @@ local function updateTags()
 		tag.Gui.Enabled = true
 		tag.Gui.Adornee = root
 		tag.Gui.StudsOffsetWorldSpace = Vector3.new(0, Tornado.radius(tcfg, level) * TornadoConfig.Height + 3, 0)
-		tag.Label.Text = `LV {level}`
+		tag.Label.Text = if king == player.UserId then `👑 LV {level}` else `LV {level}`
 		tag.Label.TextColor3 = if Pvp.canEat(pcfg, level, mine)
 			then HP_COLOR
 			elseif Pvp.canEat(pcfg, mine, level) then Color3.fromRGB(110, 230, 120)

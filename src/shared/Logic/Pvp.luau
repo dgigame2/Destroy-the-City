@@ -85,4 +85,10 @@ function Pvp.inFront(
 	return (vx * dx + vz * dz) / distance >= minDot
 end
 
+-- Tela de morte: quanto da barra já tinha (0..100, inteiro) e se já dava para EVOLVE (XP junta além da barra).
+function Pvp.deathProgress(tornado: Tornado.Config, level: number, xp: number): (number, boolean)
+	local need = Tornado.xpToNext(tornado, level)
+	return math.floor(math.clamp(xp / need, 0, 1) * 100), xp >= need
+end
+
 return Pvp

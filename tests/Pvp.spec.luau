@@ -67,4 +67,15 @@ return function(t)
 			end
 		end
 	)
+
+	t.test("tela de morte: % da barra (inteiro, até 100) e se já dava para evoluir", function()
+		local need = Tornado.xpToNext(tcfg, 5)
+		local pct, could = Pvp.deathProgress(tcfg, 5, need * 0.826)
+		t.equal(pct, 82)
+		t.equal(could, false)
+		pct, could = Pvp.deathProgress(tcfg, 5, need * 3)
+		t.equal(pct, 100)
+		t.equal(could, true)
+		t.equal((Pvp.deathProgress(tcfg, 5, 0)), 0)
+	end)
 end

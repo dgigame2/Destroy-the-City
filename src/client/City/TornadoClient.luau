@@ -42,6 +42,7 @@ type Visual = {
 	CloudAt: Attachment,
 	Angle: number,
 	Level: number,
+	Rebirths: number,
 	Own: boolean,
 }
 
@@ -169,20 +170,23 @@ local function newVisual(own: boolean): Visual
 		CloudAt = cloudAt,
 		Angle = math.random() * math.pi * 2,
 		Level = 0,
+		Rebirths = -1, -- força o primeiro resize
 		Own = own,
 	}
 end
 
 -- Tamanho, cor e quantidade de partículas: só quando o nível muda (não a cada frame).
-local function resize(v: Visual, level: number)
-	v.Level = level
+local function resize(v: Visual, level: number, rebirths: number)
+	v.Level, v.Rebirths = level, rebirths
 	local r = Tornado.radius(cfg, level)
 	local h = r * TornadoConfig.Height
 	local color = formColor(level)
 	local dark = color:Lerp(Color3.new(0, 0, 0), 0.35)
 	local q = QualityTier.current().Particles * (if v.Own then 1 else OTHERS)
+	local aura = Tornado.aura(cfg, rebirths)
+	local strand = if aura then color:Lerp(Color3.fromRGB(aura[1], aura[2], aura[3]), cfg.AuraMix) else color
 	for _, s in v.Strands do
-		s.Beam.Color = ColorSequence.new(color)
+		s.Beam.Color = ColorSequence.new(strand)
 		s.Beam.Width0 = r * 0.35
 		s.Beam.Width1 = r * 1.3
 		s.Beam.CurveSize0 = h * 0.15
@@ -268,8 +272,9 @@ local function update(dt: number)
 		end
 		v.Root.Parent = container()
 		local level = (player:GetAttribute("TornadoLevel") :: number?) or 1
-		if level ~= v.Level then
-			resize(v, level)
+		local rebirths = (player:GetAttribute("Rebirths") :: number?) or 0
+		if level ~= v.Level or rebirths ~= v.Rebirths then
+			resize(v, level, rebirths)
 		end
 		local r = Tornado.radius(cfg, level)
 		local h = r * TornadoConfig.Height

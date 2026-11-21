@@ -13,6 +13,8 @@ return table.freeze({
 		PartyClosed = "PartyClosed", -- servidor -> dono: () fechar CREATE PARTY (saiu do quadrado / tempo)
 		Notice = "Notice", -- servidor -> cliente: (texto) aviso na tela
 		Burst = "Burst", -- cliente -> servidor: (dirX, dirZ) rajada do tornado; recarga e alvo conferidos no servidor
+		Died = "Died", -- servidor -> vítima: (nome de quem matou, nível, XP perdido) tela de morte
+		Killed = "Killed", -- servidor -> quem matou: (nome da vítima, XP ganho) comemoração
 		Knock = "Knock", -- servidor -> vítima: (vx, vz, segundos) empurrão (sucção); o cliente move o próprio tornado
 	}),
 	-- UnreliableRemoteEvent: só cosmético (perder um não muda o estado da cidade)

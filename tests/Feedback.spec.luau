@@ -20,6 +20,13 @@ local ACTIONS = {
 	"TierUp",
 	"ZoneClear",
 	"Burst", -- fim de uma leva grande de destruição
+	"Smash", -- tornado
+	"Crash",
+	"Xp",
+	"Evolve",
+	"Rebirth",
+	"Hurt",
+	"Kill",
 }
 
 return function(t)
@@ -55,6 +62,17 @@ return function(t)
 		t.truthy(FeedbackConfig.Kinds.Click.Number.Hidden)
 		t.truthy(FeedbackConfig.Kinds.Reward.Number.Hidden)
 		t.truthy((FeedbackConfig.Kinds.Reward.Shake.Ui :: number) <= 5)
+	end)
+
+	t.test("golpes em sequência: tom sobe até o teto e recomeça fora da janela", function()
+		local n = Shake.streak(0, 0, 10, 0.8)
+		t.equal(n, 1)
+		n = Shake.streak(n, 10, 10.5, 0.8)
+		t.equal(n, 2)
+		t.equal(Shake.streak(n, 10.5, 12, 0.8), 1)
+		t.equal(Shake.streakPitch(1, 0.04, 12), 1)
+		t.truthy(Shake.streakPitch(5, 0.04, 12) > Shake.streakPitch(4, 0.04, 12))
+		t.equal(Shake.streakPitch(50, 0.04, 12), Shake.streakPitch(13, 0.04, 12))
 	end)
 
 	t.test("número some em menos de 1 segundo", function()

@@ -17,6 +17,8 @@ export type Config = {
 	WalkSpeed: { Base: number, Step: number },
 	Rebirth: { XpBonus: number, DamageBonus: number },
 	Forms: { { From: number, Name: string, Color: { number } } },
+	RebirthAuras: { { From: number, Color: { number } } },
+	AuraMix: number,
 }
 
 -- XP para sair do nível `level` (no nível máximo a barra não enche mais).
@@ -82,6 +84,34 @@ function Tornado.form(cfg: Config, level: number): number
 		end
 	end
 	return index
+end
+
+-- Cor do rebirth (RGB) ou nil sem rebirth.
+function Tornado.aura(cfg: Config, rebirths: number): { number }?
+	local color = nil
+	for _, aura in cfg.RebirthAuras do
+		if rebirths >= aura.From then
+			color = aura.Color
+		end
+	end
+	return color
+end
+
+-- Quem é o maior tornado do servidor (coroa): maior nível, desempate por rebirths.
+-- nil com menos de 2 jogadores ou empate no topo (no começo todos são nível 1: ninguém tem coroa).
+function Tornado.biggest(entries: { { Id: number, Level: number, Rebirths: number } }): number?
+	if #entries < 2 then
+		return nil
+	end
+	local best, tied = nil, false
+	for _, e in entries do
+		if best == nil or e.Level > best.Level or (e.Level == best.Level and e.Rebirths > best.Rebirths) then
+			best, tied = e, false
+		elseif e.Level == best.Level and e.Rebirths == best.Rebirths then
+			tied = true
+		end
+	end
+	return if best and not tied then best.Id else nil
 end
 
 -- No nível máximo, com a barra cheia e ainda com rebirth sobrando.
