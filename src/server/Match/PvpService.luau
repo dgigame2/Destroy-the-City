@@ -1,10 +1,9 @@
 --!strict
 -- PvP entre tornados (o servidor decide tudo). Números em Config/PvpConfig, fórmulas em Logic/Pvp.
 --   * Vida própria (atributos Hp/MaxHp; não usa a vida do Humanoid) que regenera fora de combate.
---   * Encostar: tornado PvpConfig.LevelGap+ níveis maior engole o menor (dano contínuo).
 --   * Rajada (remote Burst, clique): cone à frente, acerta tornados e construções. Recarga no servidor.
---   * Skills (Q) ficam no SkillService, que usa PvpService.damage / PvpService.knock.
---   * Morte: zera só a barra de XP (o nível fica) e quem matou ganha XP. O MatchService renasce o
+--   * Skills (Q) ficam no SkillService, que usa PvpService.knock para mover outros jogadores.
+--   * Morte: perde a barra de XP, ou um nível se já estava vazia. Quem matou ganha XP. O MatchService renasce o
 --     jogador no ponto de nascimento; ao nascer ganha escudo (ShieldUntil, hora do servidor).
 --   * Escudo de 2 s ao subir de nível. Sem área segura (decisão do usuário: o mapa separa pequenos e grandes).
 
@@ -67,15 +66,24 @@ local function shield(player: Player, seconds: number)
 	player:SetAttribute("ShieldUntil", math.max(current, now() + seconds))
 end
 
-local function kill(victim: Player, killer: Player)
-	victim:SetAttribute("Hp", 0)
-	local entry = PlayerData.get(victim)
+local function applyDeath(player: Player): (number?, number?)
+	player:SetAttribute("Hp", 0)
+	local entry = PlayerData.get(player)
 	if entry then
-		local lost, gain = entry.Xp, Pvp.killXp(pcfg, tcfg, entry.Level)
-		PlayerData.setTornado(victim, entry.Level, 0, entry.Rebirths) -- só a barra zera; o nível fica
+		local level, xp = entry.Level, entry.Xp
+		PlayerData.setTornado(player, Pvp.levelAfterDeath(level, xp), 0, entry.Rebirths)
+		return level, xp
+	end
+	return nil, nil
+end
+
+local function kill(victim: Player, killer: Player)
+	local level, lost = applyDeath(victim)
+	if level and lost then
+		local gain = Pvp.killXp(pcfg, tcfg, level)
 		local killerLevel = levelOf(killer)
 		TornadoService.give(killer, gain)
-		Remotes.event(Remotes.Names.Events.Died):FireClient(victim, killer.DisplayName, entry.Level, lost, killerLevel)
+		Remotes.event(Remotes.Names.Events.Died):FireClient(victim, killer.DisplayName, level, lost, killerLevel)
 		Remotes.event(Remotes.Names.Events.Killed):FireClient(killer, victim.DisplayName, gain)
 	end
 	local humanoid = victim.Character and victim.Character:FindFirstChildOfClass("Humanoid")
@@ -85,9 +93,9 @@ local function kill(victim: Player, killer: Player)
 end
 
 -- Dano de PvP. Recusa se alguém está morto ou se a vítima tem escudo.
-function PvpService.damage(victim: Player, attacker: Player, amount: number): boolean
+local function damage(victim: Player, attacker: Player, amount: number)
 	if victim == attacker or not alive(victim) or not alive(attacker) or shielded(victim) then
-		return false
+		return
 	end
 	attacker:SetAttribute("ShieldUntil", 0) -- atacar tira o próprio escudo
 	states[victim].LastHit = now()
@@ -97,9 +105,7 @@ function PvpService.damage(victim: Player, attacker: Player, amount: number): bo
 	else
 		victim:SetAttribute("Hp", hp)
 	end
-	return true
 end
-local damage = PvpService.damage
 
 -- Empurra/puxa a vítima: o cliente dela move o próprio tornado (dono da física). Escudo protege.
 function PvpService.knock(victim: Player, vx: number, vz: number, seconds: number)
@@ -110,31 +116,15 @@ end
 
 local function step(dt: number)
 	local t = now()
-	local players = Players:GetPlayers()
-	for _, a in players do
-		if not alive(a) then
+	for _, player in Players:GetPlayers() do
+		if not alive(player) then
 			continue
 		end
-		local state = states[a]
-		local la = levelOf(a)
-		local pa = (rootOf(a) :: BasePart).Position
-		local reach = Tornado.radius(tcfg, la)
-		for _, b in players do
-			if b == a or not alive(b) then
-				continue
-			end
-			local pb = (rootOf(b) :: BasePart).Position
-			local lb = levelOf(b)
-			if Vector2.new(pb.X - pa.X, pb.Z - pa.Z).Magnitude <= reach and Pvp.canEat(pcfg, la, lb) then
-				damage(b, a, pcfg.Touch.HpShare * Pvp.maxHp(pcfg, lb) * dt)
-			end
-		end
-		if alive(a) then
-			local hp = a:GetAttribute("Hp") :: number
-			local healed = Pvp.regen(pcfg, hp, Pvp.maxHp(pcfg, la), t - state.LastHit, dt)
-			if healed ~= hp then
-				a:SetAttribute("Hp", healed)
-			end
+		local hp = player:GetAttribute("Hp") :: number
+		local elapsed = t - states[player].LastHit
+		local healed = Pvp.regen(pcfg, hp, Pvp.maxHp(pcfg, levelOf(player)), elapsed, dt)
+		if healed ~= hp then
+			player:SetAttribute("Hp", healed)
 		end
 	end
 end
@@ -177,19 +167,30 @@ local function onBurst(player: Player, dx: any, dz: any)
 		half,
 		Tornado.dps(tcfg, level, rebirths) * pcfg.Burst.CitySeconds
 	)
-	Remotes.unreliable(Remotes.Names.Unreliable.BurstFx):FireAllClients(pos, x, z, reach)
+	Remotes.unreliable(Remotes.Names.Unreliable.BurstFx):FireAllClients(player.UserId, x, z)
 end
 
 local function onPlayer(player: Player)
 	states[player] = { LastHit = -math.huge, NextBurst = 0 }
 	local lastLevel = levelOf(player)
-	player.CharacterAdded:Connect(function()
+	local function onCharacter(character: Model)
 		local maxHp = Pvp.maxHp(pcfg, levelOf(player))
 		player:SetAttribute("MaxHp", maxHp)
 		player:SetAttribute("Hp", maxHp)
 		player:SetAttribute("ShieldUntil", now() + pcfg.Shield.Spawn)
 		states[player].LastHit = -math.huge
-	end)
+		local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+		humanoid.Died:Once(function()
+			-- Mortes sem atacante (por exemplo /kill). PvP já aplicou a regra e marcou Hp = 0.
+			if character == player.Character and ((player:GetAttribute("Hp") :: number?) or 0) > 0 then
+				applyDeath(player)
+			end
+		end)
+	end
+	player.CharacterAdded:Connect(onCharacter)
+	if player.Character then
+		task.spawn(onCharacter, player.Character)
+	end
 	player:GetAttributeChangedSignal("TornadoLevel"):Connect(function()
 		local level = levelOf(player)
 		local newMax = Pvp.maxHp(pcfg, level)

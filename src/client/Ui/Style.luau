@@ -181,9 +181,57 @@ function Style.glyph(name: string, glyph: string): GuiObject
 	return image
 end
 
+local buttonImages = {
+	[Style.Themes.Green] = "rbxassetid://98626308365499",
+	[Style.Themes.Blue] = "rbxassetid://131038031623354",
+	[Style.Themes.LightBlue] = "rbxassetid://131038031623354",
+	[Style.Themes.Yellow] = "rbxassetid://72475537859118",
+	[Style.Themes.Orange] = "rbxassetid://108170756686733",
+	[Style.Themes.Red] = "rbxassetid://104446201018102",
+}
+
+local function skin(face: Frame, image: string, center: Rect, scale: number): ImageLabel
+	local art = Instance.new("ImageLabel")
+	art.Name = "Skin"
+	art.BackgroundTransparency = 1
+	art.Image = image
+	art.Size = UDim2.fromScale(1, 1)
+	art.ScaleType = Enum.ScaleType.Slice
+	art.SliceCenter = center
+	art.SliceScale = scale
+	art.ZIndex = 3
+	art.Parent = face
+	return art
+end
+
+local function buttonSkin(face: Frame, t: Theme)
+	local art = face:FindFirstChild("Skin") :: ImageLabel?
+	local id = buttonImages[t]
+	if id and not art then
+		art = skin(face, id, Rect.new(110, 45, 460, 145), 0.24)
+	end
+	if art then
+		art.Visible = id ~= nil
+		if id then
+			art.Image = id
+		end
+	end
+	face.BackgroundTransparency = if id then 1 else 0
+	local stroke = face:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Enabled = id == nil
+	end
+	local lift = face:FindFirstChild("Lift") :: Frame
+	lift.Visible = id == nil
+	local shadow = (face.Parent :: Frame):FindFirstChild("Shadow") :: Frame
+	shadow.Visible = id == nil
+end
+
 -- Botão com profundidade. Retorna (holder, área de clique, face).
 function Style.button(name: string, t: Theme, text: string): (Frame, TextButton, Frame)
 	local holder, face = Style.panel(name, t, 14)
+	face:SetAttribute("ButtonSkin", true)
+	buttonSkin(face, t)
 	local label = Style.label("Text", text)
 	label.AnchorPoint = Vector2.new(0.5, 0.5)
 	label.Position = UDim2.fromScale(0.5, 0.5)
@@ -211,6 +259,9 @@ end
 
 -- Troca as cores de um painel/botão já criado (ex.: botão desativado fica cinza).
 function Style.recolor(face: Frame, t: Theme)
+	if face:GetAttribute("ButtonSkin") then
+		buttonSkin(face, t)
+	end
 	local gradient = face:FindFirstChildOfClass("UIGradient")
 	if gradient then
 		gradient.Color = ColorSequence.new(t.Top, t.Bottom)
@@ -265,24 +316,34 @@ end
 -- Retorna (holder, corpo para o conteúdo, botão X, título).
 function Style.window(
 	name: string,
-	headerTheme: Theme,
+	_headerTheme: Theme,
 	title: string,
 	width: number,
 	height: number,
 	headerH: number,
 	closeSize: number
 ): (Frame, Frame, TextButton, TextLabel)
-	local holder, body = Style.panel(name, Style.Themes.Paper, 26)
+	local holder = Instance.new("Frame")
+	holder.Name = name
+	holder.BackgroundTransparency = 1
 	holder.Size = UDim2.fromOffset(width, height)
-	local header, headerFace = Style.panel("Header", headerTheme, 26)
-	header.Size = UDim2.new(1, 0, 0, headerH)
-	header.ZIndex = 4
-	header.Parent = body
-	Style.grassLip(headerFace)
+	local body = Instance.new("Frame")
+	body.Name = "Face"
+	body.BackgroundTransparency = 1
+	body.Size = UDim2.fromScale(1, 1)
+	body.Parent = holder
+	local art = skin(body, "rbxassetid://90045679366297", Rect.new(188, 190, 936, 696), headerH / 190)
+	art.ZIndex = 0
+	local headerFace = Instance.new("Frame")
+	headerFace.Name = "Header"
+	headerFace.BackgroundTransparency = 1
+	headerFace.Size = UDim2.new(1, 0, 0, headerH)
+	headerFace.ZIndex = 4
+	headerFace.Parent = body
 	local titleLabel = Style.label("Title", title)
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.AnchorPoint = Vector2.new(0, 0.5)
-	titleLabel.Position = UDim2.new(0, 28, 0.5, 0)
+	titleLabel.Position = UDim2.new(0, headerH, 0.5, 0)
 	titleLabel.Size = UDim2.fromScale(0.6, 0.6)
 	titleLabel.Parent = headerFace
 	local closeHolder, closeHit = Style.button("Close", Style.Themes.Red, "X")

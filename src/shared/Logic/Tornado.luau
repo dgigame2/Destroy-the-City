@@ -6,6 +6,21 @@
 
 local Tornado = {}
 
+export type Form = {
+	From: number,
+	Name: string,
+	Color: { number },
+	Height: number,
+	Base: number,
+	Top: number,
+	Bend: number,
+	Crown: number,
+	Density: number,
+	Spin: number,
+	Twist: number,
+	Bands: number,
+}
+
 export type Config = {
 	BaseMaxLevel: number,
 	MaxLevel: number,
@@ -16,9 +31,7 @@ export type Config = {
 	Dps: { Base: number, Growth: number },
 	WalkSpeed: { Base: number, Step: number },
 	Rebirth: { XpBonus: number, DamageBonus: number },
-	Forms: { { From: number, Name: string, Color: { number } } },
-	RebirthAuras: { { From: number, Color: { number } } },
-	AuraMix: number,
+	Forms: { Form },
 }
 
 -- XP para sair do nível `level` (no nível máximo a barra não enche mais).
@@ -67,6 +80,14 @@ function Tornado.radius(cfg: Config, level: number): number
 	return cfg.Radius.Base + cfg.Radius.Step * (level - 1)
 end
 
+-- A esfera cobre o funil mesmo quando a câmera gira ou inclina.
+function Tornado.cameraDistance(halfHeight: number, outerRadius: number, verticalFov: number, aspect: number): number
+	local verticalSlope = math.tan(math.rad(verticalFov) / 2)
+	local narrowHalfAngle = math.atan(verticalSlope * math.min(1, aspect))
+	local sphereRadius = math.sqrt(halfHeight ^ 2 + outerRadius ^ 2)
+	return sphereRadius / math.sin(narrowHalfAngle)
+end
+
 function Tornado.dps(cfg: Config, level: number, rebirths: number): number
 	return cfg.Dps.Base * cfg.Dps.Growth ^ (level - 1) * (1 + cfg.Rebirth.DamageBonus * rebirths)
 end
@@ -86,13 +107,17 @@ function Tornado.form(cfg: Config, level: number): number
 	return index
 end
 
--- Cor do rebirth (RGB) ou nil sem rebirth.
-function Tornado.aura(cfg: Config, rebirths: number): { number }?
+function Tornado.visualRadius(form: Form, heightFraction: number): number
+	return form.Base + (form.Top - form.Base) * heightFraction
+end
+
+function Tornado.rebirthColor(colors: { { From: number, Color: { number } } }, rebirths: number): { number }?
 	local color = nil
-	for _, aura in cfg.RebirthAuras do
-		if rebirths >= aura.From then
-			color = aura.Color
+	for _, tier in colors do
+		if rebirths < tier.From then
+			break
 		end
+		color = tier.Color
 	end
 	return color
 end

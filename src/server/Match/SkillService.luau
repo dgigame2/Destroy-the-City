@@ -1,7 +1,7 @@
 --!strict
 -- Skills (Q) dos tornados: uma por forma (Config/SkillConfig, zonas em Logic/Skills). O servidor decide tudo:
 --   * Q (remote Special, com a direção): confere vida, forma e recarga; cria a skill ativa.
---   * A cada Tick: cada zona dá dano na cidade (paga XP) e nos tornados dentro dela, e puxa/empurra/arrasta
+--   * A cada Tick: cada zona dá dano na cidade (paga XP) e pode puxar/empurrar/arrastar tornados
 --     (PvpService.knock: o cliente da vítima move o próprio tornado). Rastro de fogo dura TrailSeconds.
 --   * No fim: explosão que cresce com o que a skill destruiu (até o limite).
 --   * Efeito para todos: SkillFx (início; cada cliente calcula as zonas igual) e SkillEndFx (explosão).
@@ -12,7 +12,6 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Pvp = require(Shared.Logic.Pvp)
-local PvpConfig = require(Shared.Config.PvpConfig)
 local Skills = require(Shared.Logic.Skills)
 local SkillConfig = require(Shared.Config.SkillConfig)
 local Tornado = require(Shared.Logic.Tornado)
@@ -24,13 +23,14 @@ local TornadoService = require(script.Parent.TornadoService)
 
 local SkillService = {}
 
-local pcfg = PvpConfig :: Pvp.Config
 local tcfg = TornadoConfig :: Tornado.Config
 local KNOCK_SECONDS = TornadoConfig.Tick * 1.5 -- cada empurrão dura até o próximo tick
 
 type Active = {
 	Player: Player,
 	Def: any,
+	Index: number,
+	OY: number,
 	Start: number,
 	OX: number,
 	OZ: number,
@@ -42,7 +42,6 @@ type Active = {
 	CX: number, -- última posição conhecida do tornado (se ele morrer ou sair, a skill termina ali)
 	CZ: number,
 	Collected: number,
-	Hit: { [Player]: boolean },
 	Trail: { { X: number, Z: number, R: number, Until: number } },
 	NextTrail: number,
 	Done: boolean, -- já explodiu (o rastro de fogo ainda pode estar queimando)
@@ -57,10 +56,6 @@ end
 
 local function cityDps(a: Active): number
 	return Tornado.dps(tcfg, a.Level, a.Rebirths)
-end
-
-local function maxHp(a: Active): number
-	return Pvp.maxHp(pcfg, a.Level)
 end
 
 -- Tornados (menos quem usou) dentro do círculo.
@@ -80,14 +75,10 @@ end
 local function zoneTick(a: Active, zone: Skills.Zone, dt: number)
 	local def = a.Def
 	a.Collected += TornadoService.hitCity(a.Player, zone.X, zone.Z, zone.R, cityDps(a) * def.CityRate * dt)
+	if not def.Pull and not def.Drag then
+		return
+	end
 	for _, v in victims(a, zone.X, zone.Z, zone.R) do
-		if def.Once then
-			if not a.Hit[v.Player] and PvpService.damage(v.Player, a.Player, def.ImpactHp * maxHp(a)) then
-				a.Hit[v.Player] = true
-			end
-		else
-			PvpService.damage(v.Player, a.Player, def.HpRate * maxHp(a) * dt)
-		end
 		if def.Pull then
 			-- positivo puxa para o centro; negativo empurra para fora (Wind Burst)
 			local x, z = Pvp.direction(zone.X - v.X, zone.Z - v.Z)
@@ -112,10 +103,8 @@ local function finish(a: Active)
 	local mult = Skills.burstMult(def, a.Collected)
 	local r = burst.Size * a.Radius
 	TornadoService.hitCity(a.Player, x, z, r, cityDps(a) * burst.City * mult)
-	for _, v in victims(a, x, z, r) do
-		PvpService.damage(v.Player, a.Player, burst.Hp * mult * maxHp(a))
-	end
-	Remotes.unreliable(Remotes.Names.Unreliable.SkillEndFx):FireAllClients(a.Player.UserId, x, z, r, mult)
+	Remotes.unreliable(Remotes.Names.Unreliable.SkillEndFx)
+		:FireAllClients(a.Player.UserId, x, z, r, mult, a.Index, a.OY)
 end
 
 local function step(dt: number)
@@ -147,9 +136,6 @@ local function step(dt: number)
 						fire.R,
 						cityDps(a) * def.TrailRate * dt
 					)
-					for _, v in victims(a, fire.X, fire.Z, fire.R) do
-						PvpService.damage(v.Player, a.Player, def.HpRate * 0.5 * maxHp(a) * dt)
-					end
 				end
 			end
 		end
@@ -189,6 +175,8 @@ local function onSkill(player: Player, dx: any, dz: any): string?
 	table.insert(actives, {
 		Player = player,
 		Def = def,
+		Index = index,
+		OY = pos.Y,
 		Start = t,
 		OX = pos.X,
 		OZ = pos.Z,
@@ -200,7 +188,6 @@ local function onSkill(player: Player, dx: any, dz: any): string?
 		CX = pos.X,
 		CZ = pos.Z,
 		Collected = 0,
-		Hit = {},
 		Trail = {},
 		NextTrail = 0,
 		Done = false,

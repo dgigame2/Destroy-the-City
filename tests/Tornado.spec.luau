@@ -54,6 +54,18 @@ return function(t)
 		end
 	end)
 
+	t.test("câmera: enquadra a altura e largura do funil em qualquer ângulo", function()
+		local distance = Tornado.cameraDistance(18, 24, 60, 16 / 9)
+		t.near(distance, 60) -- raio da esfera = 30; seno de 30 graus = 0,5
+		t.near(Tornado.cameraDistance(36, 48, 60, 16 / 9), distance * 2)
+	end)
+
+	t.test("câmera: tela estreita ou FOV menor precisam de mais distância", function()
+		local landscape = Tornado.cameraDistance(18, 24, 70, 16 / 9)
+		t.truthy(Tornado.cameraDistance(18, 24, 70, 9 / 16) > landscape)
+		t.truthy(Tornado.cameraDistance(18, 24, 55, 16 / 9) > landscape)
+	end)
+
 	t.test("calibragem: nível 1 derruba prop em < 1 s; nível 15 derruba o maior prédio em 1 a 4 s", function()
 		t.truthy(20 / Tornado.dps(cfg, 1, 0) < 1)
 		local t15 = 2456 / Tornado.dps(cfg, cfg.BaseMaxLevel, 0)
@@ -92,12 +104,31 @@ return function(t)
 		t.equal(r, 1)
 	end)
 
-	t.test("cor do rebirth: nenhuma sem rebirth, muda nos degraus e cobre todos os rebirths", function()
-		t.equal(Tornado.aura(cfg, 0), nil)
-		t.truthy(Tornado.aura(cfg, 1) ~= nil)
-		t.truthy(Tornado.aura(cfg, 2) == Tornado.aura(cfg, 1))
-		t.truthy(Tornado.aura(cfg, 3) ~= Tornado.aura(cfg, 2))
-		t.truthy(Tornado.aura(cfg, Tornado.maxRebirths(cfg)) ~= nil)
+	t.test("forma: Breeze volta leve e estreito ao descer do Void Storm para o nível 1", function()
+		local void = cfg.Forms[Tornado.form(cfg, cfg.MaxLevel)]
+		local breeze = cfg.Forms[Tornado.form(cfg, 1)]
+		t.truthy(breeze.Height < void.Height and breeze.Bands < void.Bands)
+		t.truthy(breeze.Crown == 0 and void.Crown > 0 and breeze.Density < void.Density)
+		t.truthy(Tornado.visualRadius(breeze, 0.5) < Tornado.visualRadius(void, 0.5))
+	end)
+
+	t.test("forma: largura interpola entre a base e o topo em cada perfil", function()
+		for _, form in cfg.Forms do
+			t.near(Tornado.visualRadius(form, 0), form.Base)
+			t.near(Tornado.visualRadius(form, 1), form.Top)
+		end
+	end)
+
+	t.test("rebirth: três rebirths selecionam o azul sem alterar a forma do nível 13", function()
+		local palette = cfg.RebirthFx.Colors
+		t.equal(Tornado.rebirthColor(palette, 0), nil)
+		t.equal(Tornado.rebirthColor(palette, 2), palette[1].Color)
+		t.equal(Tornado.rebirthColor(palette, 3), palette[2].Color)
+		t.equal(Tornado.rebirthColor(palette, 5), palette[2].Color)
+		t.equal(Tornado.rebirthColor(palette, 6), palette[3].Color)
+		t.equal(Tornado.rebirthColor(palette, Tornado.maxRebirths(cfg)), palette[#palette].Color)
+		t.equal(Tornado.maxLevel(cfg, 3), 18)
+		t.equal(cfg.Forms[Tornado.form(cfg, 13)].Name, "Supertornado")
 	end)
 
 	t.test("coroa: maior nível, desempate por rebirth, ninguém se empatar ou estiver sozinho", function()

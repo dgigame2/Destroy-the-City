@@ -39,10 +39,6 @@ export type Refs = {
 	RewardsIcon: TextButton,
 	IconHolders: { Frame },
 	RewardsBadge: TextLabel,
-	TimerHolder: Frame,
-	Timer: TextLabel,
-	MapName: TextLabel,
-	ProgressFill: Frame,
 	-- Run (embaixo)
 	MatchBar: Frame,
 	UpgradesButton: TextButton,
@@ -332,51 +328,6 @@ function Screens.build(parent: Instance): Refs
 	local rewardsHolder, rewardsIcon = iconAt(2, Style.Themes.Green, "🎁", "GIFT")
 	local rewardsBadge = badge(rewardsHolder)
 	add(icons)
-
-	-- Progresso da run (topo centro): nome da área, "AREA 1/4 • 0%" e barra. Sem fundo (minimalista):
-	-- só os textos com contorno e a barrinha, flutuando sobre a cidade.
-	local timerHolder = Instance.new("Frame")
-	timerHolder.Name = "Timer"
-	timerHolder.BackgroundTransparency = 1
-	sized(timerHolder, C.Timer.W, C.Timer.H, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, C.Margin))
-	local timerFace = Instance.new("Frame")
-	timerFace.Name = "Face"
-	timerFace.BackgroundTransparency = 1
-	timerFace.Size = UDim2.fromScale(1, 1)
-	timerFace.Parent = timerHolder
-	local timer = Style.label("Time", "0% EATEN")
-	sized(timer, C.Timer.W - 24, 38, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 4))
-	timer.Parent = timerFace
-	local mapName = Style.label("Map", "")
-	mapName.TextColor3 = Style.Colors.Gold
-	sized(mapName, C.Timer.W - 24, C.TextRow, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 42))
-	mapName.Parent = timerFace
-	local track = Instance.new("Frame")
-	track.Name = "Progress"
-	track.BackgroundColor3 = Style.Colors.Track
-	track.BorderSizePixel = 0
-	track.ZIndex = 5
-	sized(track, C.Timer.W - 40, 8, Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -6))
-	local trackCorner = Instance.new("UICorner")
-	trackCorner.CornerRadius = UDim.new(1, 0)
-	trackCorner.Parent = track
-	local trackStroke = Instance.new("UIStroke")
-	trackStroke.Color = Style.TextStroke
-	trackStroke.Thickness = 2
-	trackStroke.Parent = track
-	local fill = Instance.new("Frame")
-	fill.Name = "Fill"
-	fill.BackgroundColor3 = Style.Colors.Fill
-	fill.BorderSizePixel = 0
-	fill.Size = UDim2.fromScale(0, 1)
-	fill.ZIndex = 6
-	local fillCorner = Instance.new("UICorner")
-	fillCorner.CornerRadius = UDim.new(1, 0)
-	fillCorner.Parent = fill
-	fill.Parent = track
-	track.Parent = timerFace
-	timerHolder.Visible = false
-	add(timerHolder)
 
 	-- Barra da run (embaixo): upgrades e voltar ao lobby -------------------------------
 	local matchW = C.UpgradesButton.W + C.LobbyButton.W + gap
@@ -684,10 +635,6 @@ function Screens.build(parent: Instance): Refs
 		RewardsIcon = rewardsIcon,
 		IconHolders = { shopHolder, rewardsHolder },
 		RewardsBadge = rewardsBadge,
-		TimerHolder = timerHolder,
-		Timer = timer,
-		MapName = mapName,
-		ProgressFill = fill,
 		Shop = shop,
 		ShopClose = shopClose,
 		ShopTabs = tabs,

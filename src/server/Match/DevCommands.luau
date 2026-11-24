@@ -111,13 +111,8 @@ add("kill", function(player)
 	if humanoid == nil then
 		return "No character"
 	end
-	local entry = PlayerData.get(player)
-	if entry then
-		PlayerData.setTornado(player, entry.Level, 0, entry.Rebirths) -- igual à morte no PvP
-	end
-	player:SetAttribute("Hp", 0)
 	humanoid.Health = 0
-	return "Dead (XP bar reset)"
+	return "Dead"
 end)
 
 add("shield", function(player, arg)

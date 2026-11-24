@@ -24,7 +24,7 @@ return table.freeze({
 		CastFx = "CastFx",
 		ChainFx = "ChainFx", -- servidor -> todos: (casterUserId, pontos: { Vector3 }) saltos do raio em cadeia
 		BurnFx = "BurnFx", -- servidor -> todos: (ids: { number }, segundos) construções que pegaram fogo
-		BurstFx = "BurstFx", -- servidor -> todos: (origem: Vector3, dirX, dirZ, alcance) efeito da rajada
+		BurstFx = "BurstFx", -- servidor -> todos: (userId, dirX, dirZ) vento ao redor do tornado atacante
 		-- servidor -> todos: (skill, userId, início, ox, oy, oz, dirX, dirZ, raio) Q começou; o cliente calcula as zonas
 		SkillFx = "SkillFx",
 		SkillEndFx = "SkillEndFx", -- servidor -> todos: (userId, x, z, raio, força) explosão final do Q

@@ -5,10 +5,6 @@
 return table.freeze({
 	Hp = table.freeze({ Base = 100, Growth = 1.2 }),
 
-	-- Encostar: quem é LevelGap+ níveis maior engole o menor (HpShare da vida da vítima por segundo -> ~2 s)
-	LevelGap = 5,
-	Touch = table.freeze({ HpShare = 0.5 }),
-
 	-- Rajada (clique / botão no celular): cone na frente do tornado
 	Burst = table.freeze({
 		Cooldown = 0.6, -- segundos (conferido no servidor)

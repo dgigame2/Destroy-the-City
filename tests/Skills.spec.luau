@@ -19,7 +19,7 @@ return function(t)
 			t.truthy(type(s.Name) == "string" and #s.Color == 3 and s.Cooldown > 0)
 			t.truthy(s.Move == "Line" or s.Move == "Self" or s.Move == "Fixed" or s.Move == "Orbit")
 			t.truthy(Skills.duration(s) > 0)
-			t.truthy(s.HpRate or s.ImpactHp) -- todas acertam tornados (PvP)
+			t.truthy(s.CityRate > 0)
 		end
 		local index, def = Skills.forForm(skills, 99)
 		t.equal(index, #skills)

@@ -72,12 +72,10 @@ end
 -- HUD visível só sem janela aberta. Lobby: gemas, vitórias e atalhos. Run: dinheiro, gemas, progresso e barra.
 local function updateHud()
 	local hud = openWindow == nil
-	local state = runState()
 	refs.CashHolder.Visible = false -- dinheiro e gemas do Destroy the City: fora até a fase 5 (monetização)
 	refs.GemsHolder.Visible = false
 	refs.WinsHolder.Visible = hud and not isRun
 	refs.Icons.Visible = hud and not isRun
-	refs.TimerHolder.Visible = hud and isRun and state ~= "Loading"
 	refs.MatchBar.Visible = false -- UPGRADES/LOBBY do Destroy the City: fora do Disaster Evolution (a vida fica aí)
 end
 InterfaceController.updateHud = updateHud
@@ -146,7 +144,6 @@ local function updateScale()
 		setScale(obj, currentScale)
 	end
 	setScale(refs.MatchBar, layout.MatchScale)
-	setScale(refs.TimerHolder, layout.TimerScale)
 	-- janelas: nunca maiores que a tela (celulares bem curtos)
 	for _, window in windows() do
 		local size = { W = window.Size.X.Offset, H = window.Size.Y.Offset }
@@ -161,7 +158,6 @@ local function updateScale()
 		place(refs.GemsHolder, layout.Cash)
 		place(refs.WinsHolder, layout.Gems)
 	end
-	place(refs.TimerHolder, layout.Timer)
 	place(refs.MatchBar, layout.MatchBar)
 	place(refs.Toast, layout.Toast)
 	refs.Toast.Size = UDim2.fromOffset((layout.Toast.X1 - layout.Toast.X0) / currentScale, C.Toast.H)
@@ -266,15 +262,6 @@ local function setupCurrencies()
 	onCash()
 	onGems()
 	onWins()
-end
-
--- Progresso da cidade (compartilhado): nome da cidade, "42% DESTROYED" e a barra (MatchProgress, pelo valor).
-local function onProgress()
-	local progress = math.clamp((ReplicatedStorage:GetAttribute("MatchProgress") :: number?) or 0, 0, 1)
-	local percent = math.floor(progress * 100)
-	refs.Timer.Text = (ReplicatedStorage:GetAttribute("MatchMapName") :: string?) or ""
-	refs.MapName.Text = `{percent}% DESTROYED`
-	refs.ProgressFill.Size = UDim2.fromScale(progress, 1)
 end
 
 -- Confete caindo pela tela inteira.
@@ -382,12 +369,8 @@ function InterfaceController.init()
 	end)
 	Remotes.event(Remotes.Names.Events.RewardGranted).OnClientEvent:Connect(InterfaceController.popup)
 
-	for _, name in { "MatchProgress", "MatchMapName" } do
-		ReplicatedStorage:GetAttributeChangedSignal(name):Connect(onProgress)
-	end
 	Remotes.event(Remotes.Names.Events.Milestone).OnClientEvent:Connect(onMilestone)
 	ReplicatedStorage:GetAttributeChangedSignal("MatchState"):Connect(onStateChanged)
-	onProgress()
 	onStateChanged()
 end
 

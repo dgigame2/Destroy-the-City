@@ -1,11 +1,16 @@
 --!strict
--- Afasta a câmera conforme o jogador cresce (sem prender o zoom do jogador).
+-- Afasta a câmera conforme o tornado cresce, mantendo os controles nativos.
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
-local Place = require(ReplicatedStorage:WaitForChild("Shared").Place)
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Place = require(Shared.Place)
+local Tornado = require(Shared.Logic.Tornado)
+local TornadoConfig = require(Shared.Config.TornadoConfig)
 
 local localPlayer = Players.LocalPlayer
 
@@ -50,25 +55,116 @@ local function apply()
 	end
 end
 
--- Modo desastres: o personagem não cresce, mas os desastres sim. A câmera começa afastada (dá para ver o
--- impacto) e o zoom máximo acompanha o poder (alcance dos desastres).
-local DISASTER_START = 38 -- distância inicial da câmera
-local DISASTER_MAX = 160 -- zoom máximo na partida (ver a área do golpe de longe)
+local function followTornado()
+	local view = TornadoConfig.Camera
+	local visual = TornadoConfig.Visual
+	local targetDistance: number? = nil
+	local humanoid: Humanoid? = nil
+	local cameraSignals: { RBXScriptConnection } = {}
+	local transition: RBXScriptConnection? = nil
+
+	local function frameTornado()
+		local camera = Workspace.CurrentCamera
+		if not camera or camera.ViewportSize.X <= 0 or camera.ViewportSize.Y <= 0 then
+			return
+		end
+		local level = (localPlayer:GetAttribute("TornadoLevel") :: number?) or 1
+		local radius = Tornado.radius(TornadoConfig, level)
+		local form = TornadoConfig.Forms[Tornado.form(TornadoConfig, level)]
+		local halfHeight = radius * (form.Height + form.Crown / 2) / 2
+		local outerRadius = radius
+			* (
+				form.Bend
+				+ math.max(
+					form.Base + visual.BandWidthAtBase / 2,
+					form.Top
+						* math.max(
+							1 + visual.BandWidthAtTop / 2,
+							visual.OrbitRadiusScale + visual.SmokeWidthScale * 1.4 / 2
+						),
+					form.Crown / 2
+				)
+			)
+		local offset = Vector3.new(0, halfHeight - TornadoConfig.RootToGround, 0)
+		local aspect = camera.ViewportSize.X / camera.ViewportSize.Y
+		local distance = Tornado.cameraDistance(halfHeight, outerRadius, camera.FieldOfView, aspect) * view.Padding
+		local maxDistance = math.max(view.MinMaxDistance, distance * view.MaxDistanceScale)
+		local previousTarget = targetDistance
+		targetDistance = distance
+		if transition then
+			transition:Disconnect()
+			transition = nil
+		end
+		local subject = humanoid
+		if previousTarget == nil then
+			localPlayer.CameraMaxZoomDistance = maxDistance
+			localPlayer.CameraMinZoomDistance = distance
+			if subject then
+				subject.CameraOffset = offset
+			end
+			return
+		end
+		local from = localPlayer.CameraMinZoomDistance
+		local fromOffset = if subject then subject.CameraOffset else offset
+		local actualDistance = (camera.CFrame.Position - camera.Focus.Position).Magnitude
+		local zoomIn = distance < from
+		local fromMax = math.max(actualDistance, from)
+		local elapsed = 0
+		localPlayer.CameraMaxZoomDistance = maxDistance
+		transition = RunService.PreRender:Connect(function(dt)
+			elapsed += dt
+			local alpha = math.min(elapsed / view.TransitionSeconds, 1)
+			local eased = TweenService:GetValue(alpha, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			localPlayer.CameraMinZoomDistance = from + (distance - from) * eased
+			if zoomIn then
+				localPlayer.CameraMaxZoomDistance = fromMax + (distance - fromMax) * eased
+			end
+			if subject then
+				subject.CameraOffset = fromOffset:Lerp(offset, eased)
+			end
+			if alpha >= 1 then
+				localPlayer.CameraMaxZoomDistance = maxDistance
+				if transition then
+					transition:Disconnect()
+					transition = nil
+				end
+			end
+		end)
+	end
+
+	local function watchCamera()
+		for _, signal in cameraSignals do
+			signal:Disconnect()
+		end
+		table.clear(cameraSignals)
+		local camera = Workspace.CurrentCamera
+		if camera then
+			table.insert(cameraSignals, camera:GetPropertyChangedSignal("ViewportSize"):Connect(frameTornado))
+			table.insert(cameraSignals, camera:GetPropertyChangedSignal("FieldOfView"):Connect(frameTornado))
+		end
+		frameTornado()
+	end
+
+	local function onCharacter(character: Model)
+		local subject = character:WaitForChild("Humanoid") :: Humanoid
+		if localPlayer.Character == character then
+			humanoid = subject
+			frameTornado()
+		end
+	end
+
+	localPlayer:GetAttributeChangedSignal("TornadoLevel"):Connect(frameTornado)
+	Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(watchCamera)
+	localPlayer.CharacterAdded:Connect(onCharacter)
+	watchCamera()
+	if localPlayer.Character then
+		task.spawn(onCharacter, localPlayer.Character)
+	end
+end
 
 function CameraController.init()
 	if Place.isRun() then
-		localPlayer.CameraMaxZoomDistance = DISASTER_MAX
-		-- empurra a câmera para longe a cada nascimento e depois libera o zoom
-		local function pushBack()
-			task.wait(0.5)
-			localPlayer.CameraMinZoomDistance = DISASTER_START
-			task.wait(0.2)
-			localPlayer.CameraMinZoomDistance = 8
-		end
-		localPlayer.CharacterAdded:Connect(pushBack)
-		if localPlayer.Character then
-			task.spawn(pushBack)
-		end
+		followTornado()
 		return
 	end
 	localPlayer:GetAttributeChangedSignal("Scale"):Connect(apply)

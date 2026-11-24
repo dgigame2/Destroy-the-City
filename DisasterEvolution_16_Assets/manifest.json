@@ -1,0 +1,225 @@
+[
+  {
+    "name": "Breeze",
+    "group": "form",
+    "level": 1,
+    "meshes": 14,
+    "triangles": 2164,
+    "dimensions": [
+      3.331,
+      3.673,
+      4.666
+    ],
+    "phases": []
+  },
+  {
+    "name": "Dust_Devil",
+    "group": "form",
+    "level": 4,
+    "meshes": 28,
+    "triangles": 3692,
+    "dimensions": [
+      4.834,
+      4.535,
+      6.988
+    ],
+    "phases": []
+  },
+  {
+    "name": "Tornado",
+    "group": "form",
+    "level": 8,
+    "meshes": 34,
+    "triangles": 5372,
+    "dimensions": [
+      7.008,
+      7.241,
+      9.069
+    ],
+    "phases": []
+  },
+  {
+    "name": "Supertornado",
+    "group": "form",
+    "level": 12,
+    "meshes": 39,
+    "triangles": 7284,
+    "dimensions": [
+      9.102,
+      9.657,
+      9.499
+    ],
+    "phases": []
+  },
+  {
+    "name": "Hurricane",
+    "group": "form",
+    "level": 15,
+    "meshes": 48,
+    "triangles": 9444,
+    "dimensions": [
+      11.352,
+      11.731,
+      8.82
+    ],
+    "phases": []
+  },
+  {
+    "name": "Typhoon",
+    "group": "form",
+    "level": 19,
+    "meshes": 40,
+    "triangles": 7064,
+    "dimensions": [
+      9.709,
+      8.907,
+      9.65
+    ],
+    "phases": []
+  },
+  {
+    "name": "Firenado",
+    "group": "form",
+    "level": 23,
+    "meshes": 46,
+    "triangles": 7556,
+    "dimensions": [
+      9.033,
+      9.383,
+      9.779
+    ],
+    "phases": []
+  },
+  {
+    "name": "Void_Storm",
+    "group": "form",
+    "level": 27,
+    "meshes": 48,
+    "triangles": 8676,
+    "dimensions": [
+      10.002,
+      11.646,
+      10.939
+    ],
+    "phases": []
+  },
+  {
+    "name": "Wind_Burst",
+    "group": "skill",
+    "level": 1,
+    "meshes": 15,
+    "triangles": 1632,
+    "dimensions": [
+      5.432,
+      2.768,
+      3.228
+    ],
+    "phases": []
+  },
+  {
+    "name": "Dust_Dash",
+    "group": "skill",
+    "level": 4,
+    "meshes": 39,
+    "triangles": 4956,
+    "dimensions": [
+      4.708,
+      4.226,
+      2.479
+    ],
+    "phases": [
+      "DUST_IMPACT"
+    ]
+  },
+  {
+    "name": "Vortex_Slam",
+    "group": "skill",
+    "level": 8,
+    "meshes": 34,
+    "triangles": 5768,
+    "dimensions": [
+      8.45,
+      7.966,
+      1.909
+    ],
+    "phases": [
+      "VORTEX_IMPACT"
+    ]
+  },
+  {
+    "name": "Twin_Cyclones",
+    "group": "skill",
+    "level": 12,
+    "meshes": 57,
+    "triangles": 8004,
+    "dimensions": [
+      8.069,
+      7.528,
+      4.809
+    ],
+    "phases": [
+      "TWIN_IMPACT"
+    ]
+  },
+  {
+    "name": "Eye_Of_The_Storm",
+    "group": "skill",
+    "level": 15,
+    "meshes": 40,
+    "triangles": 8672,
+    "dimensions": [
+      11.033,
+      10.923,
+      2.942
+    ],
+    "phases": [
+      "EYE_IMPACT"
+    ]
+  },
+  {
+    "name": "Tidal_Surge",
+    "group": "skill",
+    "level": 19,
+    "meshes": 56,
+    "triangles": 8704,
+    "dimensions": [
+      6.354,
+      5.734,
+      4.335
+    ],
+    "phases": [
+      "SURGE_IMPACT"
+    ]
+  },
+  {
+    "name": "Inferno_Spiral",
+    "group": "skill",
+    "level": 23,
+    "meshes": 56,
+    "triangles": 7192,
+    "dimensions": [
+      6.436,
+      6.06,
+      6.39
+    ],
+    "phases": [
+      "FIRE_TRAIL",
+      "FIRE_IMPACT"
+    ]
+  },
+  {
+    "name": "Black_Hole",
+    "group": "skill",
+    "level": 27,
+    "meshes": 51,
+    "triangles": 7212,
+    "dimensions": [
+      8.701,
+      8.722,
+      3.289
+    ],
+    "phases": [
+      "VOID_IMPLOSION"
+    ]
+  }
+]

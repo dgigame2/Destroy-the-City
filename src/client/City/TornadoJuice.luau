@@ -38,7 +38,9 @@ local function strength(): number
 end
 
 local function above(part: BasePart): Vector3
-	return part.Position + Vector3.new(0, Tornado.radius(cfg, level()) * TornadoConfig.Height * 0.6, 0)
+	local lv = level()
+	local form = cfg.Forms[Tornado.form(cfg, lv)]
+	return part.Position + Vector3.new(0, Tornado.radius(cfg, lv) * form.Height * 0.6, 0)
 end
 
 local streak, streakAt = 0, -math.huge

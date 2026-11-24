@@ -17,7 +17,7 @@ return table.freeze({
 	["⏱️"] = "rbxassetid://132431213829295", -- Recharge
 	["🎯"] = "rbxassetid://117744580622720", -- Reach
 	["⭐"] = "rbxassetid://85957081439184", -- Xp
-	["💵"] = "rbxassetid://70546159319024", -- Cash
-	["💎"] = "rbxassetid://99183138311310", -- Gem
-	["🏆"] = "rbxassetid://88989645800738", -- Trophy
+	["💵"] = "rbxassetid://85137471308254", -- Cash
+	["💎"] = "rbxassetid://138226624489861", -- Gem
+	["🏆"] = "rbxassetid://130853023326881", -- Trophy
 } :: { [string]: string })

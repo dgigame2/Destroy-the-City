@@ -7,6 +7,9 @@
 			"Shared": {
 				"$path": "src/shared"
 			},
+			"SkillAssets": {
+				"$path": "assets/skills"
+			},
 			"PlaceRole": {
 				"$className": "StringValue",
 				"$properties": {
@@ -22,7 +25,8 @@
 		"StarterPlayer": {
 			"$properties": {
 				"CharacterUseJumpPower": true,
-				"CharacterJumpPower": 0
+				"CharacterJumpPower": 0,
+				"DevCameraOcclusionMode": "Zoom"
 			},
 			"StarterPlayerScripts": {
 				"Client": {

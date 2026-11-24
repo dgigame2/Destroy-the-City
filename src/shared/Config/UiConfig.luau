@@ -4,6 +4,15 @@
 -- Todo botão tem pelo menos 88 de altura: na menor escala (0.5) continua com 44px (tamanho do polegar).
 
 return table.freeze({
+	HealthBar = {
+		Width = 220,
+		Height = 30,
+		HeartSize = 46,
+		Bottom = 20,
+		Inset = 4,
+		TextSize = 18,
+		HeartImage = "rbxassetid://135539574642708",
+	},
 	DesignWidth = 1280,
 	DesignHeight = 720,
 	MinScale = 0.5,

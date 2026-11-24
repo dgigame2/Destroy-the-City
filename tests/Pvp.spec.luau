@@ -1,4 +1,4 @@
--- PvP entre tornados: vida, engolir, rajada, equilíbrio, entrada do cliente.
+-- PvP entre tornados: vida, morte, rajada, equilíbrio, entrada do cliente.
 local Pvp = require("../src/shared/Logic/Pvp")
 local Tornado = require("../src/shared/Logic/Tornado")
 local cfg = require("../src/shared/Config/PvpConfig")
@@ -12,10 +12,15 @@ return function(t)
 		end
 	end)
 
-	t.test("só engole quem é LevelGap+ níveis maior", function()
-		t.truthy(Pvp.canEat(cfg, 1 + cfg.LevelGap, 1))
-		t.equal(Pvp.canEat(cfg, cfg.LevelGap, 1), false)
-		t.equal(Pvp.canEat(cfg, 1, 1 + cfg.LevelGap), false)
+	t.test("morte com barra vazia perde exatamente um nível e nunca cai abaixo de 1", function()
+		t.equal(Pvp.levelAfterDeath(8, 0), 7)
+		t.equal(Pvp.levelAfterDeath(1, 0), 1)
+		t.equal(Pvp.levelAfterDeath(tcfg.MaxLevel, 0), tcfg.MaxLevel - 1)
+	end)
+
+	t.test("morte com qualquer XP acumulado mantém o nível", function()
+		t.equal(Pvp.levelAfterDeath(8, tcfg.PropXp), 8)
+		t.equal(Pvp.levelAfterDeath(8, Tornado.xpToNext(tcfg, 8)), 8)
 	end)
 
 	t.test("matar dá parte da barra da vítima", function()

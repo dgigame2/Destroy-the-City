@@ -7,8 +7,6 @@ local Pvp = {}
 
 export type Config = {
 	Hp: { Base: number, Growth: number },
-	LevelGap: number,
-	Touch: { HpShare: number },
 	Burst: {
 		Cooldown: number,
 		Reach: number,
@@ -26,9 +24,8 @@ function Pvp.maxHp(cfg: Config, level: number): number
 	return cfg.Hp.Base * cfg.Hp.Growth ^ (level - 1)
 end
 
--- Encostar só machuca quando a diferença de nível é grande (iguais ou parecidos não se machucam).
-function Pvp.canEat(cfg: Config, attackerLevel: number, victimLevel: number): boolean
-	return attackerLevel - victimLevel >= cfg.LevelGap
+function Pvp.levelAfterDeath(level: number, xp: number): number
+	return if xp <= 0 then math.max(1, level - 1) else level
 end
 
 -- XP de quem mata: parte da barra do nível da vítima (caçar compensa, sem roubar o nível).

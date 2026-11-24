@@ -62,11 +62,13 @@ local function onDied(killer: any, level: any, lost: any, killerLevel: any)
 		return
 	end
 	local pct, could = Pvp.deathProgress(tcfg, level, lost)
+	local nextLevel = Pvp.levelAfterDeath(level, lost)
 	title.Text = if type(killerLevel) == "number"
 		then `DESTROYED BY {string.upper(killer)} (LV {killerLevel})`
 		else `DESTROYED BY {string.upper(killer)}`
-	line.Text = if could
-		then "You already had enough XP to EVOLVE! Press R sooner."
+	line.Text = if nextLevel < level
+		then `XP bar was empty. LV {level} → LV {nextLevel}`
+		elseif could then "You already had enough XP to EVOLVE! Press R sooner."
 		else `You were {pct}% of the way to LV {level + 1}!`
 	token += 1
 	local mine = token
