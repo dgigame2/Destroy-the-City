@@ -4,15 +4,40 @@
 -- Todo botão tem pelo menos 88 de altura: na menor escala (0.5) continua com 44px (tamanho do polegar).
 
 return table.freeze({
-	HealthBar = {
-		Width = 220,
-		Height = 30,
-		HeartSize = 46,
-		Bottom = 20,
-		Inset = 4,
-		TextSize = 18,
-		HeartImage = "rbxassetid://135539574642708",
-	},
+	-- Arte do Figma do usuário (PNGs em assets/ui, enviados em 23/11)
+	Art = table.freeze({
+		Heart = "rbxassetid://102941635382190",
+		HpEmpty = "rbxassetid://74782842015537",
+		HpFill = "rbxassetid://137272056114928",
+		XpFill = "rbxassetid://119036340647892",
+		XpBorder = "rbxassetid://140608159415551",
+		WindLeft = "rbxassetid://103159771547413",
+		WindRight = "rbxassetid://83154149341418",
+		Key = "rbxassetid://101055978646694",
+		ButtonYellow = "rbxassetid://140726203346372",
+		ButtonGreen = "rbxassetid://125606905254179",
+		RowPurple = "rbxassetid://84178224709026",
+		RowCyan = "rbxassetid://101312940541994",
+		RowRed = "rbxassetid://86019228058960",
+		RowBlue = "rbxassetid://124336819155847",
+		MenuBack = "rbxassetid://78590297022569",
+		MenuTitle = "rbxassetid://95280659397215",
+		Close = "rbxassetid://117597498739030",
+	}),
+	HealthBar = table.freeze({ Width = 264, Height = 32, HeartW = 64, HeartH = 56, Bottom = 24, TextSize = 20 }),
+	XpBar = table.freeze({
+		W = 420,
+		H = 49,
+		Top = 69,
+		CompactTop = 24,
+		CompactScale = 0.75,
+		Ring = 84,
+		CaptionW = 350,
+		CaptionH = 32,
+		TextSize = 24,
+	}),
+	Skill = table.freeze({ Key = 62, NameW = 190, TouchKey = 72 }),
+	RebirthMenu = table.freeze({ W = 440, H = 373 }),
 	DesignWidth = 1280,
 	DesignHeight = 720,
 	MinScale = 0.5,
@@ -30,7 +55,7 @@ return table.freeze({
 	CompactHeight = 500,
 	Timer = { W = 270, H = 84 }, -- na run: "% EATEN", nome do mapa e barra de progresso
 	TimerTop = 6, -- o relógio sobe para a faixa da barra do Roblox (centro, que fica livre): px do topo da tela
-	Toast = { W = 900, H = 64, Y = 140 },
+	Toast = { W = 900, H = 64, Y = 220 },
 	Combo = { W = 320, H = 60 },
 
 	-- Botões da run (embaixo, centralizados)

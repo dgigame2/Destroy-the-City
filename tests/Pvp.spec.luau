@@ -12,6 +12,14 @@ return function(t)
 		end
 	end)
 
+	t.test("só luta até 3 níveis de diferença; briga em andamento continua", function()
+		t.truthy(Pvp.canFight(cfg, 5, 8, 0))
+		t.truthy(Pvp.canFight(cfg, 8, 5, 0))
+		t.equal(Pvp.canFight(cfg, 5, 9, 0), false)
+		t.equal(Pvp.canFight(cfg, 9, 5, -1), false)
+		t.truthy(Pvp.canFight(cfg, 5, 9, 0.1))
+	end)
+
 	t.test("morte com barra vazia perde exatamente um nível e nunca cai abaixo de 1", function()
 		t.equal(Pvp.levelAfterDeath(8, 0), 7)
 		t.equal(Pvp.levelAfterDeath(1, 0), 1)

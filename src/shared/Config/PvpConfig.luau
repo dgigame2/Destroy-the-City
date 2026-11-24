@@ -23,6 +23,12 @@ return table.freeze({
 	-- Regenera fora de combate: Share da vida máxima por segundo, depois de Delay segundos sem levar dano
 	Regen = table.freeze({ Delay = 4, Share = 0.05 }),
 
+	-- Só luta quem tem até LevelGap níveis de diferença. Quem já está brigando continua podendo por FightSeconds
+	-- depois do último golpe (evoluir não serve para fugir). NoticeEvery = intervalo do aviso na tela.
+	LevelGap = 3,
+	FightSeconds = 10,
+	NoticeEvery = 3,
+
 	-- Quem mata ganha este tanto da barra de XP do nível da vítima
 	KillXpShare = 0.25,
 })

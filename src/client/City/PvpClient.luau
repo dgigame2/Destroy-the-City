@@ -6,7 +6,8 @@
 --   * Investida: o servidor aceita (forma + recarga) e o cliente empurra o próprio personagem.
 --     Sucção: o servidor manda Knock e o cliente da vítima puxa o próprio tornado (o cliente é dono da física).
 --   * Escudo: bolha de ForceField em volta do tornado (todos veem); pisca no último segundo.
---   * Vida própria embaixo no centro (onde era o botão UPGRADES): "HP atual/máx"; nos outros, nível + vida em cima do tornado.
+--   * Vida própria embaixo no centro (onde era o botão UPGRADES): "HP atual/máx"; nos outros, nível + vida em cima do tornado
+--     (vermelho = dá para atacar; cinza com cadeado = diferença de nível grande demais).
 
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
@@ -16,7 +17,10 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local healthStyle = require(Shared.Config.UiConfig).HealthBar
+local UiConfig = require(Shared.Config.UiConfig)
+local healthStyle = UiConfig.HealthBar
+local skillStyle = UiConfig.Skill
+local art = UiConfig.Art
 local Pvp = require(Shared.Logic.Pvp)
 local PvpConfig = require(Shared.Config.PvpConfig)
 local Tornado = require(Shared.Logic.Tornado)
@@ -157,6 +161,7 @@ local function ratioOf(player: Player): number
 end
 
 local HP_COLOR = Color3.fromRGB(235, 70, 70)
+local LOCKED_COLOR = Color3.fromRGB(170, 175, 185)
 local SHIELD_COLOR = Color3.fromRGB(120, 200, 255)
 
 local function buildHud(): () -> ()
@@ -167,66 +172,44 @@ local function buildHud(): () -> ()
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
 
 	-- vida própria: embaixo no centro (onde ficava o UPGRADES do Destroy the City)
-	local hpHolder, hpFace = Style.panel("Hp", Style.Themes.Night, healthStyle.Height / 2)
+	local hpHolder = Instance.new("Frame")
+	hpHolder.Name = "Hp"
+	hpHolder.BackgroundColor3 = Color3.fromRGB(60, 15, 20)
+	hpHolder.BorderSizePixel = 0
 	hpHolder.AnchorPoint = Vector2.new(0.5, 1)
-	hpHolder.Position = UDim2.new(0.5, 0, 1, -healthStyle.Bottom)
+	hpHolder.Position = UDim2.new(0.5, healthStyle.HeartW / 4, 1, -healthStyle.Bottom)
 	hpHolder.Size = UDim2.fromOffset(healthStyle.Width, healthStyle.Height)
 	hpHolder.Parent = gui
-
-	local track = Instance.new("Frame")
-	track.Name = "Track"
-	track.BackgroundColor3 = Color3.fromRGB(64, 29, 65)
-	track.BorderSizePixel = 0
-	track.Position = UDim2.fromOffset(healthStyle.HeartSize / 2, healthStyle.Inset)
-	track.Size = UDim2.new(1, -healthStyle.HeartSize / 2 - healthStyle.Inset, 1, -2 * healthStyle.Inset)
-	track.ZIndex = 4
-	track.Parent = hpFace
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = track
-
 	local clip = Instance.new("Frame")
+	clip.Name = "Fill"
 	clip.BackgroundTransparency = 1
 	clip.ClipsDescendants = true
-	clip.ZIndex = 5
-	clip.Parent = track
-	local fill = Instance.new("Frame")
-	fill.Name = "Fill"
-	fill.Size = UDim2.fromOffset(
-		healthStyle.Width - healthStyle.HeartSize / 2 - healthStyle.Inset,
-		healthStyle.Height - 2 * healthStyle.Inset
-	)
-	fill.BackgroundColor3 = Color3.new(1, 1, 1)
-	fill.BorderSizePixel = 0
-	fill.ZIndex = 5
-	fill.Parent = clip
-	corner:Clone().Parent = fill
-	local gradient = Instance.new("UIGradient")
-	gradient.Rotation = 90
-	gradient.Color = ColorSequence.new(Color3.fromRGB(255, 112, 110), Color3.fromRGB(226, 27, 58))
-	gradient.Parent = fill
-
-	local heart = Instance.new("ImageLabel")
-	heart.Name = "RubyHeart"
-	heart.BackgroundTransparency = 1
-	heart.Image = healthStyle.HeartImage
-	heart.ScaleType = Enum.ScaleType.Fit
-	heart.AnchorPoint = Vector2.new(0, 0.5)
+	clip.ZIndex = 2
+	clip.Parent = hpHolder
+	Style.art("FillArt", art.HpFill, UDim2.fromOffset(healthStyle.Width, healthStyle.Height), 2).Parent = clip
+	Style.art("Border", art.HpEmpty, UDim2.fromScale(1, 1), 3).Parent = hpHolder
+	local heart = Style.art("Heart", art.Heart, UDim2.fromOffset(healthStyle.HeartW, healthStyle.HeartH), 7)
+	heart.AnchorPoint = Vector2.new(0.5, 0.5)
 	heart.Position = UDim2.fromScale(0, 0.5)
-	heart.Size = UDim2.fromOffset(healthStyle.HeartSize, healthStyle.HeartSize)
-	heart.ZIndex = 7
-	heart.Parent = hpFace
-
-	local hpText = Style.label("HpText", "", healthStyle.TextSize)
-	hpText.Position = UDim2.fromOffset(healthStyle.HeartSize, 0)
-	hpText.Size = UDim2.new(1, -healthStyle.HeartSize, 1, 0)
+	heart.Parent = hpHolder
+	local hpText = Style.heavy("HpText", "", healthStyle.TextSize)
+	hpText.Position = UDim2.fromOffset(healthStyle.HeartW / 2, 0)
+	hpText.Size = UDim2.new(1, -healthStyle.HeartW / 2, 1, 0)
 	hpText.ZIndex = 6
-	hpText.Parent = hpFace
+	hpText.Parent = hpHolder
 	local leader, crownFace = Style.panel("Crown", Style.Themes.Blue, 9)
 	leader.AnchorPoint = Vector2.new(0.5, 0)
-	leader.Position = UDim2.new(0.5, 0, 0, 19)
 	leader.Size = UDim2.fromOffset(192, 28)
 	leader.Visible = false
+	local hpScale = Instance.new("UIScale")
+	hpScale.Parent = hpHolder
+	local function fitHud()
+		local compact = gui.AbsoluteSize.Y < UiConfig.CompactHeight
+		hpScale.Scale = if compact then UiConfig.XpBar.CompactScale else 1
+		leader.Position = UDim2.new(0.5, 0, 0, if compact then -6 else 19)
+	end
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitHud)
+	fitHud()
 	leader.Parent = gui
 	local crown = Style.label("Leader", "", 14)
 	crown.Position = UDim2.fromOffset(8, 0)
@@ -249,28 +232,36 @@ local function buildHud(): () -> ()
 			burst(cameraFlat())
 		end)
 	end
-	local qHolder, qHit, qFace = Style.button("SpecialButton", Style.Themes.Purple, "Q")
-	qHolder.AnchorPoint = Vector2.new(1, 1)
-	qHolder.Position = if touch then UDim2.new(1, -118, 1, -110) else UDim2.new(1, -24, 1, -24)
-	qHolder.Size = UDim2.fromOffset(150, 64) -- cresce para a esquerda (âncora à direita): cabe o nome da skill
-	qHolder.Parent = gui
-	-- fwjelaa-ignore: findfirstchild-chain (Style.button sempre cria o "Text" no face)
-	local qText = qFace:FindFirstChild("Text") :: TextLabel
+	-- tecla + nome do lado; no toque, sem a letra e com o nome embaixo
+	local keySize = if touch then skillStyle.TouchKey else skillStyle.Key
+	local qHit, qText = Style.artButton("SpecialButton", art.Key, "", UDim2.fromOffset(keySize, keySize), 34)
+	qHit.AnchorPoint = Vector2.new(1, 1)
+	qHit.Position = if touch then UDim2.new(1, -130, 1, -112) else UDim2.new(1, -32 - skillStyle.NameW, 1, -24)
+	qHit.Parent = gui
 	qHit.Activated:Connect(special)
+	local qName = Style.heavy("SkillName", "", if touch then 15 else 20)
+	qName.Size = UDim2.fromOffset(skillStyle.NameW, 24)
+	if touch then
+		qName.AnchorPoint = Vector2.new(0.5, 0)
+		qName.Position = UDim2.new(0.5, 0, 1, 2)
+	else
+		qName.AnchorPoint = Vector2.new(0, 0.5)
+		qName.Position = UDim2.new(1, 8, 0.5, 0)
+		qName.TextXAlignment = Enum.TextXAlignment.Left
+	end
+	qName.Parent = qHit
 
 	return function()
 		local ratio = ratioOf(localPlayer)
 		clip.Size = UDim2.fromScale(ratio, 1)
 		local hp = math.ceil((localPlayer:GetAttribute("Hp") :: number?) or 0)
-		hpText.Text = `{hp} / {math.ceil((localPlayer:GetAttribute("MaxHp") :: number?) or 0)}`
+		hpText.Text = `HP {hp}/{math.ceil((localPlayer:GetAttribute("MaxHp") :: number?) or 0)}`
 		local level = (localPlayer:GetAttribute("TornadoLevel") :: number?) or 1
 		local remaining = nextSpecial - os.clock()
 		local _, def = Skills.forForm(SkillConfig, Tornado.form(tcfg, level))
-		local text = if remaining > 0 then `Q {math.ceil(remaining)}` else `Q {string.upper(def.Name)}`
-		if qText.Text ~= text then
-			qText.Text = text
-			Style.recolor(qFace, if remaining > 0 then Style.Themes.Gray else Style.Themes.Purple)
-		end
+		qName.Text = string.upper(def.Name)
+		qText.Text = if remaining > 0 then tostring(math.ceil(remaining)) elseif touch then "" else "Q"
+		qHit.ImageColor3 = if remaining > 0 then Color3.fromRGB(110, 110, 110) else Color3.new(1, 1, 1)
 	end
 end
 
@@ -314,7 +305,7 @@ local function updateTags()
 		local leader = if king then Players:GetPlayerByUserId(king) else nil
 		crownHolder.Visible = leader ~= nil
 		if leader then
-			crownLabel.Text = `👑 MAIOR TORNADO · {leader.DisplayName}`
+			crownLabel.Text = `👑 BIGGEST TORNADO · {leader.DisplayName}`
 		end
 	end
 	for _, player in Players:GetPlayers() do
@@ -334,7 +325,12 @@ local function updateTags()
 		tag.Gui.Adornee = root
 		tag.Gui.StudsOffsetWorldSpace =
 			Vector3.new(0, Tornado.radius(tcfg, level) * (form.Height + form.Crown / 2) + TornadoConfig.RootToGround, 0)
-		tag.Label.Text = if king == player.UserId then `👑 LV {level}` else `LV {level}`
+		local fightUntil = (localPlayer:GetAttribute(Pvp.fightKey(player.UserId)) :: number?) or 0
+		local mine = (localPlayer:GetAttribute("TornadoLevel") :: number?) or 1
+		local open = Pvp.canFight(pcfg, mine, level, fightUntil - Workspace:GetServerTimeNow())
+		local crownText = if king == player.UserId then "👑 " else ""
+		tag.Label.Text = `{if open then "" else "🔒 "}{crownText}LV {level}`
+		tag.Label.TextColor3 = if open then HP_COLOR else LOCKED_COLOR
 		tag.Fill.Size = UDim2.fromScale(ratioOf(player), 1)
 	end
 end

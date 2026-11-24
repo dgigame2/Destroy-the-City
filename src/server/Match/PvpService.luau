@@ -5,6 +5,7 @@
 --   * Skills (Q) ficam no SkillService, que usa PvpService.knock para mover outros jogadores.
 --   * Morte: perde a barra de XP, ou um nível se já estava vazia. Quem matou ganha XP. O MatchService renasce o
 --     jogador no ponto de nascimento; ao nascer ganha escudo (ShieldUntil, hora do servidor).
+--   * Só luta quem tem até LevelGap níveis de diferença (aviso para quem tenta); briga em andamento continua.
 --   * Escudo na animação do EVOLVE: não leva nem dá dano/empurrão em jogadores, não cura. Sem área segura (decisão do usuário: o mapa separa pequenos e grandes).
 
 local Players = game:GetService("Players")
@@ -26,7 +27,7 @@ local PvpService = {}
 local pcfg = PvpConfig :: Pvp.Config
 local tcfg = TornadoConfig :: Tornado.Config
 
-type State = { LastHit: number, NextBurst: number, EvolveUntil: number }
+type State = { LastHit: number, NextBurst: number, EvolveUntil: number, NextNotice: number }
 
 local states: { [Player]: State } = {}
 
@@ -72,6 +73,26 @@ local function evolving(player: Player): boolean
 	return state ~= nil and state.EvolveUntil > now()
 end
 
+-- Diferença de nível permite? Se não, avisa quem tentou (no máximo um aviso a cada NoticeEvery).
+local function canFight(victim: Player, attacker: Player): boolean
+	local fightUntil = (attacker:GetAttribute(Pvp.fightKey(victim.UserId)) :: number?) or 0
+	if Pvp.canFight(pcfg, levelOf(attacker), levelOf(victim), fightUntil - now()) then
+		return true
+	end
+	local state = states[attacker]
+	if state and now() >= state.NextNotice then
+		state.NextNotice = now() + pcfg.NoticeEvery
+		Remotes.event(Remotes.Names.Events.Notice)
+			:FireClient(attacker, `You can't attack players more than {pcfg.LevelGap} levels above or below you!`)
+	end
+	return false
+end
+
+local function endFight(a: Player, b: Player)
+	a:SetAttribute(Pvp.fightKey(b.UserId), nil)
+	b:SetAttribute(Pvp.fightKey(a.UserId), nil)
+end
+
 local function applyDeath(player: Player): (number?, number?)
 	player:SetAttribute("Hp", 0)
 	local entry = PlayerData.get(player)
@@ -84,6 +105,7 @@ local function applyDeath(player: Player): (number?, number?)
 end
 
 local function kill(victim: Player, killer: Player)
+	endFight(victim, killer) -- morreu: a briga acabou
 	local level, lost = applyDeath(victim)
 	if level and lost then
 		local gain = Pvp.killXp(pcfg, tcfg, level)
@@ -103,6 +125,12 @@ local function damage(victim: Player, attacker: Player, amount: number)
 	if victim == attacker or not alive(victim) or not alive(attacker) or shielded(victim) or evolving(attacker) then
 		return
 	end
+	if not canFight(victim, attacker) then
+		return
+	end
+	local fightUntil = now() + pcfg.FightSeconds
+	attacker:SetAttribute(Pvp.fightKey(victim.UserId), fightUntil)
+	victim:SetAttribute(Pvp.fightKey(attacker.UserId), fightUntil)
 	attacker:SetAttribute("ShieldUntil", 0) -- atacar tira o próprio escudo
 	states[victim].LastHit = now()
 	local hp = (victim:GetAttribute("Hp") :: number) - amount
@@ -115,7 +143,7 @@ end
 
 -- Empurra/puxa a vítima: o cliente dela move o próprio tornado (dono da física). Escudo protege.
 function PvpService.knock(victim: Player, attacker: Player, vx: number, vz: number, seconds: number)
-	if alive(victim) and not shielded(victim) and not evolving(attacker) then
+	if alive(victim) and not shielded(victim) and not evolving(attacker) and canFight(victim, attacker) then
 		Remotes.event(Remotes.Names.Events.Knock):FireClient(victim, vx, vz, seconds)
 	end
 end
@@ -177,7 +205,7 @@ local function onBurst(player: Player, dx: any, dz: any)
 end
 
 local function onPlayer(player: Player)
-	states[player] = { LastHit = -math.huge, NextBurst = 0, EvolveUntil = 0 }
+	states[player] = { LastHit = -math.huge, NextBurst = 0, EvolveUntil = 0, NextNotice = 0 }
 	local lastLevel = levelOf(player)
 	local function onCharacter(character: Model)
 		local maxHp = Pvp.maxHp(pcfg, levelOf(player))
@@ -230,6 +258,9 @@ function PvpService.start()
 	end
 	Players.PlayerRemoving:Connect(function(player)
 		states[player] = nil
+		for _, other in Players:GetPlayers() do
+			other:SetAttribute(Pvp.fightKey(player.UserId), nil)
+		end
 	end)
 	Remotes.event(Remotes.Names.Events.Burst).OnServerEvent:Connect(onBurst)
 	task.spawn(function()

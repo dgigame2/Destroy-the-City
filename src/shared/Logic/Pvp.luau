@@ -18,7 +18,20 @@ export type Config = {
 	Shield: { Spawn: number },
 	Regen: { Delay: number, Share: number },
 	KillXpShare: number,
+	LevelGap: number,
+	FightSeconds: number,
+	NoticeEvery: number,
 }
+
+-- Os dois podem lutar? fightLeft = segundos que ainda restam da briga em andamento (<= 0: nenhuma).
+function Pvp.canFight(cfg: Config, a: number, b: number, fightLeft: number): boolean
+	return math.abs(a - b) <= cfg.LevelGap or fightLeft > 0
+end
+
+-- Atributo (nos dois jogadores) com a hora do servidor em que a briga com o outro acaba.
+function Pvp.fightKey(userId: number): string
+	return `Fight_{userId}`
+end
 
 function Pvp.maxHp(cfg: Config, level: number): number
 	return cfg.Hp.Base * cfg.Hp.Growth ^ (level - 1)

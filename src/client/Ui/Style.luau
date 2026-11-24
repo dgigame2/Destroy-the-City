@@ -165,6 +165,60 @@ function Style.label(name: string, text: string, textSize: number?): TextLabel
 	return label
 end
 
+-- Imagem da arte do usuário (UiConfig.Art), esticada no tamanho dado.
+function Style.art(name: string, id: string, size: UDim2, zIndex: number): ImageLabel
+	local image = Instance.new("ImageLabel")
+	image.Name = name
+	image.BackgroundTransparency = 1
+	image.Image = id
+	image.Size = size
+	image.ZIndex = zIndex
+	return image
+end
+
+-- Texto da UI nova: Montserrat grossa, branca, com contorno preto.
+function Style.heavy(name: string, text: string, textSize: number): TextLabel
+	local label = Style.label(name, text, textSize)
+	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	local stroke = label:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Color = Color3.new(0, 0, 0)
+		stroke.Thickness = 3
+	end
+	return label
+end
+
+-- Botão com a arte do usuário. Retorna (botão, texto).
+function Style.artButton(
+	name: string,
+	id: string,
+	text: string,
+	size: UDim2,
+	textSize: number
+): (ImageButton, TextLabel)
+	local button = Instance.new("ImageButton")
+	button.Name = name
+	button.BackgroundTransparency = 1
+	button.Image = id
+	button.Size = size
+	button.ZIndex = 6
+	local label = Style.heavy("Text", text, textSize)
+	label.Size = UDim2.fromScale(1, 1)
+	label.ZIndex = 7
+	label.Parent = button
+	local scale = Instance.new("UIScale")
+	scale.Parent = button
+	button.MouseButton1Down:Connect(function()
+		scale.Scale = 0.95
+	end)
+	local function release()
+		scale.Scale = 1
+	end
+	button.MouseButton1Up:Connect(release)
+	button.MouseLeave:Connect(release)
+	return button, label
+end
+
 -- Ícone: imagem do IconConfig quando o emoji tem uma (contorno Ink já desenhado no PNG),
 -- senão o próprio emoji como texto.
 function Style.glyph(name: string, glyph: string): GuiObject
