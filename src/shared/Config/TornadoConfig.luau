@@ -155,7 +155,7 @@ return table.freeze({
 			Bend = 0.22,
 			Crown = 0,
 			Density = 0.52,
-			Spin = 0.95,
+			Spin = 1.1,
 			Twist = 2.1,
 			Bands = 2,
 		}),

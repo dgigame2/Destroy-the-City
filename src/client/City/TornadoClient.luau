@@ -29,6 +29,8 @@ local menu = UiConfig.RebirthMenu
 local Style = require(script.Parent.Parent.Ui.Style)
 local QualityTier = require(script.Parent.QualityTier)
 
+local SpinModelConfig = require(Shared.Config.SpinModelConfig)
+local TornadoVfx = require(script.Parent.TornadoVfx)
 local VisualModels = require(script.Parent.VisualModels)
 
 local TornadoClient = {}
@@ -75,6 +77,7 @@ type Orbit = { Attachment: Attachment, Emitter: ParticleEmitter, Height: number 
 type Visual = {
 	Root: Part,
 	Model: Model?,
+	Vfx: TornadoVfx.Vfx?, -- vento próprio do modelo em peças
 	Strands: { Ribbon },
 	Core: Ribbon,
 	Aura: { Ribbon },
@@ -282,7 +285,7 @@ local function updateVisibility(v: Visual)
 		end
 	end
 	v.Cloud.Enabled = v.Model == nil and not close and v.Form.Crown > 0
-	v.Dust.Enabled = not close
+	v.Dust.Enabled = not close and v.Vfx == nil -- o modelo em peças tem a própria poeira
 	if close then
 		v.Cloud:Clear()
 		v.Dust:Clear()
@@ -306,9 +309,17 @@ local function resize(v: Visual, level: number, rebirths: number)
 		if v.Model then
 			v.Model:Destroy()
 		end
+		if v.Vfx then
+			TornadoVfx.destroy(v.Vfx)
+			v.Vfx = nil
+		end
 		v.Model = VisualModels.clone((form.Name:gsub(" ", "_")))
 		if v.Model then
 			v.Model.Parent = v.Root
+			local spin = SpinModelConfig.Models[v.Model.Name]
+			if spin then
+				v.Vfx = TornadoVfx.new(v.Root, spin, v.Own)
+			end
 		end
 	end
 	v.Level, v.Form, v.Radius = level, form, r
@@ -324,6 +335,9 @@ local function resize(v: Visual, level: number, rebirths: number)
 	v.HasAura = aura ~= nil
 	local quality = QualityTier.current().Particles
 	local q = quality * (if v.Own then 1 else OTHERS) * form.Density
+	if v.Vfx and v.Model then
+		TornadoVfx.resize(v.Vfx, v.Model:GetScale(), quality * (if v.Own then 1 else OTHERS))
+	end
 	v.WindBands = math.max(1, math.round(wind.Bands * quality))
 	for _, band in v.Wind do
 		band.Beam.Segments = math.round(wind.Segments * quality)
@@ -558,10 +572,15 @@ local function update(dt: number)
 		local h = r * form.Height
 		local bend = r * form.Bend
 		local spin = if v.EvolveSeconds > 0 then evolveFx.SpinBoost else 1
-		v.Angle = (v.Angle + dt * form.Spin * spin * math.pi * 2) % (math.pi * 2)
+		v.Angle = (v.Angle + dt * form.Spin * spin * math.pi * 2) % (math.pi * 4) -- duas voltas: as peças usam múltiplos de 0.5
 		v.Root.CFrame = CFrame.new(root.Position - Vector3.new(0, TornadoConfig.RootToGround, 0))
 		if v.Model then
-			v.Model:PivotTo(v.Root.CFrame * CFrame.Angles(0, v.Angle, 0))
+			if v.Vfx then
+				local speed = root.AssemblyLinearVelocity / math.max(Tornado.walkSpeed(cfg, level), 1)
+				TornadoVfx.update(v.Vfx, v.Model, v.Root.CFrame, v.Angle, dt, speed.X, speed.Z, v.CameraClose)
+			else
+				v.Model:PivotTo(v.Root.CFrame * CFrame.Angles(0, v.Angle, 0))
+			end
 		end
 		if v.HasAura and not v.CameraClose then
 			v.AuraPivot.CFrame = CFrame.Angles(0, os.clock() * rebirthFx.Spin, 0)
