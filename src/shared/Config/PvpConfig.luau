@@ -17,8 +17,8 @@ return table.freeze({
 
 	-- Skills (Q) de cada forma: Config/SkillConfig.
 
-	-- Escudo (ninguém dá dano): ao nascer e ao subir de nível. Atacar tira o próprio escudo.
-	Shield = table.freeze({ Spawn = 5, LevelUp = 2 }),
+	-- Escudo ao nascer (atacar tira). O do EVOLVE dura a animação (TornadoConfig.Evolve) e não deixa atacar jogadores.
+	Shield = table.freeze({ Spawn = 5 }),
 
 	-- Regenera fora de combate: Share da vida máxima por segundo, depois de Delay segundos sem levar dano
 	Regen = table.freeze({ Delay = 4, Share = 0.05 }),

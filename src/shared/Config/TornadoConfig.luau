@@ -4,20 +4,65 @@
 -- casas/prédios de 20 a ~2456 de vida.
 --   Nível 1: raio 6, 30 de dano/s  -> prop cai em < 1 s, casa pequena (~60) em ~2 s.
 --   Nível 15: raio ~28, ~1.360 de dano/s -> o maior prédio cai em ~2 s.
--- Nível máximo: BaseMaxLevel sem rebirth; cada rebirth soma +1, até MaxLevel (decisão do usuário, 20/11).
--- Subir de nível é na mão: a barra enche, o XP continua juntando e o jogador aperta EVOLVE (R).
+-- Nível máximo: MaxLevels[rebirths + 1]; cada rebirth libera mais níveis que o anterior (decisão do usuário, 23/11).
+-- Subir de nível é na mão: a barra enche, o XP continua juntando e o jogador aperta EVOLVE (R), que sobe todos os níveis pagos.
 
 return table.freeze({
-	BaseMaxLevel = 15, -- máximo sem rebirth
-	MaxLevel = 30, -- teto absoluto (15 rebirths)
+	MaxLevels = table.freeze({ 15, 17, 20, 24, 29 }), -- por quantidade de rebirths (0 a 4)
 	Tick = 0.2, -- segundos entre cada checagem de contato (servidor)
 	MaxTargets = 24, -- construções atingidas por tick, no máximo
 
-	-- XP para passar do nível L para o L+1 = XpBase * XpGrowth^(L-1). Soma até o 15: ~1.900 XP.
-	XpBase = 8,
-	XpGrowth = 1.38,
+	-- XP da barra de cada nível. Meta por ciclo: 15, 20, 30, 45 e 70 min (3 h no total).
+	-- Conta: minutos da barra x XP/min do nível x bônus do ciclo em que o nível estreia (`lune run xprate`).
+	Xp = table.freeze({
+		-- sem rebirth (1 a 15)
+		31,
+		43,
+		58,
+		80,
+		109,
+		148,
+		205,
+		281,
+		383,
+		523,
+		716,
+		978,
+		1183,
+		1344,
+		1533,
+		-- 1 rebirth (16 e 17)
+		8050,
+		12075,
+		-- 2 rebirths (18 a 20)
+		25700,
+		30400,
+		37400,
+		-- 3 rebirths (21 a 24)
+		55800,
+		65100,
+		74400,
+		83700,
+		-- 4 rebirths (25 a 29)
+		174000,
+		197000,
+		220000,
+		243000,
+		267000,
+	}),
 	-- XP de cada objeto destruído = valor da construção + PropXp (props valem 0 de valor e dão só isto)
 	PropXp = 0.4,
+
+	-- EVOLVE: segundos da animação e da proteção. FormSeconds = virou outra forma (o tornado para).
+	-- Durante a animação não leva nem dá dano em jogadores; continua destruindo a cidade.
+	Evolve = table.freeze({
+		Seconds = 0.6,
+		FormSeconds = 1.2,
+		ChangeAt = 0.75, -- fração da animação em que a forma nova aparece
+		SpinBoost = 3,
+		WindStart = 2, -- o vento vem de fora (múltiplos do raio) e fecha no tornado
+		Flash = 0.5, -- segundos do clarão (forma nova e rebirth)
+	}),
 
 	-- Crescimento por nível (L-1 vezes o passo)
 	Radius = table.freeze({ Base = 6, Step = 1.6 }), -- studs
@@ -61,10 +106,9 @@ return table.freeze({
 	RebirthFx = table.freeze({
 		Colors = table.freeze({
 			table.freeze({ From = 1, Color = table.freeze({ 78, 241, 128 }) }),
-			table.freeze({ From = 3, Color = table.freeze({ 28, 150, 255 }) }),
-			table.freeze({ From = 6, Color = table.freeze({ 174, 78, 255 }) }),
-			table.freeze({ From = 10, Color = table.freeze({ 255, 195, 40 }) }),
-			table.freeze({ From = 15, Color = table.freeze({ 255, 63, 101 }) }),
+			table.freeze({ From = 2, Color = table.freeze({ 28, 150, 255 }) }),
+			table.freeze({ From = 3, Color = table.freeze({ 174, 78, 255 }) }),
+			table.freeze({ From = 4, Color = table.freeze({ 255, 195, 40 }) }),
 		}),
 		Heights = table.freeze({ 0.12, 0.30, 0.48, 0.67, 0.85 }),
 		Arc = math.rad(175),
@@ -95,8 +139,9 @@ return table.freeze({
 		CenterColor = table.freeze({ 223, 247, 255 }),
 	}),
 
-	-- Rebirth: volta ao nível 1; cada um dá +50% de XP, +10% de dano e +1 no nível máximo
-	Rebirth = table.freeze({ XpBonus = 0.5, DamageBonus = 0.1 }),
+	-- Rebirth: volta ao nível 1; cada um multiplica o XP por XpFactor (2x, 4x, 8x, 16x), dá +10% de dano
+	-- e aumenta o nível máximo
+	Rebirth = table.freeze({ XpFactor = 2, DamageBonus = 0.1 }),
 
 	-- Medidas da forma visual em múltiplos do raio. Spin em voltas/s, Twist em radianos.
 	Forms = table.freeze({

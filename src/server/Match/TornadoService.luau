@@ -34,6 +34,8 @@ local function registerCollisionGroups()
 	PhysicsService:CollisionGroupSetCollidable("Tornado", "CityBuildings", false)
 end
 
+local evolvingUntil: { [Player]: number } = {} -- animação do EVOLVE em andamento
+
 local function levelOf(player: Player): number
 	return (player:GetAttribute("TornadoLevel") :: number?) or 1
 end
@@ -45,35 +47,47 @@ local function applySpeed(player: Player)
 	end
 end
 
+-- Soma o XP como veio. O bônus de rebirth é só da destruição (hitCity): o XP por matar já é parte da barra da vítima.
 function TornadoService.give(player: Player, gain: number)
 	local entry = PlayerData.get(player)
 	if entry == nil then
 		return -- save ainda não carregou
 	end
-	local bonus = 1 + cfg.Rebirth.XpBonus * entry.Rebirths
-	local xp = Tornado.addXp(cfg, entry.Level, entry.Xp, gain * bonus, entry.Rebirths)
+	local xp = Tornado.addXp(cfg, entry.Level, entry.Xp, gain, entry.Rebirths)
 	PlayerData.setTornado(player, entry.Level, xp, entry.Rebirths)
 end
 
--- EVOLVE: sobe 1 nível gastando a barra cheia (o cliente só pede; o servidor confere).
+-- EVOLVE: sobe os níveis pagos (o cliente só pede; o servidor confere). Virou outra forma: para na animação.
 local function evolve(player: Player): boolean
 	local entry = PlayerData.get(player)
-	if entry == nil then
+	if entry == nil or player:GetAttribute("Hp") == 0 or os.clock() < (evolvingUntil[player] or 0) then
 		return false
 	end
+	local from = entry.Level
 	local level, xp = Tornado.evolve(cfg, entry.Level, entry.Xp, entry.Rebirths)
 	if level == nil or xp == nil then
 		return false
 	end
+	local seconds = Tornado.evolveSeconds(cfg, from, level)
+	evolvingUntil[player] = os.clock() + seconds
 	PlayerData.setTornado(player, level, xp, entry.Rebirths)
 	applySpeed(player)
+	-- fwjelaa-ignore: findfirstchild-chain (resultado guardado e conferido logo abaixo)
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid and Tornado.form(cfg, from) ~= Tornado.form(cfg, level) then
+		humanoid.WalkSpeed = 0
+		task.delay(seconds, applySpeed, player)
+	end
 	return true
 end
 
 -- Volta ao nível 1 com +1 rebirth (+1 no nível máximo). Só no máximo com a barra cheia.
 local function rebirth(player: Player): boolean
 	local entry = PlayerData.get(player)
-	if entry == nil or not Tornado.canRebirth(cfg, entry.Level, entry.Xp, entry.Rebirths) then
+	if entry == nil or os.clock() < (evolvingUntil[player] or 0) then
+		return false
+	end
+	if not Tornado.canRebirth(cfg, entry.Level, entry.Xp, entry.Rebirths) then
 		return false
 	end
 	PlayerData.setTornado(player, 1, 0, entry.Rebirths + 1)
@@ -90,11 +104,12 @@ function TornadoService.hitCity(player: Player, x: number, z: number, radius: nu
 	if state == nil then
 		return 0
 	end
+	local rebirths = (player:GetAttribute("Rebirths") :: number?) or 0
 	local gain, count = 0, 0
 	for _, id in CityService.query(x, z, radius, cfg.MaxTargets) do
 		local _, killed = CityService.hit(id, damage)
 		if killed then
-			gain += state.Value[id] + cfg.PropXp
+			gain += Tornado.xpFor(cfg, state.Value[id], rebirths)
 			count += 1
 		end
 	end
@@ -152,6 +167,9 @@ function TornadoService.start()
 	for _, player in Players:GetPlayers() do
 		onPlayer(player)
 	end
+	Players.PlayerRemoving:Connect(function(player)
+		evolvingUntil[player] = nil
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(cfg.Tick)

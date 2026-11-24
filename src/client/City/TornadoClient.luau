@@ -31,6 +31,7 @@ local cfg = TornadoConfig :: Tornado.Config
 local fx = TornadoConfig.Visual
 local rebirthFx = TornadoConfig.RebirthFx
 local wind = TornadoConfig.BurstWind
+local evolveFx = TornadoConfig.Evolve
 local STRANDS = 3 -- fitas em espiral
 local RINGS = 4 -- níveis de fumaça orbitando o funil
 local OTHERS = 0.6 -- tornado dos outros: menos partículas
@@ -79,6 +80,10 @@ type Visual = {
 	WindAge: number,
 	WindDirection: Vector3,
 	WindBands: number,
+	WindIn: boolean, -- vento do EVOLVE: fecha no tornado em vez de abrir
+	WindSeconds: number,
+	EvolveAge: number,
+	EvolveSeconds: number, -- 0 = sem animação
 	Orbits: { Orbit },
 	Dust: ParticleEmitter,
 	Debris: ParticleEmitter,
@@ -228,6 +233,10 @@ local function newVisual(own: boolean): Visual
 		WindAge = wind.Seconds,
 		WindDirection = Vector3.xAxis,
 		WindBands = 0,
+		WindIn = false,
+		WindSeconds = wind.Seconds,
+		EvolveAge = 0,
+		EvolveSeconds = 0,
 		Orbits = orbits,
 		Dust = dust,
 		Debris = debris,
@@ -398,17 +407,19 @@ local function windAttachment(angle: number, center: Vector3, radius: number): C
 end
 
 local function updateWind(v: Visual, dt: number)
-	if v.WindAge >= wind.Seconds then
+	if v.WindAge >= v.WindSeconds then
 		return
 	end
-	v.WindAge = math.min(v.WindAge + dt, wind.Seconds)
-	local progress = v.WindAge / wind.Seconds
+	v.WindAge = math.min(v.WindAge + dt, v.WindSeconds)
+	local progress = v.WindAge / v.WindSeconds
 	local eased = 1 - (1 - progress) ^ 2
 	local r = v.Radius
-	local radius = r * (wind.RadiusStart + (wind.RadiusEnd - wind.RadiusStart) * eased)
+	local from = if v.WindIn then evolveFx.WindStart else wind.RadiusStart
+	local to = if v.WindIn then wind.RadiusStart else wind.RadiusEnd
+	local radius = r * (from + (to - from) * eased)
 	local height = r * v.Form.Height * (wind.HeightStart + (wind.HeightEnd - wind.HeightStart) * progress)
 	local angle = math.atan2(v.WindDirection.Z, v.WindDirection.X) + wind.Sweep * eased
-	local drift = v.WindDirection * (r * wind.AimDrift * eased)
+	local drift = v.WindDirection * (if v.WindIn then 0 else r * wind.AimDrift * eased)
 	local width = r * wind.Width * (1 - progress)
 	for i, band in v.Wind do
 		band.Beam.Enabled = i <= v.WindBands and progress < 1
@@ -423,6 +434,57 @@ local function updateWind(v: Visual, dt: number)
 			band.Beam.Width0 = width * wind.TailWidth
 			band.Beam.Width1 = width
 		end
+	end
+end
+
+local function gust(v: Visual, inward: boolean, seconds: number)
+	v.WindIn, v.WindSeconds, v.WindAge = inward, seconds, 0
+end
+
+-- Clarão curto que some sozinho (forma nova e rebirth).
+local function flash(v: Visual)
+	local model = v.Model
+	if model == nil or v.CameraClose then
+		return
+	end
+	local light = Instance.new("Highlight")
+	light.FillColor = Color3.new(1, 1, 1)
+	light.FillTransparency = 0.2
+	light.OutlineTransparency = 1
+	light.DepthMode = Enum.HighlightDepthMode.Occluded
+	light.Parent = model
+	local tween = TweenService:Create(light, TweenInfo.new(evolveFx.Flash), { FillTransparency = 1 })
+	tween.Completed:Once(function()
+		light:Destroy()
+	end)
+	tween:Play()
+end
+
+-- Nível mudou: EVOLVE anima (a forma nova só aparece em ChangeAt); rebirth dá o clarão; o resto troca na hora.
+local function updateLevel(v: Visual, level: number, rebirths: number, dt: number)
+	if v.EvolveSeconds > 0 then
+		v.EvolveAge += dt
+		if level < v.Level or v.EvolveAge >= v.EvolveSeconds then
+			v.EvolveAge, v.EvolveSeconds = 0, 0
+		end
+	end
+	if level == v.Level and rebirths == v.Rebirths then
+		return
+	end
+	local changesForm = v.Level > 0 and Tornado.form(cfg, level) ~= Tornado.form(cfg, v.Level)
+	if v.EvolveSeconds == 0 and v.EvolveAge == 0 and v.Level > 0 and level > v.Level and rebirths == v.Rebirths then
+		v.EvolveSeconds = Tornado.evolveSeconds(cfg, v.Level, level)
+		gust(v, true, v.EvolveSeconds * evolveFx.ChangeAt)
+	end
+	local animating = v.EvolveSeconds > 0
+	if animating and changesForm and v.EvolveAge < v.EvolveSeconds * evolveFx.ChangeAt then
+		return -- ainda juntando vento
+	end
+	local reborn = v.Rebirths >= 0 and rebirths > v.Rebirths
+	resize(v, level, rebirths)
+	if reborn or (changesForm and animating) then
+		flash(v)
+		gust(v, false, wind.Seconds)
 	end
 end
 
@@ -485,13 +547,12 @@ local function update(dt: number)
 		v.Root.Parent = container()
 		local level = (player:GetAttribute("TornadoLevel") :: number?) or 1
 		local rebirths = (player:GetAttribute("Rebirths") :: number?) or 0
-		if level ~= v.Level or rebirths ~= v.Rebirths then
-			resize(v, level, rebirths)
-		end
+		updateLevel(v, level, rebirths, dt)
 		local r, form = v.Radius, v.Form
 		local h = r * form.Height
 		local bend = r * form.Bend
-		v.Angle = (v.Angle + dt * form.Spin * math.pi * 2) % (math.pi * 2)
+		local spin = if v.EvolveSeconds > 0 then evolveFx.SpinBoost else 1
+		v.Angle = (v.Angle + dt * form.Spin * spin * math.pi * 2) % (math.pi * 2)
 		v.Root.CFrame = CFrame.new(root.Position - Vector3.new(0, TornadoConfig.RootToGround, 0))
 		if v.Model then
 			v.Model:PivotTo(v.Root.CFrame * CFrame.Angles(0, v.Angle, 0))
@@ -531,7 +592,7 @@ local function onBurstFx(userId: number, dx: number, dz: number)
 	local v = player and visuals[player]
 	if v then
 		v.WindDirection = Vector3.new(dx, 0, dz)
-		v.WindAge = 0
+		gust(v, false, wind.Seconds)
 	end
 end
 
@@ -748,7 +809,7 @@ local function buildHud()
 			end
 		end
 		rows[1].Text = `REBIRTHS  {r}  >>  {r + 1}`
-		rows[2].Text = `XP  x{1 + cfg.Rebirth.XpBonus * r}  >>  x{1 + cfg.Rebirth.XpBonus * (r + 1)}`
+		rows[2].Text = `XP  x{Tornado.xpBonus(cfg, r)}  >>  x{Tornado.xpBonus(cfg, r + 1)}`
 		rows[3].Text = `DAMAGE  x{1 + cfg.Rebirth.DamageBonus * r}  >>  x{1 + cfg.Rebirth.DamageBonus * (r + 1)}`
 		rows[4].Text = `MAX LEVEL  {fromMax}  >>  {toMax}`
 			.. (if unlocked then `   NEW: {string.upper(unlocked)}` else "")
@@ -776,7 +837,7 @@ local function buildHud()
 		ask(Remotes.Names.Functions.Rebirth)
 	end)
 
-	-- Botão logo abaixo da barra: EVOLVE (sobe 1 nível) ou, no máximo, REBIRTH! (abre a janela). Tecla R.
+	-- Botão logo abaixo da barra: EVOLVE (sobe os níveis pagos) ou, no máximo, REBIRTH! (abre a janela). Tecla R.
 	local actionHolder, actionHit, actionFace = Style.button("Evolve", Style.Themes.Green, "R  EVOLVE")
 	actionHolder.AnchorPoint = Vector2.new(0.5, 0)
 	actionHolder.Position = UDim2.new(0.5, 0, 0, 143)
@@ -815,7 +876,7 @@ local function buildHud()
 		currentPortrait(form)
 		nextPortrait(if level < maxLevel then cfg.Forms[Tornado.form(cfg, level + 1)].Name else nil)
 		label.Text = `{short(xp)} / {short(need)} XP`
-		caption.Text = `{form}   Nv. {level}   {1 + cfg.Rebirth.XpBonus * rebirths}× XP`
+		caption.Text = `{form}   Nv. {level}   {Tornado.xpBonus(cfg, rebirths)}× XP`
 		fill.Size = UDim2.fromScale(ratio, 1)
 		local evolve = Tornado.canEvolve(cfg, level, xp, rebirths)
 		local rebirth = Tornado.canRebirth(cfg, level, xp, rebirths)

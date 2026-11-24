@@ -9,3 +9,7 @@ sourcemap.json
 check-log.txt
 mensagem-commit.txt
 fwjelaa-vault-0.1.0-new/
+
+# Temporários (perfil de navegador: nunca enviar)
+.ui-export-work/
+.hp-work/

@@ -5,7 +5,7 @@
 --   * Skills (Q) ficam no SkillService, que usa PvpService.knock para mover outros jogadores.
 --   * Morte: perde a barra de XP, ou um nível se já estava vazia. Quem matou ganha XP. O MatchService renasce o
 --     jogador no ponto de nascimento; ao nascer ganha escudo (ShieldUntil, hora do servidor).
---   * Escudo de 2 s ao subir de nível. Sem área segura (decisão do usuário: o mapa separa pequenos e grandes).
+--   * Escudo na animação do EVOLVE: não leva nem dá dano/empurrão em jogadores, não cura. Sem área segura (decisão do usuário: o mapa separa pequenos e grandes).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,7 +26,7 @@ local PvpService = {}
 local pcfg = PvpConfig :: Pvp.Config
 local tcfg = TornadoConfig :: Tornado.Config
 
-type State = { LastHit: number, NextBurst: number }
+type State = { LastHit: number, NextBurst: number, EvolveUntil: number }
 
 local states: { [Player]: State } = {}
 
@@ -66,6 +66,12 @@ local function shield(player: Player, seconds: number)
 	player:SetAttribute("ShieldUntil", math.max(current, now() + seconds))
 end
 
+-- Na animação do EVOLVE: protegido, mas sem atacar jogadores.
+local function evolving(player: Player): boolean
+	local state = states[player]
+	return state ~= nil and state.EvolveUntil > now()
+end
+
 local function applyDeath(player: Player): (number?, number?)
 	player:SetAttribute("Hp", 0)
 	local entry = PlayerData.get(player)
@@ -92,9 +98,9 @@ local function kill(victim: Player, killer: Player)
 	end
 end
 
--- Dano de PvP. Recusa se alguém está morto ou se a vítima tem escudo.
+-- Dano de PvP. Recusa se alguém está morto, se a vítima tem escudo ou se quem ataca está evoluindo.
 local function damage(victim: Player, attacker: Player, amount: number)
-	if victim == attacker or not alive(victim) or not alive(attacker) or shielded(victim) then
+	if victim == attacker or not alive(victim) or not alive(attacker) or shielded(victim) or evolving(attacker) then
 		return
 	end
 	attacker:SetAttribute("ShieldUntil", 0) -- atacar tira o próprio escudo
@@ -108,8 +114,8 @@ local function damage(victim: Player, attacker: Player, amount: number)
 end
 
 -- Empurra/puxa a vítima: o cliente dela move o próprio tornado (dono da física). Escudo protege.
-function PvpService.knock(victim: Player, vx: number, vz: number, seconds: number)
-	if alive(victim) and not shielded(victim) then
+function PvpService.knock(victim: Player, attacker: Player, vx: number, vz: number, seconds: number)
+	if alive(victim) and not shielded(victim) and not evolving(attacker) then
 		Remotes.event(Remotes.Names.Events.Knock):FireClient(victim, vx, vz, seconds)
 	end
 end
@@ -171,7 +177,7 @@ local function onBurst(player: Player, dx: any, dz: any)
 end
 
 local function onPlayer(player: Player)
-	states[player] = { LastHit = -math.huge, NextBurst = 0 }
+	states[player] = { LastHit = -math.huge, NextBurst = 0, EvolveUntil = 0 }
 	local lastLevel = levelOf(player)
 	local function onCharacter(character: Model)
 		local maxHp = Pvp.maxHp(pcfg, levelOf(player))
@@ -201,7 +207,9 @@ local function onPlayer(player: Player)
 			player:SetAttribute("Hp", Pvp.rescale(hp, oldMax, newMax))
 		end
 		if level > lastLevel then
-			shield(player, pcfg.Shield.LevelUp)
+			local seconds = Tornado.evolveSeconds(tcfg, lastLevel, level)
+			states[player].EvolveUntil = now() + seconds
+			shield(player, seconds)
 		end
 		lastLevel = level
 	end)

@@ -7,7 +7,7 @@ local tcfg = require("../src/shared/Config/TornadoConfig")
 return function(t)
 	t.test("vida cresce com o nível", function()
 		t.near(Pvp.maxHp(cfg, 1), cfg.Hp.Base)
-		for level = 2, tcfg.MaxLevel do
+		for level = 2, tcfg.MaxLevels[#tcfg.MaxLevels] do
 			t.truthy(Pvp.maxHp(cfg, level) > Pvp.maxHp(cfg, level - 1))
 		end
 	end)
@@ -15,7 +15,7 @@ return function(t)
 	t.test("morte com barra vazia perde exatamente um nível e nunca cai abaixo de 1", function()
 		t.equal(Pvp.levelAfterDeath(8, 0), 7)
 		t.equal(Pvp.levelAfterDeath(1, 0), 1)
-		t.equal(Pvp.levelAfterDeath(tcfg.MaxLevel, 0), tcfg.MaxLevel - 1)
+		t.equal(Pvp.levelAfterDeath(tcfg.MaxLevels[#tcfg.MaxLevels], 0), tcfg.MaxLevels[#tcfg.MaxLevels] - 1)
 	end)
 
 	t.test("morte com qualquer XP acumulado mantém o nível", function()
@@ -60,12 +60,12 @@ return function(t)
 	t.test(
 		"PvP equilibrado: mesmo nível = mesma vida e mesmo dano; 1 nível de diferença não decide sozinho",
 		function()
-			for level = 1, tcfg.MaxLevel do
+			for level = 1, tcfg.MaxLevels[#tcfg.MaxLevels] do
 				local hp = Pvp.maxHp(cfg, level)
 				local hit = cfg.Burst.HpShare * Pvp.maxHp(cfg, level)
 				t.equal(math.ceil(hp / hit), math.ceil(1 / cfg.Burst.HpShare)) -- igual contra igual: mesmas rajadas
 			end
-			for level = 1, tcfg.MaxLevel - 1 do
+			for level = 1, tcfg.MaxLevels[#tcfg.MaxLevels] - 1 do
 				local small = math.ceil(Pvp.maxHp(cfg, level + 1) / (cfg.Burst.HpShare * Pvp.maxHp(cfg, level)))
 				local big = math.ceil(Pvp.maxHp(cfg, level) / (cfg.Burst.HpShare * Pvp.maxHp(cfg, level + 1)))
 				t.truthy(small - big <= 4) -- o menor precisa de no máximo 4 rajadas a mais

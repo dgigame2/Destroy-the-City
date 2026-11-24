@@ -36,7 +36,7 @@ return table.freeze({
 		ClaimDaily = "ClaimDaily", -- () -> sucesso
 		ClaimWeekly = "ClaimWeekly", -- () -> sucesso
 		Rebirth = "Rebirth", -- () -> sucesso (o servidor confere nível máximo, barra cheia e rebirths)
-		Evolve = "Evolve", -- () -> sucesso (sobe 1 nível com a barra cheia; o servidor confere)
+		Evolve = "Evolve", -- () -> sucesso (sobe todos os níveis pagos; o servidor confere)
 		Special = "Special", -- (dirX, dirZ) -> nome da skill ou nil (Q; o servidor confere vida, forma e recarga)
 		CreateParty = "CreateParty", -- (padIndex, {Map, Difficulty, Size}) -> (sucesso, motivo)
 		CancelParty = "CancelParty", -- (padIndex) -> () botão BACK

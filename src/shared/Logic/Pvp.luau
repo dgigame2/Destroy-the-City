@@ -15,7 +15,7 @@ export type Config = {
 		HpShare: number,
 		CitySeconds: number,
 	},
-	Shield: { Spawn: number, LevelUp: number },
+	Shield: { Spawn: number },
 	Regen: { Delay: number, Share: number },
 	KillXpShare: number,
 }

@@ -1,8 +1,8 @@
 --!strict
 -- Matemática do tornado (pura): XP por nível, evoluir, tamanho, dano, velocidade, forma e rebirth.
 -- Números em Config/TornadoConfig.
--- Subir de nível é na mão (EVOLVE): o XP junta além da barra e o jogador evolui um nível por vez.
--- Nível máximo = BaseMaxLevel + rebirths, até MaxLevel. No máximo, com a barra cheia, libera o rebirth.
+-- Subir de nível é na mão (EVOLVE): o XP junta além da barra e um EVOLVE sobe todos os níveis pagos.
+-- Nível máximo = MaxLevels[rebirths + 1]. No máximo, com a barra cheia, libera o rebirth.
 
 local Tornado = {}
 
@@ -22,37 +22,41 @@ export type Form = {
 }
 
 export type Config = {
-	BaseMaxLevel: number,
-	MaxLevel: number,
-	XpBase: number,
-	XpGrowth: number,
+	MaxLevels: { number },
+	Xp: { number },
 	PropXp: number,
+	Evolve: { Seconds: number, FormSeconds: number },
 	Radius: { Base: number, Step: number },
 	Dps: { Base: number, Growth: number },
 	WalkSpeed: { Base: number, Step: number },
-	Rebirth: { XpBonus: number, DamageBonus: number },
+	Rebirth: { XpFactor: number, DamageBonus: number },
 	Forms: { Form },
 }
 
 -- XP para sair do nível `level` (no nível máximo a barra não enche mais).
 function Tornado.xpToNext(cfg: Config, level: number): number
-	return cfg.XpBase * cfg.XpGrowth ^ (level - 1)
+	return cfg.Xp[level]
 end
 
 -- Nível máximo com estes rebirths.
 function Tornado.maxLevel(cfg: Config, rebirths: number): number
-	return math.min(cfg.BaseMaxLevel + rebirths, cfg.MaxLevel)
+	return cfg.MaxLevels[math.min(rebirths + 1, #cfg.MaxLevels)]
 end
 
 -- Quantos rebirths existem (depois disso o nível máximo não sobe mais).
 function Tornado.maxRebirths(cfg: Config): number
-	return cfg.MaxLevel - cfg.BaseMaxLevel
+	return #cfg.MaxLevels - 1
+end
+
+-- Multiplicador de XP com estes rebirths (1, 2, 4, 8...).
+function Tornado.xpBonus(cfg: Config, rebirths: number): number
+	return cfg.Rebirth.XpFactor ^ rebirths
 end
 
 -- Soma o XP (o nível não muda sozinho). Só no fim de tudo (teto e sem rebirth) a barra para cheia.
 function Tornado.addXp(cfg: Config, level: number, xp: number, gain: number, rebirths: number): number
 	xp += gain
-	if level >= cfg.MaxLevel and rebirths >= Tornado.maxRebirths(cfg) then
+	if level >= Tornado.maxLevel(cfg, rebirths) and rebirths >= Tornado.maxRebirths(cfg) then
 		xp = math.min(xp, Tornado.xpToNext(cfg, level))
 	end
 	return xp
@@ -63,17 +67,21 @@ function Tornado.canEvolve(cfg: Config, level: number, xp: number, rebirths: num
 	return level < Tornado.maxLevel(cfg, rebirths) and xp >= Tornado.xpToNext(cfg, level)
 end
 
--- Sobe 1 nível gastando a barra (o que sobra continua). nil = não dá.
+-- Sobe todos os níveis que o XP paga, até o máximo (o que sobra continua). nil = não dá.
 function Tornado.evolve(cfg: Config, level: number, xp: number, rebirths: number): (number?, number?)
 	if not Tornado.canEvolve(cfg, level, xp, rebirths) then
 		return nil, nil
 	end
-	return level + 1, xp - Tornado.xpToNext(cfg, level)
+	repeat
+		xp -= Tornado.xpToNext(cfg, level)
+		level += 1
+	until not Tornado.canEvolve(cfg, level, xp, rebirths)
+	return level, xp
 end
 
 -- XP de um objeto destruído (props têm valor 0 e dão só PropXp), com o bônus dos rebirths.
 function Tornado.xpFor(cfg: Config, value: number, rebirths: number): number
-	return (value + cfg.PropXp) * (1 + cfg.Rebirth.XpBonus * rebirths)
+	return (value + cfg.PropXp) * Tornado.xpBonus(cfg, rebirths)
 end
 
 function Tornado.radius(cfg: Config, level: number): number
@@ -137,6 +145,11 @@ function Tornado.biggest(entries: { { Id: number, Level: number, Rebirths: numbe
 		end
 	end
 	return if best and not tied then best.Id else nil
+end
+
+-- Segundos da animação e da proteção ao subir de um nível para outro.
+function Tornado.evolveSeconds(cfg: Config, from: number, to: number): number
+	return if Tornado.form(cfg, from) == Tornado.form(cfg, to) then cfg.Evolve.Seconds else cfg.Evolve.FormSeconds
 end
 
 -- No nível máximo, com a barra cheia e ainda com rebirth sobrando.

@@ -85,10 +85,10 @@ local function zoneTick(a: Active, zone: Skills.Zone, dt: number)
 			if x == nil or z == nil then
 				x, z = a.DX, a.DZ
 			end
-			PvpService.knock(v.Player, (x :: number) * def.Pull, (z :: number) * def.Pull, KNOCK_SECONDS)
+			PvpService.knock(v.Player, a.Player, (x :: number) * def.Pull, (z :: number) * def.Pull, KNOCK_SECONDS)
 		end
 		if def.Drag then
-			PvpService.knock(v.Player, a.DX * def.Drag, a.DZ * def.Drag, KNOCK_SECONDS)
+			PvpService.knock(v.Player, a.Player, a.DX * def.Drag, a.DZ * def.Drag, KNOCK_SECONDS)
 		end
 	end
 end
