@@ -18,9 +18,8 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UiConfig = require(Shared.Config.UiConfig)
-local healthStyle = UiConfig.HealthBar
-local skillStyle = UiConfig.Skill
-local art = UiConfig.Art
+local hud = UiConfig.Hud
+local hudArt = UiConfig.HudArt
 local Pvp = require(Shared.Logic.Pvp)
 local PvpConfig = require(Shared.Config.PvpConfig)
 local Tornado = require(Shared.Logic.Tornado)
@@ -37,6 +36,7 @@ local pcfg = PvpConfig :: Pvp.Config
 local tcfg = TornadoConfig :: Tornado.Config
 local localPlayer = Players.LocalPlayer
 local nextBurst = 0
+local specialCooldown = 1 -- recarga da última skill usada (o preto da tecla)
 local nextSpecial = 0 -- só para mostrar a recarga; quem confere é o servidor
 local crownHolder: Frame? = nil
 local crownLabel: TextLabel? = nil
@@ -128,6 +128,7 @@ local function special()
 	end
 	local level = (localPlayer:GetAttribute("TornadoLevel") :: number?) or 1
 	local _, def = Skills.forForm(SkillConfig, Tornado.form(tcfg, level))
+	specialCooldown = def.Cooldown
 	nextSpecial = os.clock() + def.Cooldown
 end
 
@@ -164,6 +165,55 @@ local HP_COLOR = Color3.fromRGB(235, 70, 70)
 local LOCKED_COLOR = Color3.fromRGB(170, 175, 185)
 local SHIELD_COLOR = Color3.fromRGB(120, 200, 255)
 
+-- Mouse branco da tecla ATTACK (medidas do mockup).
+local function mouseIcon(parent: GuiObject): Frame
+	local w, h = 28, 37
+	local function piece(name: string, size: Vector2, pos: Vector2, color: Color3, z: number, to: GuiObject): Frame
+		local frame = Instance.new("Frame")
+		frame.Name = name
+		frame.Size = UDim2.fromOffset(size.X, size.Y)
+		frame.Position = UDim2.fromOffset(pos.X, pos.Y)
+		frame.BackgroundColor3 = color
+		frame.BorderSizePixel = 0
+		frame.ZIndex = z
+		frame.Parent = to
+		return frame
+	end
+	local black, white = Color3.fromRGB(22, 10, 36), Color3.new(1, 1, 1)
+	local body = piece("Mouse", Vector2.new(w, h), Vector2.zero, white, 7, parent)
+	body.AnchorPoint = Vector2.new(0.5, 0.5)
+	body.Position = UDim2.fromScale(0.5, 0.5)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = body
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 3
+	stroke.Color = black
+	stroke.Parent = body
+	piece("Split", Vector2.new(3, 17), Vector2.new(w / 2 - 1.5, 0), black, 9, body)
+	piece("Line", Vector2.new(w, 3), Vector2.new(0, 17), black, 9, body)
+	return body
+end
+
+-- Preto da recarga: cobre a tecla inteira e desce até sumir. Retorna quem atualiza (fração que falta, 0 a 1).
+local function cooldownCover(key: GuiObject): (number) -> ()
+	local cover = Instance.new("Frame")
+	cover.Name = "Cooldown"
+	cover.AnchorPoint = Vector2.new(0, 1)
+	cover.Position = UDim2.fromScale(0, 1)
+	cover.BackgroundColor3 = Color3.new(0, 0, 0)
+	cover.BackgroundTransparency = 0.35
+	cover.BorderSizePixel = 0
+	cover.ZIndex = 6
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 11)
+	corner.Parent = cover
+	cover.Parent = key
+	return function(fraction: number)
+		cover.Size = UDim2.fromScale(1, math.clamp(fraction, 0, 1))
+	end
+end
+
 local function buildHud(): () -> ()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "PvpHud"
@@ -171,42 +221,49 @@ local function buildHud(): () -> ()
 	gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
 
-	-- vida própria: embaixo no centro (onde ficava o UPGRADES do Destroy the City)
+	local touch = UserInputService.TouchEnabled
+	-- vida própria: embaixo no centro
 	local hpHolder = Instance.new("Frame")
 	hpHolder.Name = "Hp"
-	hpHolder.BackgroundColor3 = Color3.fromRGB(60, 15, 20)
-	hpHolder.BorderSizePixel = 0
+	hpHolder.BackgroundTransparency = 1
 	hpHolder.AnchorPoint = Vector2.new(0.5, 1)
-	hpHolder.Position = UDim2.new(0.5, healthStyle.HeartW / 4, 1, -healthStyle.Bottom)
-	hpHolder.Size = UDim2.fromOffset(healthStyle.Width, healthStyle.Height)
+	hpHolder.Size = UDim2.fromOffset(666, 84)
 	hpHolder.Parent = gui
+	local track = Style.art("Track", hudArt.HpTrack, UDim2.fromOffset(604, 62), 2)
+	track.Position = UDim2.fromOffset(62, 13)
+	track.Parent = hpHolder
 	local clip = Instance.new("Frame")
 	clip.Name = "Fill"
 	clip.BackgroundTransparency = 1
 	clip.ClipsDescendants = true
-	clip.ZIndex = 2
+	clip.Position = UDim2.fromOffset(71.5, 22.5)
+	clip.ZIndex = 3
 	clip.Parent = hpHolder
-	Style.art("FillArt", art.HpFill, UDim2.fromOffset(healthStyle.Width, healthStyle.Height), 2).Parent = clip
-	Style.art("Border", art.HpEmpty, UDim2.fromScale(1, 1), 3).Parent = hpHolder
-	local heart = Style.art("Heart", art.Heart, UDim2.fromOffset(healthStyle.HeartW, healthStyle.HeartH), 7)
-	heart.AnchorPoint = Vector2.new(0.5, 0.5)
-	heart.Position = UDim2.fromScale(0, 0.5)
-	heart.Parent = hpHolder
-	local hpText = Style.heavy("HpText", "", healthStyle.TextSize)
-	hpText.Position = UDim2.fromOffset(healthStyle.HeartW / 2, 0)
-	hpText.Size = UDim2.new(1, -healthStyle.HeartW / 2, 1, 0)
-	hpText.ZIndex = 6
-	hpText.Parent = hpHolder
+	Style.art("FillArt", hudArt.HpFill, UDim2.fromOffset(585, 43), 3).Parent = clip
+	Style.art("Heart", hudArt.Heart, UDim2.fromOffset(92, 84), 7).Parent = hpHolder
+	local hpText = Style.hudText(hpHolder, "HpText", 365, 42, 500, 41, 5)
 	local leader, crownFace = Style.panel("Crown", Style.Themes.Blue, 9)
-	leader.AnchorPoint = Vector2.new(0.5, 0)
+	leader.AnchorPoint = Vector2.new(0.5, 1)
 	leader.Size = UDim2.fromOffset(192, 28)
 	leader.Visible = false
 	local hpScale = Instance.new("UIScale")
 	hpScale.Parent = hpHolder
+	local keysScale = Instance.new("UIScale")
+	local keysHolder = Instance.new("Frame")
+	keysHolder.Name = "Keys"
+	keysHolder.BackgroundTransparency = 1
+	keysHolder.AnchorPoint = Vector2.new(1, 1)
+	keysHolder.Size = UDim2.fromOffset(226, 144)
+	keysHolder.Parent = gui
+	keysScale.Parent = keysHolder
 	local function fitHud()
-		local compact = gui.AbsoluteSize.Y < UiConfig.CompactHeight
-		hpScale.Scale = if compact then UiConfig.XpBar.CompactScale else 1
-		leader.Position = UDim2.new(0.5, 0, 0, if compact then -6 else 19)
+		local s = Style.hudScale(gui)
+		keysScale.Scale = s
+		keysHolder.Position = UDim2.new(1, -28 * s, 1, -20 * s)
+		hpScale.Scale = if touch then s * hud.TouchHp else s
+		hpHolder.Position = UDim2.new(0.5, 0, 1, -10)
+		-- líder: em cima da vida
+		leader.Position = UDim2.new(0.5, 0, 1, -16 - 84 * hpScale.Scale)
 	end
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitHud)
 	fitHud()
@@ -221,7 +278,6 @@ local function buildHud(): () -> ()
 	crownLabel = crown
 
 	-- botões junto do pulo (o pulo do Roblox fica no canto de baixo à direita)
-	local touch = UserInputService.TouchEnabled
 	if touch then
 		local holder, hit = Style.button("BurstButton", Style.Themes.Blue, "BLAST")
 		holder.AnchorPoint = Vector2.new(1, 1)
@@ -232,36 +288,57 @@ local function buildHud(): () -> ()
 			burst(cameraFlat())
 		end)
 	end
-	-- tecla + nome do lado; no toque, sem a letra e com o nome embaixo
-	local keySize = if touch then skillStyle.TouchKey else skillStyle.Key
-	local qHit, qText = Style.artButton("SpecialButton", art.Key, "", UDim2.fromOffset(keySize, keySize), 34)
-	qHit.AnchorPoint = Vector2.new(1, 1)
-	qHit.Position = if touch then UDim2.new(1, -130, 1, -112) else UDim2.new(1, -32 - skillStyle.NameW, 1, -24)
-	qHit.Parent = gui
+	-- PC: plaquinhas SKILL e ATTACK com a tecla roxa; toque: só o botão da skill, perto do pulo
+	local keySize = if touch then UDim2.fromOffset(hud.TouchKey.W, hud.TouchKey.H) else UDim2.fromOffset(68, 58)
+	local function plate(name: string, y: number): ImageLabel
+		local image = Style.art(name .. "Plate", hudArt.Plate, UDim2.fromOffset(226, 68), 4)
+		image.Position = UDim2.fromOffset(0, y)
+		image.Parent = keysHolder
+		local text = Style.hudText(image, name .. "Name", 151, 33, 134, 31, 4)
+		text.TextXAlignment = Enum.TextXAlignment.Left
+		text.Text = name
+		return image
+	end
+	local qHit, qText = Style.artButton("SpecialButton", hudArt.Key, "", keySize, 40)
+	qHit.AnchorPoint = if touch then Vector2.new(1, 1) else Vector2.new(0.5, 0.5)
+	qHit.Position = if touch then UDim2.new(1, -130, 1, -112) else UDim2.fromOffset(41, 33)
+	qHit.Parent = if touch then gui else plate("SKILL", 0)
 	qHit.Activated:Connect(special)
-	local qName = Style.heavy("SkillName", "", if touch then 15 else 20)
-	qName.Size = UDim2.fromOffset(skillStyle.NameW, 24)
+	local skillCover = cooldownCover(qHit)
+	RunService.RenderStepped:Connect(function()
+		skillCover((nextSpecial - os.clock()) / specialCooldown)
+	end)
 	if touch then
+		local qName = Style.heavy("SkillName", "SKILL", 15)
 		qName.AnchorPoint = Vector2.new(0.5, 0)
 		qName.Position = UDim2.new(0.5, 0, 1, 2)
+		qName.Size = UDim2.fromOffset(90, 24)
+		qName.Parent = qHit
 	else
-		qName.AnchorPoint = Vector2.new(0, 0.5)
-		qName.Position = UDim2.new(1, 8, 0.5, 0)
-		qName.TextXAlignment = Enum.TextXAlignment.Left
+		-- só o lembrete do clique (não é botão: o clique passa para o ataque)
+		local click = Style.art("AttackKey", hudArt.Key, keySize, 6)
+		click.AnchorPoint = Vector2.new(0.5, 0.5)
+		click.Position = UDim2.fromOffset(41, 33)
+		click.Parent = plate("ATTACK", 75)
+		local icon = mouseIcon(click)
+		local attackCover = cooldownCover(click)
+		local attackTime = Style.hudText(click, "Time", 34, 28, 68, 32, 4)
+		RunService.RenderStepped:Connect(function()
+			local left = nextBurst - os.clock()
+			attackCover(left / pcfg.Burst.Cooldown)
+			icon.Visible = left <= 0
+			attackTime.Text = if left > 0 then string.format("%.1f", left) else ""
+		end)
 	end
-	qName.Parent = qHit
 
 	return function()
 		local ratio = ratioOf(localPlayer)
-		clip.Size = UDim2.fromScale(ratio, 1)
+		clip.Size = UDim2.fromOffset(585 * ratio, 43)
 		local hp = math.ceil((localPlayer:GetAttribute("Hp") :: number?) or 0)
 		hpText.Text = `HP {hp}/{math.ceil((localPlayer:GetAttribute("MaxHp") :: number?) or 0)}`
-		local level = (localPlayer:GetAttribute("TornadoLevel") :: number?) or 1
 		local remaining = nextSpecial - os.clock()
-		local _, def = Skills.forForm(SkillConfig, Tornado.form(tcfg, level))
-		qName.Text = string.upper(def.Name)
 		qText.Text = if remaining > 0 then tostring(math.ceil(remaining)) elseif touch then "" else "Q"
-		qHit.ImageColor3 = if remaining > 0 then Color3.fromRGB(110, 110, 110) else Color3.new(1, 1, 1)
+		qText.Position = UDim2.fromOffset(0, if remaining > 0 then 0 else -2) -- o rabo do Q desce: sobe para o centro
 	end
 end
 
@@ -386,6 +463,9 @@ local function updateBubbles()
 end
 
 function PvpClient.init()
+	if UserInputService.MouseEnabled then
+		UserInputService.MouseIcon = hudArt.Crosshair
+	end
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed then
 			return

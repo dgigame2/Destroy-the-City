@@ -43,6 +43,16 @@ function Tornado.maxLevel(cfg: Config, rebirths: number): number
 	return cfg.MaxLevels[math.min(rebirths + 1, #cfg.MaxLevels)]
 end
 
+-- Menor quantidade de rebirths que deixa chegar neste nível.
+function Tornado.rebirthsFor(cfg: Config, level: number): number
+	for i, max in cfg.MaxLevels do
+		if max >= level then
+			return i - 1
+		end
+	end
+	return Tornado.maxRebirths(cfg)
+end
+
 -- Quantos rebirths existem (depois disso o nível máximo não sobe mais).
 function Tornado.maxRebirths(cfg: Config): number
 	return #cfg.MaxLevels - 1

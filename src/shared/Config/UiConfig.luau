@@ -4,39 +4,45 @@
 -- Todo botão tem pelo menos 88 de altura: na menor escala (0.5) continua com 44px (tamanho do polegar).
 
 return table.freeze({
-	-- Arte do Figma do usuário (PNGs em assets/ui, enviados em 23/11)
-	Art = table.freeze({
-		Heart = "rbxassetid://102941635382190",
-		HpEmpty = "rbxassetid://74782842015537",
-		HpFill = "rbxassetid://137272056114928",
-		XpFill = "rbxassetid://119036340647892",
-		XpBorder = "rbxassetid://140608159415551",
-		WindLeft = "rbxassetid://103159771547413",
-		WindRight = "rbxassetid://83154149341418",
-		Key = "rbxassetid://101055978646694",
-		ButtonYellow = "rbxassetid://140726203346372",
-		ButtonGreen = "rbxassetid://125606905254179",
-		RowPurple = "rbxassetid://84178224709026",
-		RowCyan = "rbxassetid://101312940541994",
-		RowRed = "rbxassetid://86019228058960",
-		RowBlue = "rbxassetid://124336819155847",
-		MenuBack = "rbxassetid://78590297022569",
-		MenuTitle = "rbxassetid://95280659397215",
-		Close = "rbxassetid://117597498739030",
+	-- HUD igual ao mockup de 23/11 (peças em assets/ui/hud, geradas por gerar.py). Medidas em px do mockup
+	-- (altura Ref); Style.hudScale converte para a tela.
+	Hud = table.freeze({
+		Ref = 1136,
+		MinScale = 0.54, -- EVOLVE com 44 px de altura no celular
+		MaxScale = 1.3,
+		XpScale = 0.8, -- painel de XP menor que o mockup (pedido do usuário: poluir menos a tela)
+		-- círculos: giro dos raios (graus/s), brilho que pulsa, e a força extra quando a forma muda (Burst some em BurstSeconds)
+		Ring = table.freeze({ Spin = 15, Pulse = 1.2, SwirlAlpha = 0.65, Burst = 8, BurstSeconds = 0.8 }),
+		W = 958,
+		H = 191,
+		Top = 16, -- px do mockup até o topo da TELA (faixa da barra do Roblox)
+		TouchKey = table.freeze({ W = 84, H = 72 }),
+		TouchHp = 0.75, -- a vida encolhe no toque (área do analógico)
 	}),
-	HealthBar = table.freeze({ Width = 264, Height = 32, HeartW = 64, HeartH = 56, Bottom = 24, TextSize = 20 }),
-	XpBar = table.freeze({
-		W = 420,
-		H = 49,
-		Top = 69,
-		CompactTop = 24,
-		CompactScale = 0.75,
-		Ring = 84,
-		CaptionW = 350,
-		CaptionH = 32,
-		TextSize = 24,
+	HudArt = table.freeze({
+		Panel = "rbxassetid://115578309678110",
+		RingLeft = "rbxassetid://108263855239503",
+		RingRight = "rbxassetid://97923442195355",
+		RingSwirl = "rbxassetid://97740097690893",
+		RingGlow = "rbxassetid://102905552193226",
+		XpTrack = "rbxassetid://87259960699244",
+		XpFill = "rbxassetid://136106324487930",
+		HpTrack = "rbxassetid://91383017122424",
+		HpFill = "rbxassetid://130873424649941",
+		Evolve = "rbxassetid://130753846998458",
+		KeyR = "rbxassetid://95854211948976",
+		Plate = "rbxassetid://133994633437495",
+		Key = "rbxassetid://111658632518800",
+		Heart = "rbxassetid://139146450900812",
+		Crosshair = "rbxassetid://138251780391330",
+		Window = "rbxassetid://127237472141539",
+		WindowTitle = "rbxassetid://126553752480222",
+		WindowClose = "rbxassetid://78354882625589",
+		RowPurple = "rbxassetid://114234416789974",
+		RowCyan = "rbxassetid://135465091963320",
+		RowRed = "rbxassetid://108791477376582",
+		RowBlue = "rbxassetid://113494820052116",
 	}),
-	Skill = table.freeze({ Key = 62, NameW = 190, TouchKey = 72 }),
 	RebirthMenu = table.freeze({ W = 440, H = 373 }),
 	DesignWidth = 1280,
 	DesignHeight = 720,

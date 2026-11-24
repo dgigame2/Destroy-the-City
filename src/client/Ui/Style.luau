@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PaletteConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.PaletteConfig)
 local IconConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.IconConfig)
+local UiConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.UiConfig)
 
 local Style = {}
 
@@ -165,7 +166,7 @@ function Style.label(name: string, text: string, textSize: number?): TextLabel
 	return label
 end
 
--- Imagem da arte do usuário (UiConfig.Art), esticada no tamanho dado.
+-- Imagem da arte do HUD (UiConfig.HudArt), esticada no tamanho dado.
 function Style.art(name: string, id: string, size: UDim2, zIndex: number): ImageLabel
 	local image = Instance.new("ImageLabel")
 	image.Name = name
@@ -174,6 +175,30 @@ function Style.art(name: string, id: string, size: UDim2, zIndex: number): Image
 	image.Size = size
 	image.ZIndex = zIndex
 	return image
+end
+
+-- Escala do HUD do mockup (UiConfig.Hud) para o tamanho da ScreenGui.
+function Style.hudScale(gui: ScreenGui): number
+	local hud = UiConfig.Hud
+	local size = gui.AbsoluteSize
+	local wanted = math.clamp((size.Y + UiConfig.TopbarInset) / hud.Ref, hud.MinScale, hud.MaxScale)
+	return math.max(math.min(wanted, (size.X - 24) / hud.W), 0.1)
+end
+
+-- Texto do HUD do mockup: posição do CENTRO em px do mockup (ou da ponta, com alinhamento).
+function Style.hudText(parent: GuiObject, name: string, x: number, y: number, w: number, size: number, stroke: number)
+	local label = Style.heavy(name, "", size)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromOffset(x, y)
+	label.Size = UDim2.fromOffset(w, size)
+	label.ZIndex = 9
+	local outline = label:FindFirstChildOfClass("UIStroke")
+	if outline then
+		outline.Thickness = stroke
+		outline.Color = Color3.fromRGB(8, 14, 30)
+	end
+	label.Parent = parent
+	return label
 end
 
 -- Texto da UI nova: Montserrat grossa, branca, com contorno preto.

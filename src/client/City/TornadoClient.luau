@@ -7,6 +7,7 @@
 --   * Barra de XP do jogador local ("LV 12/15 · forma · XP/precisa") + botão EVOLVE / REBIRTH! (tecla R)
 --     e a janela de confirmação do rebirth.
 
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -21,8 +22,8 @@ local ElementFxConfig = require(Shared.Config.ElementFxConfig)
 local Remotes = require(Shared.Remotes)
 
 local UiConfig = require(Shared.Config.UiConfig)
-local art = UiConfig.Art
-local xpBar = UiConfig.XpBar
+local hud = UiConfig.Hud
+local hudArt = UiConfig.HudArt
 local menu = UiConfig.RebirthMenu
 
 local Style = require(script.Parent.Parent.Ui.Style)
@@ -603,75 +604,68 @@ end
 
 -- ===== barra de XP =====
 
-local function xpSurface(parent: GuiObject, name: string, radius: UDim, colors: { Color3 }, layer: number)
-	local frame = Instance.new("Frame")
-	frame.Name = name
-	frame.BackgroundColor3 = Color3.new(1, 1, 1)
-	frame.BorderSizePixel = 0
-	frame.ZIndex = layer
-	frame.Parent = parent
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = radius
-	corner.Parent = frame
-	local keys = {}
-	for i, color in colors do
-		table.insert(keys, ColorSequenceKeypoint.new((i - 1) / (#colors - 1), color))
-	end
-	local gradient = Instance.new("UIGradient")
-	gradient.Color = ColorSequence.new(keys)
-	gradient.Rotation = 90
-	gradient.Parent = frame
-	return frame
-end
-
-local navy = Color3.fromRGB(0, 0, 0)
-local cyan = { Color3.fromRGB(120, 255, 255), Color3.fromRGB(20, 190, 230) }
+-- Círculo do tornado atual (esquerda) e da próxima forma (direita); medidas do mockup.
 local function portrait(parent: Frame, side: number)
-	local ring = xpSurface(parent, if side == 0 then "CurrentRing" else "NextRing", UDim.new(0.5, 0), cyan, 6)
+	local dia = if side == 0 then 156 else 190
+	local ring = Style.art(
+		if side == 0 then "CurrentRing" else "NextRing",
+		if side == 0 then hudArt.RingLeft else hudArt.RingRight,
+		UDim2.fromOffset(dia, dia),
+		6
+	)
 	ring.AnchorPoint = Vector2.new(0.5, 0.5)
-	ring.Position = UDim2.fromScale(side, 0.5)
-	ring.Size = UDim2.fromOffset(xpBar.Ring, xpBar.Ring)
-	local outline = Instance.new("UIStroke")
-	outline.Thickness = 3
-	outline.Color = navy
-	outline.Parent = ring
+	ring.Position = if side == 0 then UDim2.fromOffset(78, 99) else UDim2.fromOffset(863, 95)
+	ring.Parent = parent
+	-- camadas animadas atrás do tornado: raios girando e brilho pulsando
+	local function layer(name: string, id: string): ImageLabel
+		local image = Style.art(name, id, UDim2.new(1, -29, 1, -29), 6)
+		image.AnchorPoint = Vector2.new(0.5, 0.5)
+		image.Position = UDim2.fromScale(0.5, 0.5)
+		image.Parent = ring
+		return image
+	end
+	local swirl = layer("Swirl", hudArt.RingSwirl)
+	local glow = layer("Glow", hudArt.RingGlow)
+	local changedAt = -math.huge
+	RunService.RenderStepped:Connect(function(dt)
+		local ringFx = hud.Ring
+		local now = os.clock()
+		local burst = math.clamp(1 - (now - changedAt) / ringFx.BurstSeconds, 0, 1)
+		local pulse = 0.5 + 0.5 * math.sin(now * ringFx.Pulse)
+		swirl.Rotation = (swirl.Rotation + ringFx.Spin * (1 + ringFx.Burst * burst) * dt) % 360
+		swirl.ImageTransparency = ringFx.SwirlAlpha + 0.12 * (1 - pulse) - 0.3 * burst
+		local size = 0.8 + 0.2 * pulse
+		glow.Size = UDim2.new(size, -29 * size, size, -29 * size)
+		local strength = if side == 0 then 0.3 else 0.75 -- a Breeze é branca: menos brilho atrás dela
+		glow.ImageTransparency = 1 - math.min(strength * (0.7 + 0.3 * pulse) + burst, 1)
+	end)
 	local view = Instance.new("ViewportFrame")
 	view.Name = if side == 0 then "CurrentForm" else "NextForm"
 	view.AnchorPoint = Vector2.new(0.5, 0.5)
 	view.Position = UDim2.fromScale(0.5, 0.5)
-	view.Size = UDim2.new(1, -12, 1, -12)
-	view.BackgroundColor3 = Color3.fromRGB(181, 232, 255)
-	view.BorderSizePixel = 0
+	view.Size = UDim2.new(1, -32, 1, -32)
+	view.BackgroundTransparency = 1
 	view.ZIndex = 7
 	view.Parent = ring
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0.5, 0)
 	corner.Parent = view
-	outline:Clone().Parent = view
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 32
 	camera.Parent = view
 	view.CurrentCamera = camera
-	view.Ambient = Color3.fromRGB(205, 215, 230)
-	if side == 1 then
-		view.Ambient = Color3.new(0, 0, 0)
-		view.LightColor = Color3.new(0, 0, 0)
-	end
+	local light = view.LightColor
 	local displayed: Model? = nil
-	local unlock = Style.heavy("Unlock", "", 18)
-	unlock.AnchorPoint = Vector2.new(0.5, 0)
-	unlock.Position = UDim2.new(0.5, 0, 1, 2)
-	unlock.Size = UDim2.fromOffset(90, 18)
-	unlock.ZIndex = 9
-	unlock.Parent = ring
-	return function(name: string?, note: string?)
-		unlock.Text = note or ""
+	return function(name: string?, silhouette: boolean?)
+		view.Ambient = if silhouette then Color3.new(0, 0, 0) else Color3.fromRGB(205, 215, 230)
+		view.LightColor = if silhouette then Color3.new(0, 0, 0) else light
 		ring.Visible = name ~= nil
 		if not name or (displayed and displayed.Name == name) then
 			return
 		end
 		if displayed then
 			displayed:Destroy()
+			changedAt = os.clock()
 		end
 		displayed = VisualModels.clone((name:gsub(" ", "_")))
 		if displayed then
@@ -696,67 +690,73 @@ local function buildHud()
 	holder.Name = "XpBar"
 	holder.BackgroundTransparency = 1
 	holder.AnchorPoint = Vector2.new(0.5, 0)
-	holder.Position = UDim2.new(0.5, 0, 0, xpBar.Top)
-	holder.Size = UDim2.fromOffset(xpBar.W, xpBar.H)
+	holder.Size = UDim2.fromOffset(hud.W, hud.H)
 	holder.Parent = gui
 	local scale = Instance.new("UIScale")
 	scale.Parent = holder
-	local keyboard = UserInputService.KeyboardEnabled
-	local actionHit, actionText = Style.artButton("Evolve", art.ButtonGreen, "", UDim2.fromOffset(220, 54), 26)
-	actionHit.AnchorPoint = Vector2.new(0.5, 0)
-	actionHit.Visible = false
-	actionHit.Parent = gui
 	local function fitBar()
-		local compact = gui.AbsoluteSize.Y < UiConfig.CompactHeight
-		local most = if compact then xpBar.CompactScale else 1
-		scale.Scale = math.clamp((gui.AbsoluteSize.X - 24) / (xpBar.W + xpBar.Ring), 0.1, most)
-		local top = if compact then xpBar.CompactTop else xpBar.Top
-		holder.Position = UDim2.new(0.5, 0, 0, top)
-		actionHit.Position = UDim2.new(0.5, 0, 0, top + (xpBar.H + xpBar.CaptionH) * scale.Scale + 8)
+		-- menor que o mockup, mas o EVOLVE nunca abaixo de 44 px
+		local full = Style.hudScale(gui)
+		scale.Scale = math.min(full, math.max(full * hud.XpScale, hud.MinScale))
+		-- sobe para a faixa da barra do Roblox só se não encostar nos botões dela
+		local free = GuiService.TopbarInset
+		local half = hud.W / 2 * scale.Scale + UiConfig.Gap
+		local center = gui.AbsolutePosition.X + gui.AbsoluteSize.X / 2
+		local fits = free.Width > 0 and center - half >= free.Min.X and center + half <= free.Max.X
+		holder.Position =
+			UDim2.new(0.5, 0, 0, if fits then hud.Top * scale.Scale - UiConfig.TopbarInset else UiConfig.Gap)
 	end
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitBar)
+	GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(fitBar)
 	fitBar()
-	local track = Instance.new("Frame")
-	track.Name = "Track"
-	track.BackgroundColor3 = Color3.fromRGB(20, 50, 80)
-	track.BorderSizePixel = 0
-	track.Size = UDim2.fromScale(1, 1)
-	track.ZIndex = 2
-	track.Parent = holder
+	local function place(name: string, id: string, x: number, y: number, w: number, h: number, z: number): ImageLabel
+		local image = Style.art(name, id, UDim2.fromOffset(w, h), z)
+		image.Position = UDim2.fromOffset(x, y)
+		image.Parent = holder
+		return image
+	end
+	place("Panel", hudArt.Panel, 123, 2, 676, 174, 2)
+	place("XpTrack", hudArt.XpTrack, 153, 64, 616, 62, 3)
 	local clip = Instance.new("Frame")
 	clip.Name = "Fill"
 	clip.BackgroundTransparency = 1
 	clip.ClipsDescendants = true
-	clip.ZIndex = 3
+	clip.Position = UDim2.fromOffset(161, 72)
+	clip.ZIndex = 4
 	clip.Parent = holder
-	local fill = Style.art("FillArt", art.XpFill, UDim2.fromOffset(xpBar.W, xpBar.H), 3)
-	fill.Parent = clip
-	Style.art("Border", art.XpBorder, UDim2.fromScale(1, 1), 4).Parent = holder
-	for i, id in { art.WindLeft, art.WindRight } do
-		local windArt = Style.art("Wind" .. i, id, UDim2.fromOffset(100, 57), 5)
-		windArt.AnchorPoint = Vector2.new(0.5, 0.5)
-		windArt.Position = if i == 1 then UDim2.fromOffset(72, 4) else UDim2.new(1, -72, 1, -4)
-		windArt.Parent = holder
-	end
+	Style.art("FillArt", hudArt.XpFill, UDim2.fromOffset(600, 46), 4).Parent = clip
 	local currentPortrait = portrait(holder, 0)
 	local nextPortrait = portrait(holder, 1)
-	local caption = Style.art("FormAndBonus", art.RowBlue, UDim2.fromOffset(xpBar.CaptionW, xpBar.CaptionH), 6)
-	caption.AnchorPoint = Vector2.new(0.5, 0)
-	caption.Position = UDim2.new(0.5, 0, 1, -2)
-	caption.Parent = holder
-	local captions: { TextLabel } = {}
-	for i, width in { 0.46, 0.25, 0.29 } do
-		local part = Style.heavy("Caption" .. i, "", 18)
-		part.Position = UDim2.fromScale(({ 0, 0.46, 0.71 })[i], 0)
-		part.Size = UDim2.fromScale(width, 1)
-		part.ZIndex = 7
-		part.Parent = caption
-		captions[i] = part
+	local formText = Style.hudText(holder, "Form", 330, 35, 300, 39, 4)
+	formText.TextXAlignment = Enum.TextXAlignment.Left
+	local levelText = Style.hudText(holder, "LevelText", 655, 35, 180, 39, 4)
+	levelText.TextXAlignment = Enum.TextXAlignment.Right
+	local label = Style.hudText(holder, "Level", 466, 94, 560, 48, 5)
+	local bonusText = Style.hudText(holder, "Bonus", 331, 146, 140, 34, 4)
+	Style.hudText(holder, "Divider", 425, 145, 20, 34, 4).Text = "|"
+	local nextText = Style.hudText(holder, "Next", 582, 146, 290, 34, 4)
+
+	-- EVOLVE! / REBIRTH! embaixo do painel; a tecla R só onde há teclado
+	local keyboard = UserInputService.KeyboardEnabled
+	local actionHit, actionText = Style.artButton("Evolve", hudArt.Evolve, "", UDim2.fromOffset(412, 82), 52)
+	actionHit.AnchorPoint = Vector2.new(0.5, 0.5)
+	actionHit.Position = UDim2.fromOffset(455, 219)
+	actionHit.Visible = false
+	actionHit.Parent = holder
+	local actionStroke = actionText:FindFirstChildOfClass("UIStroke")
+	if actionStroke then
+		actionStroke.Thickness = 5
 	end
-	local label = Style.heavy("Level", "", xpBar.TextSize)
-	label.Size = UDim2.fromScale(1, 1)
-	label.ZIndex = 6
-	label.Parent = holder
+	if keyboard then
+		local cap = Style.art("KeyR", hudArt.KeyR, UDim2.fromOffset(54, 50), 7)
+		cap.Position = UDim2.fromOffset(66, 16)
+		cap.Parent = actionHit
+		Style.hudText(cap, "Text", 27, 24, 54, 32, 3).Text = "R"
+		actionText.Position = UDim2.fromOffset(120, 0)
+		actionText.Size = UDim2.new(1, -140, 1, -6)
+	else
+		actionText.Size = UDim2.new(1, 0, 1, -6)
+	end
 
 	local function short(n: number): string
 		if n >= 1e6 then
@@ -775,7 +775,7 @@ local function buildHud()
 
 	-- Janela de confirmação do rebirth: o que ganha, o que fica e o que zera.
 	local W, H = menu.W, menu.H
-	local window = Style.art("RebirthWindow", art.MenuBack, UDim2.fromOffset(W, H), 20)
+	local window = Style.art("RebirthWindow", hudArt.Window, UDim2.fromOffset(W, H), 20)
 	window.AnchorPoint = Vector2.new(0.5, 0.5)
 	window.Position = UDim2.fromScale(0.5, 0.5)
 	window.Visible = false
@@ -783,8 +783,8 @@ local function buildHud()
 	window.Parent = gui
 	local fit = Instance.new("UIScale") -- celular curto: a janela encolhe para caber
 	fit.Parent = window
-	local titleArt = Style.art("TitleBar", art.MenuTitle, UDim2.fromOffset(W - 68, 60), 21)
-	titleArt.Position = UDim2.fromOffset(6, 6)
+	local titleArt = Style.art("TitleBar", hudArt.WindowTitle, UDim2.fromOffset(W - 88, 52), 21)
+	titleArt.Position = UDim2.fromOffset(18, 17)
 	titleArt.Parent = window
 	local title = Style.heavy("Title", "REBIRTH", 30)
 	title.TextXAlignment = Enum.TextXAlignment.Left
@@ -792,12 +792,13 @@ local function buildHud()
 	title.Size = UDim2.new(1, -16, 1, -6)
 	title.ZIndex = 22
 	title.Parent = titleArt
-	local closeHit = Style.artButton("Close", art.Close, "", UDim2.fromOffset(58, 60), 14)
-	closeHit.Position = UDim2.fromOffset(W - 64, 6)
+	local closeHit, closeText = Style.artButton("Close", hudArt.WindowClose, "X", UDim2.fromOffset(52, 52), 30)
+	closeHit.Position = UDim2.fromOffset(W - 70, 17)
 	closeHit.ZIndex = 22
+	closeText.ZIndex = 23
 	closeHit.Parent = window
 	local rows: { TextLabel } = {}
-	for i, id in { art.RowPurple, art.RowCyan, art.RowRed, art.RowBlue } do
+	for i, id in { hudArt.RowPurple, hudArt.RowCyan, hudArt.RowRed, hudArt.RowBlue } do
 		local row = Style.art("Row" .. i, id, UDim2.fromOffset(W - 36, 44), 21)
 		row.Position = UDim2.fromOffset(18, 76 + (i - 1) * 49)
 		row.Parent = window
@@ -812,8 +813,7 @@ local function buildHud()
 	reset.Size = UDim2.fromOffset(W - 36, 24)
 	reset.ZIndex = 21
 	reset.Parent = window
-	local confirmHit, confirmText =
-		Style.artButton("Confirm", art.ButtonYellow, "REBIRTH!", UDim2.fromOffset(240, 64), 28)
+	local confirmHit, confirmText = Style.artButton("Confirm", hudArt.Evolve, "REBIRTH!", UDim2.fromOffset(300, 60), 30)
 	confirmHit.AnchorPoint = Vector2.new(0.5, 1)
 	confirmHit.Position = UDim2.new(0.5, 0, 1, -13)
 	confirmHit.ZIndex = 21
@@ -891,19 +891,26 @@ local function buildHud()
 		local form = cfg.Forms[Tornado.form(cfg, level)].Name
 		local ratio = math.clamp(xp / need, 0, 1)
 		currentPortrait(form)
-		-- direita: silhueta da próxima forma e o nível em que ela chega (mesmo se só depois de um rebirth)
+		-- direita: próxima forma colorida + nível; se ainda depende de rebirth, silhueta + quantos rebirths
 		local upcoming = cfg.Forms[Tornado.form(cfg, level) + 1]
-		nextPortrait(upcoming and upcoming.Name, upcoming and `LVL {upcoming.From}`)
+		local needed = if upcoming then Tornado.rebirthsFor(cfg, upcoming.From) else 0
+		local locked = needed > rebirths
+		nextPortrait(upcoming and upcoming.Name, locked)
+		nextText.TextSize = if locked then 30 else 34
+		nextText.Text = if not upcoming
+			then "MAX FORM"
+			elseif locked then `NEED {needed} REBIRTH{if needed > 1 then "S" else ""}`
+			else `NEXT: LVL {upcoming.From}`
 		label.Text = `XP {short(xp)}/{short(need)}`
-		captions[1].Text = string.upper(form)
-		captions[2].Text = `LVL {level}`
-		captions[3].Text = `XP {Tornado.xpBonus(cfg, rebirths)}x`
-		clip.Size = UDim2.fromScale(ratio, 1)
+		formText.Text = string.upper(form)
+		levelText.Text = `LVL {level}`
+		bonusText.Text = `XP {Tornado.xpBonus(cfg, rebirths)}x`
+		clip.Size = UDim2.fromOffset(600 * ratio, 46)
 		local evolve = Tornado.canEvolve(cfg, level, xp, rebirths)
 		local rebirth = Tornado.canRebirth(cfg, level, xp, rebirths)
 		actionHit.Visible = (evolve or rebirth) and not window.Visible
-		actionHit.Image = if evolve then art.ButtonGreen else art.ButtonYellow
-		actionText.Text = (if keyboard then "R  " else "") .. (if evolve then "EVOLVE!" else "REBIRTH!")
+		actionText.Text = if evolve then "EVOLVE!" else "REBIRTH!"
+		actionText.TextSize = if evolve then 52 else 46
 		if not rebirth then
 			window.Visible = false
 		end
@@ -918,10 +925,8 @@ local function buildHud()
 		local level = (localPlayer:GetAttribute("TornadoLevel") :: number?) or 1
 		if level > lastLevel then
 			-- comemoração curta do nível novo (pulo da barra)
-			holder.Size = UDim2.fromOffset(xpBar.W + 8, xpBar.H + 2)
-			TweenService:Create(holder, TweenInfo.new(0.35, Enum.EasingStyle.Back), {
-				Size = UDim2.fromOffset(xpBar.W, xpBar.H),
-			}):Play()
+			label.TextSize = 58
+			TweenService:Create(label, TweenInfo.new(0.35, Enum.EasingStyle.Back), { TextSize = 48 }):Play()
 		end
 		lastLevel = level
 	end)
