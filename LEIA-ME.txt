@@ -1,0 +1,15 @@
+BAIXAR AS TRANSCRIÇÕES (leva uns 30 minutos para os 100 vídeos)
+
+1) Instale o Python: https://www.python.org/downloads/
+   IMPORTANTE: na primeira tela do instalador, marque "Add python.exe to PATH".
+
+2) Abra esta pasta, clique com o botão direito num espaço vazio > "Abrir no Terminal".
+
+3) Rode estes dois comandos, um de cada vez:
+   python -m pip install youtube-transcript-api
+   python baixar_transcricoes.py
+
+4) Quando aparecer "Pronto", zipe a pasta "transcricoes" e mande o zip.
+
+Não precisa esperar terminar: os 10 primeiros são os mais importantes.
+Pode fechar e rodar de novo depois; o que já baixou é pulado.
