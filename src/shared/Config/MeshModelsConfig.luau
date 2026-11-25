@@ -5,7 +5,8 @@
 -- ReplicatedStorage.Assets (importe assets/blender/CityModels.fbx no Studio do Run). Sem elas, o
 -- Builder usa os blocos do Templates.
 
-export type MeshPiece = { Role: string, Mesh: string, Size: { number }, Center: { number } }
+-- Yaw = giro da mesh em graus (GLB chega ao Roblox virado 180).
+export type MeshPiece = { Role: string, Mesh: string, Size: { number }, Center: { number }, Yaw: number? }
 
 local models: { [string]: { MeshPiece } } = {
 	Barrel = {
@@ -177,15 +178,6 @@ local models: { [string]: { MeshPiece } } = {
 		{ Role = "Beam", Mesh = "M_Buoy_Beam", Size = { 0.800, 3.400, 0.800 }, Center = { 0.000, 1.700, 0.000 } },
 		{ Role = "Trim", Mesh = "M_Buoy_Trim", Size = { 1.400, 1.400, 0.300 }, Center = { 0.000, 2.300, -0.300 } },
 	},
-	Bush = {
-		{ Role = "Leaves", Mesh = "M_Bush_Leaves", Size = { 3.565, 3.303, 3.244 }, Center = { -0.716, 1.652, 0.354 } },
-		{
-			Role = "Leaves2",
-			Mesh = "M_Bush_Leaves2",
-			Size = { 3.340, 2.109, 3.514 },
-			Center = { 0.741, 1.132, -0.271 },
-		},
-	},
 	Clothesline = {
 		{
 			Role = "Accent",
@@ -222,44 +214,6 @@ local models: { [string]: { MeshPiece } } = {
 			Mesh = "M_Clothesline_Trim",
 			Size = { 6.201, 0.160, 0.660 },
 			Center = { 0.000, 3.700, 0.000 },
-		},
-	},
-	ContainerStack = {
-		{
-			Role = "Accent",
-			Mesh = "M_ContainerStack_Accent",
-			Size = { 2.990, 3.000, 7.570 },
-			Center = { 1.545, 1.500, 0.035 },
-		},
-		{
-			Role = "Body",
-			Mesh = "M_ContainerStack_Body",
-			Size = { 2.990, 3.000, 7.570 },
-			Center = { -1.545, 4.500, 0.035 },
-		},
-		{
-			Role = "Bus",
-			Mesh = "M_ContainerStack_Bus",
-			Size = { 2.990, 3.000, 7.570 },
-			Center = { 1.545, 4.500, 0.035 },
-		},
-		{
-			Role = "Container",
-			Mesh = "M_ContainerStack_Container",
-			Size = { 2.990, 3.000, 7.570 },
-			Center = { -1.545, 1.500, 0.035 },
-		},
-		{
-			Role = "Metal",
-			Mesh = "M_ContainerStack_Metal",
-			Size = { 5.980, 5.950, 7.730 },
-			Center = { 0.000, 2.975, 0.055 },
-		},
-		{
-			Role = "Trim",
-			Mesh = "M_ContainerStack_Trim",
-			Size = { 5.400, 3.120, 0.050 },
-			Center = { 0.000, 2.860, 3.900 },
 		},
 	},
 	Cooler = {
@@ -317,10 +271,6 @@ local models: { [string]: { MeshPiece } } = {
 			Center = { 0.000, 7.200, -1.885 },
 		},
 	},
-	Crate = {
-		{ Role = "Beam", Mesh = "M_Crate_Beam", Size = { 2.400, 2.300, 2.520 }, Center = { 0.000, 1.150, 0.000 } },
-		{ Role = "Plank", Mesh = "M_Crate_Plank", Size = { 2.300, 2.300, 2.300 }, Center = { 0.000, 1.150, 0.000 } },
-	},
 	Doghouse = {
 		{
 			Role = "Accent",
@@ -340,95 +290,41 @@ local models: { [string]: { MeshPiece } } = {
 		{ Role = "Trim", Mesh = "M_Doghouse_Trim", Size = { 1.963, 1.850, 1.038 }, Center = { -0.232, 0.925, -1.909 } },
 		{ Role = "Wall", Mesh = "M_Doghouse_Wall", Size = { 3.200, 3.800, 3.200 }, Center = { 0.000, 1.900, 0.000 } },
 	},
-	Dumpster = {
-		{ Role = "Body", Mesh = "M_Dumpster_Body", Size = { 5.000, 2.600, 3.000 }, Center = { 0.000, 1.700, 0.000 } },
+	-- assets/blender/build_stalls.py (FoodCart.glb)
+	FoodCart = {
 		{
-			Role = "Metal",
-			Mesh = "M_Dumpster_Metal",
-			Size = { 5.100, 1.420, 3.270 },
-			Center = { 0.000, 2.710, -0.085 },
-		},
-		{ Role = "Sign", Mesh = "M_Dumpster_Sign", Size = { 1.600, 0.600, 0.060 }, Center = { 0.000, 1.700, -1.500 } },
-		{ Role = "Tire", Mesh = "M_Dumpster_Tire", Size = { 4.100, 0.400, 2.300 }, Center = { 0.000, 0.200, 0.000 } },
-	},
-	FlowerPot = {
-		{
-			Role = "Flower",
-			Mesh = "M_FlowerPot_Flower",
-			Size = { 1.560, 0.268, 1.191 },
-			Center = { -0.169, 2.778, 0.000 },
+			Role = "Beam",
+			Mesh = "M_FoodCart_Beam",
+			Size = { 6.140, 6.362, 3.390 },
+			Center = { 0.000, 3.181, 0.225 },
+			Yaw = 180,
 		},
 		{
-			Role = "Flower2",
-			Mesh = "M_FlowerPot_Flower2",
-			Size = { 1.588, 0.407, 1.059 },
-			Center = { 0.213, 2.803, 0.350 },
+			Role = "Plank",
+			Mesh = "M_FoodCart_Plank",
+			Size = { 5.300, 2.300, 2.300 },
+			Center = { 0.000, 1.370, 0.250 },
+			Yaw = 180,
 		},
 		{
-			Role = "Leaves",
-			Mesh = "M_FlowerPot_Leaves",
-			Size = { 1.757, 1.310, 1.725 },
-			Center = { -0.053, 1.979, 0.003 },
-		},
-		{ Role = "Pot", Mesh = "M_FlowerPot_Pot", Size = { 2.100, 1.500, 2.100 }, Center = { 0.000, 0.750, 0.000 } },
-	},
-	Flowers = {
-		{
-			Role = "Flower",
-			Mesh = "M_Flowers_Flower",
-			Size = { 3.449, 0.784, 2.283 },
-			Center = { -0.164, 1.592, 0.188 },
+			Role = "Awning",
+			Mesh = "M_FoodCart_Awning",
+			Size = { 5.309, 2.175, 3.689 },
+			Center = { 0.533, 5.900, 0.094 },
+			Yaw = 180,
 		},
 		{
-			Role = "Flower2",
-			Mesh = "M_Flowers_Flower2",
-			Size = { 3.745, 0.784, 2.759 },
-			Center = { 0.084, 1.592, 0.050 },
-		},
-		{
-			Role = "Leaves",
-			Mesh = "M_Flowers_Leaves",
-			Size = { 4.000, 0.300, 3.000 },
-			Center = { 0.000, 0.150, 0.000 },
-		},
-		{
-			Role = "Leaves2",
-			Mesh = "M_Flowers_Leaves2",
-			Size = { 3.343, 1.500, 1.955 },
-			Center = { 0.202, 1.050, 0.050 },
-		},
-	},
-	FuelPump = {
-		{
-			Role = "Accent",
-			Mesh = "M_FuelPump_Accent",
-			Size = { 1.500, 3.400, 1.100 },
-			Center = { 0.000, 2.100, 0.000 },
-		},
-		{
-			Role = "Metal",
-			Mesh = "M_FuelPump_Metal",
-			Size = { 0.900, 0.500, 0.060 },
-			Center = { 0.000, 1.850, -0.580 },
-		},
-		{ Role = "Stone", Mesh = "M_FuelPump_Stone", Size = { 2.400, 0.400, 1.800 }, Center = { 0.000, 0.200, 0.000 } },
-		{ Role = "Tire", Mesh = "M_FuelPump_Tire", Size = { 0.455, 2.263, 0.818 }, Center = { 0.952, 1.568, -0.234 } },
-		{ Role = "Trim", Mesh = "M_FuelPump_Trim", Size = { 1.700, 0.600, 1.300 }, Center = { 0.000, 4.100, 0.000 } },
-		{
-			Role = "Window",
-			Mesh = "M_FuelPump_Window",
-			Size = { 0.900, 0.700, 0.060 },
-			Center = { 0.000, 2.850, -0.580 },
+			Role = "Stripe",
+			Mesh = "M_FoodCart_Stripe",
+			Size = { 5.309, 2.175, 3.689 },
+			Center = { -0.533, 5.900, 0.094 },
+			Yaw = 180,
 		},
 	},
 	Gate = {
 		{ Role = "Beam", Mesh = "M_Gate_Beam", Size = { 8.800, 3.600, 0.800 }, Center = { 0.000, 1.800, 0.000 } },
 		{ Role = "Metal", Mesh = "M_Gate_Metal", Size = { 0.500, 0.250, 0.120 }, Center = { 0.000, 1.725, -0.200 } },
 		{ Role = "Plank", Mesh = "M_Gate_Plank", Size = { 7.200, 2.900, 0.300 }, Center = { 0.000, 1.850, 0.000 } },
-	},
-	Grill = {
-		{ Role = "Metal", Mesh = "M_Grill_Metal", Size = { 1.716, 2.500, 1.760 }, Center = { 0.000, 1.250, 0.000 } },
-		{ Role = "Tire", Mesh = "M_Grill_Tire", Size = { 1.755, 1.160, 1.800 }, Center = { 0.000, 1.780, 0.000 } },
 	},
 	House = {
 		{
@@ -465,6 +361,65 @@ local models: { [string]: { MeshPiece } } = {
 	IceBlock = {
 		{ Role = "Ice", Mesh = "M_IceBlock_Ice", Size = { 2.400, 4.000, 2.400 }, Center = { 0.000, 2.000, 0.000 } },
 		{ Role = "Snow", Mesh = "M_IceBlock_Snow", Size = { 1.500, 0.150, 1.500 }, Center = { 0.150, 4.075, -0.100 } },
+	},
+	-- assets/blender/build_stalls.py (FruitStand.glb): barraca de frutas no lugar da de sorvete
+	IceCreamStand = {
+		{
+			Role = "Metal",
+			Mesh = "M_FruitStand_Metal",
+			Size = { 4.480, 5.837, 2.350 },
+			Center = { 0.000, 2.919, 0.000 },
+			Yaw = 180,
+		},
+		{
+			Role = "PlaneBody",
+			Mesh = "M_FruitStand_PlaneBody",
+			Size = { 4.950, 2.560, 3.000 },
+			Center = { 0.000, 1.560, 0.000 },
+			Yaw = 180,
+		},
+		{
+			Role = "Awning",
+			Mesh = "M_FruitStand_Awning",
+			Size = { 4.976, 1.873, 2.539 },
+			Center = { 0.000, 5.850, -0.081 },
+			Yaw = 180,
+		},
+		{
+			Role = "Stripe",
+			Mesh = "M_FruitStand_Stripe",
+			Size = { 2.976, 1.873, 2.539 },
+			Center = { 0.000, 5.850, -0.081 },
+			Yaw = 180,
+		},
+		{
+			Role = "Beam",
+			Mesh = "M_FruitStand_Beam",
+			Size = { 2.160, 1.383, 1.410 },
+			Center = { 0.000, 3.531, -0.450 },
+			Yaw = 180,
+		},
+		{
+			Role = "ToyRed",
+			Mesh = "M_FruitStand_ToyRed",
+			Size = { 1.380, 0.570, 1.240 },
+			Center = { 0.320, 3.497, -0.440 },
+			Yaw = 180,
+		},
+		{
+			Role = "TruckGreen",
+			Mesh = "M_FruitStand_TruckGreen",
+			Size = { 1.362, 0.239, 0.907 },
+			Center = { 0.295, 3.819, -0.368 },
+			Yaw = 180,
+		},
+		{
+			Role = "ToyYellow",
+			Mesh = "M_FruitStand_ToyYellow",
+			Size = { 1.279, 0.973, 1.122 },
+			Center = { -0.368, 3.615, -0.371 },
+			Yaw = 180,
+		},
 	},
 	IceSculpture = {
 		{
@@ -507,54 +462,68 @@ local models: { [string]: { MeshPiece } } = {
 		{ Role = "Towel", Mesh = "M_Lounger_Towel", Size = { 1.800, 1.450, 4.850 }, Center = { 0.000, 1.225, -0.025 } },
 		{ Role = "Trim", Mesh = "M_Lounger_Trim", Size = { 1.000, 0.250, 0.600 }, Center = { 0.000, 0.825, 1.900 } },
 	},
-	Mushroom = {
-		{ Role = "Cap", Mesh = "M_Mushroom_Cap", Size = { 4.830, 2.300, 3.580 }, Center = { 0.335, 1.850, 0.260 } },
-		{ Role = "Stem", Mesh = "M_Mushroom_Stem", Size = { 3.728, 1.800, 1.900 }, Center = { 0.274, 0.900, 0.500 } },
-		{ Role = "Trim", Mesh = "M_Mushroom_Trim", Size = { 4.221, 1.953, 2.481 }, Center = { 0.329, 2.091, 0.336 } },
-	},
 	Pallet = {
 		{ Role = "Beam", Mesh = "M_Pallet_Beam", Size = { 4.000, 0.300, 2.900 }, Center = { 0.000, 0.150, 0.000 } },
 		{ Role = "Brick", Mesh = "M_Pallet_Brick", Size = { 3.380, 1.320, 2.320 }, Center = { 0.000, 1.110, 0.000 } },
 		{ Role = "Plank", Mesh = "M_Pallet_Plank", Size = { 4.000, 0.150, 3.000 }, Center = { 0.000, 0.375, 0.000 } },
 	},
-	PatioSet = {
-		{
-			Role = "Awning",
-			Mesh = "M_PatioSet_Awning",
-			Size = { 3.900, 0.700, 3.900 },
-			Center = { 0.000, 4.650, 0.000 },
-		},
-		{ Role = "Beam", Mesh = "M_PatioSet_Beam", Size = { 5.621, 1.200, 1.040 }, Center = { 0.000, 0.600, 0.000 } },
-		{ Role = "Metal", Mesh = "M_PatioSet_Metal", Size = { 1.000, 4.480, 1.000 }, Center = { 0.000, 2.240, 0.000 } },
-		{ Role = "Plank", Mesh = "M_PatioSet_Plank", Size = { 5.800, 1.480, 1.200 }, Center = { 0.000, 1.940, 0.000 } },
-		{
-			Role = "Stripe",
-			Mesh = "M_PatioSet_Stripe",
-			Size = { 3.900, 0.700, 3.900 },
-			Center = { 0.000, 4.650, 0.000 },
-		},
-		{ Role = "Trim", Mesh = "M_PatioSet_Trim", Size = { 2.560, 0.180, 2.600 }, Center = { 0.000, 2.090, 0.000 } },
-	},
+	-- assets/blender/build_plane.py (Plane.glb)
 	Plane = {
+		{
+			Role = "PlaneBody",
+			Mesh = "M_Plane_WallWhite",
+			Size = { 27.400, 6.422, 29.261 },
+			Center = { 0.000, 3.569, -0.056 },
+			Yaw = 180,
+		},
+		{
+			Role = "PlaneFlap",
+			Mesh = "M_Plane_Concrete",
+			Size = { 24.200, 3.421, 6.819 },
+			Center = { 0.000, 2.193, 0.249 },
+			Yaw = 180,
+		},
 		{
 			Role = "Accent",
 			Mesh = "M_Plane_Accent",
-			Size = { 28.800, 10.200, 29.000 },
-			Center = { 0.000, 6.100, 0.100 },
-		},
-		{ Role = "Metal", Mesh = "M_Plane_Metal", Size = { 13.462, 2.700, 10.800 }, Center = { 0.000, 2.150, -4.250 } },
-		{ Role = "Tire", Mesh = "M_Plane_Tire", Size = { 5.961, 0.800, 10.900 }, Center = { -0.200, 0.400, -4.050 } },
-		{
-			Role = "WallWhite",
-			Mesh = "M_Plane_WallWhite",
-			Size = { 28.000, 4.100, 30.000 },
-			Center = { 0.000, 4.250, 0.000 },
+			Size = { 28.600, 11.603, 19.198 },
+			Center = { 0.000, 6.140, 4.939 },
+			Yaw = 180,
 		},
 		{
-			Role = "Window",
-			Mesh = "M_Plane_Window",
-			Size = { 4.040, 0.850, 19.575 },
-			Center = { 0.000, 4.775, -3.412 },
+			Role = "PlaneBand",
+			Mesh = "M_Plane_PlaneBand",
+			Size = { 4.340, 1.140, 13.700 },
+			Center = { 0.000, 4.420, -1.600 },
+			Yaw = 180,
+		},
+		{
+			Role = "PlaneWindow",
+			Mesh = "M_Plane_PlaneWindow",
+			Size = { 4.480, 1.846, 18.010 },
+			Center = { 0.000, 4.993, -4.165 },
+			Yaw = 180,
+		},
+		{
+			Role = "Steel",
+			Mesh = "M_Plane_Steel",
+			Size = { 14.111, 2.337, 12.720 },
+			Center = { 0.000, 1.482, -5.150 },
+			Yaw = 180,
+		},
+		{
+			Role = "ToyDark",
+			Mesh = "M_Plane_ToyDark",
+			Size = { 14.076, 1.676, 0.240 },
+			Center = { 0.000, 1.620, -4.920 },
+			Yaw = 180,
+		},
+		{
+			Role = "Tire",
+			Mesh = "M_Plane_Tire",
+			Size = { 6.920, 1.191, 13.241 },
+			Center = { 0.000, 0.620, -5.131 },
+			Yaw = 180,
 		},
 	},
 	PowerBox = {
@@ -567,14 +536,6 @@ local models: { [string]: { MeshPiece } } = {
 		{ Role = "Metal", Mesh = "M_PowerBox_Metal", Size = { 1.900, 2.700, 1.200 }, Center = { 0.000, 1.650, 0.000 } },
 		{ Role = "Sign", Mesh = "M_PowerBox_Sign", Size = { 0.600, 0.500, 0.050 }, Center = { 0.000, 1.850, -0.580 } },
 		{ Role = "Stone", Mesh = "M_PowerBox_Stone", Size = { 2.000, 0.300, 1.200 }, Center = { 0.000, 0.150, 0.000 } },
-	},
-	Rock = {
-		{ Role = "Rock", Mesh = "M_Rock_Rock", Size = { 6.339, 3.887, 3.374 }, Center = { 0.937, 1.943, 0.292 } },
-	},
-	Seesaw = {
-		{ Role = "Accent", Mesh = "M_Seesaw_Accent", Size = { 7.000, 0.750, 0.800 }, Center = { 0.000, 1.125, 0.000 } },
-		{ Role = "Metal", Mesh = "M_Seesaw_Metal", Size = { 5.120, 2.151, 0.900 }, Center = { 0.000, 1.075, 0.000 } },
-		{ Role = "Plank", Mesh = "M_Seesaw_Plank", Size = { 7.000, 0.507, 0.700 }, Center = { 0.000, 1.145, 0.000 } },
 	},
 	ShoppingCart = {
 		{
@@ -618,12 +579,6 @@ local models: { [string]: { MeshPiece } } = {
 			Center = { 5.000, 0.750, 0.000 },
 		},
 		{ Role = "Trim", Mesh = "M_SkateRink_Trim", Size = { 12.800, 1.000, 8.800 }, Center = { 0.000, 0.500, 0.000 } },
-	},
-	Slide = {
-		{ Role = "Accent", Mesh = "M_Slide_Accent", Size = { 1.640, 4.100, 6.000 }, Center = { 0.000, 2.450, 1.400 } },
-		{ Role = "Metal", Mesh = "M_Slide_Metal", Size = { 2.100, 6.200, 8.688 }, Center = { 0.000, 3.100, -0.324 } },
-		{ Role = "Plank", Mesh = "M_Slide_Plank", Size = { 2.200, 0.300, 2.200 }, Center = { 0.000, 4.150, -2.700 } },
-		{ Role = "Roof", Mesh = "M_Slide_Roof", Size = { 2.400, 1.000, 2.400 }, Center = { 0.000, 6.700, -2.700 } },
 	},
 	SnowCabin = {
 		{
@@ -702,16 +657,6 @@ local models: { [string]: { MeshPiece } } = {
 			Center = { 0.000, 2.250, -0.490 },
 		},
 	},
-	Swing = {
-		{ Role = "Accent", Mesh = "M_Swing_Accent", Size = { 6.700, 4.056, 0.600 }, Center = { 0.000, 3.978, 0.000 } },
-		{ Role = "Body", Mesh = "M_Swing_Body", Size = { 1.200, 0.200, 0.600 }, Center = { 1.400, 2.050, 0.000 } },
-		{ Role = "Metal", Mesh = "M_Swing_Metal", Size = { 6.680, 5.823, 2.438 }, Center = { 0.000, 2.911, 0.000 } },
-	},
-	Tree = {
-		{ Role = "Leaves", Mesh = "M_Tree_Leaves", Size = { 5.498, 7.490, 7.072 }, Center = { -0.001, 8.859, -0.713 } },
-		{ Role = "Leaves2", Mesh = "M_Tree_Leaves2", Size = { 9.754, 4.428, 6.597 }, Center = { 0.004, 7.258, 0.873 } },
-		{ Role = "Trunk", Mesh = "M_Tree_Trunk", Size = { 4.600, 6.000, 1.650 }, Center = { 0.100, 3.000, 0.075 } },
-	},
 	VolleyNet = {
 		{
 			Role = "Metal",
@@ -727,24 +672,102 @@ local models: { [string]: { MeshPiece } } = {
 		},
 		{ Role = "Trim", Mesh = "M_VolleyNet_Trim", Size = { 7.700, 3.750, 4.800 }, Center = { 0.000, 1.875, 0.000 } },
 	},
-	WarningSign = {
+	-- placas: assets/blender/build_signs.py (StopSign, BumpSign e SpeedSign .glb)
+	StopSign = {
 		{
 			Role = "Metal",
-			Mesh = "M_WarningSign_Metal",
-			Size = { 1.100, 3.250, 1.100 },
-			Center = { 0.000, 1.625, 0.000 },
+			Mesh = "M_StopSign_Metal",
+			Size = { 1.260, 3.650, 1.260 },
+			Center = { 0.000, 1.825, 0.140 },
+			Yaw = 180,
 		},
 		{
-			Role = "Sign",
-			Mesh = "M_WarningSign_Sign",
-			Size = { 1.900, 1.650, 0.180 },
-			Center = { 0.000, 4.025, -0.030 },
+			Role = "Steel",
+			Mesh = "M_StopSign_Steel",
+			Size = { 0.985, 0.240, 0.985 },
+			Center = { 0.000, 0.500, 0.140 },
+			Yaw = 180,
+		},
+		{
+			Role = "PlaneBody",
+			Mesh = "M_StopSign_PlaneBody",
+			Size = { 2.217, 2.217, 0.460 },
+			Center = { 0.000, 3.650, -0.060 },
+			Yaw = 180,
+		},
+		{
+			Role = "ToyRed",
+			Mesh = "M_StopSign_ToyRed",
+			Size = { 1.829, 1.829, 0.160 },
+			Center = { 0.000, 3.650, -0.140 },
+			Yaw = 180,
+		},
+	},
+	SpeedSign = {
+		{
+			Role = "Metal",
+			Mesh = "M_SpeedSign_Metal",
+			Size = { 1.260, 3.650, 1.260 },
+			Center = { 0.000, 1.825, 0.140 },
+			Yaw = 180,
+		},
+		{
+			Role = "Steel",
+			Mesh = "M_SpeedSign_Steel",
+			Size = { 0.985, 0.240, 0.985 },
+			Center = { 0.000, 0.500, 0.140 },
+			Yaw = 180,
+		},
+		{
+			Role = "ToyRed",
+			Mesh = "M_SpeedSign_ToyRed",
+			Size = { 2.360, 2.360, 0.380 },
+			Center = { 0.000, 3.650, 0.000 },
+			Yaw = 180,
+		},
+		{
+			Role = "PlaneBody",
+			Mesh = "M_SpeedSign_PlaneBody",
+			Size = { 1.860, 1.860, 0.240 },
+			Center = { 0.000, 3.650, -0.010 },
+			Yaw = 180,
 		},
 		{
 			Role = "Tire",
-			Mesh = "M_WarningSign_Tire",
-			Size = { 0.220, 0.900, 0.050 },
-			Center = { 0.000, 3.850, -0.170 },
+			Mesh = "M_SpeedSign_Tire",
+			Size = { 1.120, 1.267, 0.140 },
+			Center = { 0.000, 3.636, -0.130 },
+			Yaw = 180,
+		},
+	},
+	WarningSign = {
+		{
+			Role = "Metal",
+			Mesh = "M_BumpSign_Metal",
+			Size = { 1.260, 3.650, 1.260 },
+			Center = { 0.000, 1.825, 0.140 },
+			Yaw = 180,
+		},
+		{
+			Role = "Steel",
+			Mesh = "M_BumpSign_Steel",
+			Size = { 0.985, 0.240, 0.985 },
+			Center = { 0.000, 0.500, 0.140 },
+			Yaw = 180,
+		},
+		{
+			Role = "ToyYellow",
+			Mesh = "M_BumpSign_ToyYellow",
+			Size = { 2.544, 2.544, 0.340 },
+			Center = { 0.000, 3.650, 0.000 },
+			Yaw = 180,
+		},
+		{
+			Role = "Tire",
+			Mesh = "M_BumpSign_Tire",
+			Size = { 2.130, 2.130, 0.130 },
+			Center = { 0.000, 3.650, -0.165 },
+			Yaw = 180,
 		},
 	},
 }

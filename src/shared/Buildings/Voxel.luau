@@ -142,6 +142,21 @@ function Voxel.gable(
 	return baseY + h + 0.4
 end
 
+-- Bomba de gasolina (avulsa e a do posto).
+function Voxel.fuelPump(boxes: { Box }, x: number, y: number, z: number)
+	Voxel.add(
+		boxes,
+		box(2.8, 0.4, 2.2, x, y, z, "Steel"),
+		box(1.8, 3, 1.4, x, y + 0.4, z, "ToyRed"),
+		box(1.1, 0.9, 0.1, x, y + 2.2, z - 0.75, "Window"),
+		box(2.3, 0.5, 1.9, x, y + 3.4, z, "Trim"),
+		-- bico e mangueira na lateral
+		box(0.4, 1.1, 0.6, x + 1.1, y + 2, z, "Tire"),
+		box(0.25, 1, 0.25, x + 1.2, y + 1, z, "Tire"),
+		box(0.45, 0.25, 0.25, x + 1.125, y + 0.75, z, "Tire")
+	)
+end
+
 -- Rodas quadradas coladas na lateral do veículo.
 function Voxel.wheels(boxes: { Box }, xs: { number }, zs: { number }, size: number)
 	for _, x in xs do

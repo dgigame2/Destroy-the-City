@@ -44,6 +44,7 @@ local VARIANT_GROUP: { [string]: string } = {
 	RoofTop = "Roof",
 	Leaves2 = "Leaves",
 	Stripe = "Awning",
+	CapSpot = "Cap",
 }
 
 local STUD_MATERIAL = (Enum.Material :: any)[StudConfig.Material] :: Enum.Material
@@ -236,7 +237,9 @@ function Builder.build(template: Template, palette: Palette, variant: number, cf
 			part.Name = piece.Role
 			part.Anchored = true
 			part.Size = Vector3.new(piece.Size[1], piece.Size[2], piece.Size[3])
-			part.CFrame = cframe * CFrame.new(piece.Center[1], piece.Center[2], piece.Center[3])
+			part.CFrame = cframe
+				* CFrame.new(piece.Center[1], piece.Center[2], piece.Center[3])
+				* CFrame.Angles(0, math.rad(piece.Yaw or 0), 0)
 			part.Color = Builder.color(palette, piece.Role, variantFor(piece.Role))
 			Builder.studify(part, StudConfig.Smooth[piece.Role] == true)
 			part.Material = SPECIAL_MATERIALS[piece.Role] or Enum.Material.SmoothPlastic

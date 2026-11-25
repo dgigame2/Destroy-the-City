@@ -10,6 +10,7 @@ export type Entry = {
 	SpacingGroup: string?,
 	Only: { [string]: boolean }?,
 	Districts: { [string]: boolean }?,
+	FaceRoad: boolean?,
 }
 export type Catalog = { [string]: Entry }
 

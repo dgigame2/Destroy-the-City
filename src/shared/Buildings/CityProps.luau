@@ -77,15 +77,23 @@ end
 
 function CityProps.Grill(V)
 	local box = V.box
-	local boxes = {}
-	for _, x in { -0.6, 0.6 } do
-		for _, z in { -0.6, 0.6 } do
-			table.insert(boxes, box(0.2, 1.6, 0.2, x, 0, z, "Metal"))
+	local boxes = {
+		box(1.9, 0.3, 1.5, 0, 1.6, 0, "Tire"),
+		box(2.3, 0.5, 1.9, 0, 1.9, 0, "Tire"),
+		box(1.8, 0.5, 1.4, 0, 2.4, 0, "Tire"),
+		box(1.5, 0.3, 1.1, 0, 2.9, 0, "Tire"),
+		box(0.5, 0.25, 0.5, 0, 3.2, 0, "Steel"),
+	}
+	-- pernas abertas em dois degraus
+	for _, x in { -1, 1 } do
+		for _, z in { -1, 1 } do
+			V.add(
+				boxes,
+				box(0.35, 0.8, 0.35, x * 0.75, 0.8, z * 0.55, "Steel"),
+				box(0.35, 0.8, 0.35, x * 0.95, 0, z * 0.65, "Steel")
+			)
 		end
 	end
-	table.insert(boxes, box(1.6, 0.6, 1.6, 0, 1.6, 0, "Tire"))
-	table.insert(boxes, box(1.2, 0.5, 1.2, 0, 2.2, 0, "Tire"))
-	table.insert(boxes, box(0.3, 0.2, 0.3, 0, 2.7, 0, "Metal"))
 	return { Name = "Grill", Tier = 1, Boxes = boxes }
 end
 
@@ -93,29 +101,36 @@ end
 function CityProps.PatioSet(V)
 	local box = V.box
 	local boxes = {
-		box(0.4, 2, 0.4, 0, 0, 0, "Metal"),
-		box(2.6, 0.2, 2.6, 0, 2, 0, "Trim"),
-		box(0.2, 2.4, 0.2, 0, 2.2, 0, "Metal"),
-		box(4, 0.3, 4, 0, 4.6, 0, "Awning"),
-		box(2.6, 0.3, 2.6, 0, 4.9, 0, "Stripe"),
+		box(0.5, 1.8, 0.5, 0, 0, 0, "ToyDark"),
+		box(2.6, 0.5, 2.2, 0, 1.8, 0, "Trim"),
+		box(0.5, 2, 0.5, 0, 2.3, 0, "ToyDark"),
+		box(4, 0.6, 4, 0, 4.3, 0, "ToyYellow"),
+		box(2.7, 0.35, 2.7, 0, 4.9, 0, "Trim"),
 	}
 	for _, s in { -1, 1 } do
-		table.insert(boxes, box(1, 1.2, 1, s * 2.3, 0, 0, "Beam"))
-		table.insert(boxes, box(1.2, 0.2, 1.2, s * 2.3, 1.2, 0, "Plank"))
-		table.insert(boxes, box(0.2, 1.4, 1.2, s * 2.8, 1.4, 0, "Plank"))
+		table.insert(boxes, box(1.1, 1, 1.1, s * 2.3, 0, 0, "Trunk"))
+		table.insert(boxes, box(1.2, 0.4, 1.4, s * 2.3, 1, 0, "ToyYellow"))
+		table.insert(boxes, box(0.3, 1.5, 1.4, s * 2.75, 1.4, 0, "ToyYellow"))
 	end
 	return { Name = "PatioSet", Tier = 1, Boxes = boxes }
 end
 
+-- Pilha de três caixas de papelão com fita (cabe em 1 célula).
 function CityProps.Crate(V)
 	local box = V.box
 	return {
 		Name = "Crate",
 		Tier = 1,
 		Boxes = {
-			box(2.4, 2.4, 2.4, 0, 0, 0, "Plank"),
-			box(2.4, 0.3, 0.1, 0, 1.05, -1.25, "Beam"),
-			box(2.4, 0.3, 0.1, 0, 1.05, 1.25, "Beam"),
+			box(1.5, 1.6, 1.8, 0.73, 0, 0.2, "Cardboard"),
+			box(0.35, 0.06, 0.3, 0.73, 1.6, -0.55, "Tape"),
+			box(0.35, 0.4, 0.06, 0.73, 1.2, -0.73, "Tape"),
+			box(1.35, 1.25, 1.7, -0.75, 0, -0.1, "Cardboard"),
+			box(0.35, 0.06, 1.7, -0.9, 1.25, -0.1, "Tape"),
+			box(0.35, 0.35, 0.06, -0.9, 0.9, -0.98, "Tape"),
+			box(1.5, 1.2, 1.6, 0, 1.6, 0.4, "Cardboard"),
+			box(0.35, 0.06, 1.6, 0, 2.8, 0.4, "Tape"),
+			box(0.35, 0.4, 0.06, 0, 2.4, -0.43, "Tape"),
 		},
 	}
 end
@@ -139,13 +154,29 @@ function CityProps.Pallet(V)
 	}
 end
 
+-- Caçamba com tampa inclinada (a tampa é cunha: alta atrás, baixa na frente).
 function CityProps.Dumpster(V)
 	local box = V.box
-	return {
-		Name = "Dumpster",
-		Tier = 1,
-		Boxes = { box(5, 3, 3, 0, 0, 0, "Body"), box(5.2, 0.3, 3.2, 0, 3, 0, "Metal") },
+	local boxes = {
+		box(4.8, 2, 2.8, 0, 0.4, 0, "ToyBlue"),
+		box(5.2, 0.4, 3.2, 0, 2.4, 0, "Steel"),
+		box(4.8, 0.2, 2.8, 0, 2.8, 0, "Steel"),
 	}
+	for _, sx in { -1, 1 } do
+		table.insert(boxes, box(0.4, 0.6, 1.3, sx * 2.6, 1.3, -0.4, "ToyDark"))
+		for _, sz in { -1, 1 } do
+			table.insert(boxes, box(1, 0.4, 0.8, sx * 1.7, 0, sz * 0.9, "ToyDark"))
+		end
+		table.insert(boxes, V.shaped(box(0.45, 0.7, 2.8, sx * 2.175, 3, 0, "Steel"), "Wedge", 0))
+		table.insert(boxes, V.shaped(box(1.2, 0.7, 2.8, sx * 0.85, 3, 0, "Steel"), "Wedge", 0))
+		for _, x in { 0.6, 1.75 } do
+			table.insert(boxes, box(0.4, 1.4, 0.1, sx * x, 0.7, -1.45, "ToyBlueDark"))
+		end
+	end
+	for _, x in { -1.7, 0, 1.7 } do
+		V.add(boxes, box(0.5, 0.2, 2.8, x, 3, 0, "Steel"), V.shaped(box(0.5, 0.7, 2.8, x, 3.2, 0, "Steel"), "Wedge", 0))
+	end
+	return { Name = "Dumpster", Tier = 1, Boxes = boxes }
 end
 
 -- Cavalete de obra listrado.
@@ -162,33 +193,31 @@ function CityProps.Barrier(V)
 	return { Name = "Barrier", Tier = 1, Boxes = boxes }
 end
 
-function CityProps.WarningSign(V)
-	local box = V.box
-	return {
-		Name = "WarningSign",
-		Tier = 1,
-		Boxes = {
-			box(1.2, 0.3, 1.2, 0, 0, 0, "Metal"),
-			box(0.3, 3, 0.3, 0, 0.3, 0, "Metal"),
-			box(1.8, 1.8, 0.2, 0, 3.3, 0, "Sign"),
-			box(0.3, 0.9, 0.1, 0, 3.7, -0.15, "Tire"),
-		},
-	}
+-- Placas de trânsito (reserva das meshes de assets/blender/build_signs.py): poste com a placa na frente.
+local function trafficSign(name: string, role: string, mark: string): (Voxel) -> any
+	return function(V)
+		local box = V.box
+		return {
+			Name = name,
+			Tier = 1,
+			Boxes = {
+				box(1.2, 0.4, 1.2, 0, 0, 0.1, "Metal"),
+				box(0.4, 3.25, 0.4, 0, 0.4, 0.3, "Metal"),
+				box(2.2, 2.2, 0.3, 0, 2.55, -0.05, role),
+				box(1.4, 0.4, 0.1, 0, 3.45, -0.25, mark),
+			},
+		}
+	end
 end
 
+CityProps.StopSign = trafficSign("StopSign", "ToyRed", "Trim")
+CityProps.SpeedSign = trafficSign("SpeedSign", "Trim", "ToyRed")
+CityProps.WarningSign = trafficSign("WarningSign", "ToyYellow", "Tire")
+
 function CityProps.FuelPump(V)
-	local box = V.box
-	return {
-		Name = "FuelPump",
-		Tier = 1,
-		Boxes = {
-			box(2.4, 0.4, 1.8, 0, 0, 0, "Stone"),
-			box(1.6, 3.6, 1.2, 0, 0.4, 0, "Accent"),
-			box(1, 0.8, 0.1, 0, 2.6, -0.65, "Window"),
-			box(1.8, 0.4, 1.4, 0, 4, 0, "Trim"),
-			box(0.3, 1.2, 0.3, 0.95, 1.6, 0, "Tire"),
-		},
-	}
+	local boxes = {}
+	V.fuelPump(boxes, 0, 0, 0)
+	return { Name = "FuelPump", Tier = 1, Boxes = boxes }
 end
 
 function CityProps.ShoppingCart(V)
@@ -234,51 +263,50 @@ end
 
 -- Escorregador: torre com escada atrás (-Z) e rampa descendo para +Z (em degraus nos blocos de reserva).
 function CityProps.Slide(V)
-	local box = V.box
-	local oz = -2.7 -- centraliza o comprimento no footprint
-	local boxes = {}
-	for _, x in { -0.9, 0.9 } do
-		for _, z in { -0.9, 0.9 } do
-			table.insert(boxes, box(0.4, 4, 0.4, x, 0, z + oz, "Metal"))
+	local box, shaped = V.box, V.shaped
+	local oz = -2.9 -- centraliza o comprimento no footprint
+	local boxes = {
+		box(3, 0.5, 2.8, 0, 5.6, oz, "ToyWood"),
+		box(1.8, 0.4, 2.6, 0, 3.6, oz, "ToyWood"),
+	}
+	for _, x in { -1.15, 1.15 } do
+		for _, z in { -1.05, 1.05 } do
+			table.insert(boxes, box(0.5, 5.6, 0.5, x, 0, z + oz, "ToyMetal"))
 		end
 	end
-	table.insert(boxes, box(2.2, 0.3, 2.2, 0, 4, oz, "Plank"))
-	for _, x in { -0.6, 0.6 } do
-		table.insert(boxes, box(0.2, 4, 0.2, x, 0, -1.6 + oz, "Metal"))
+	for _, y in { 0.8, 1.75, 2.7 } do
+		table.insert(boxes, box(1.8, 0.35, 0.35, 0, y, -1.1 + oz, "ToyMetal"))
 	end
-	for _, y in { 1, 2, 3 } do
-		table.insert(boxes, box(1, 0.2, 0.2, 0, y, -1.6 + oz, "Metal"))
-	end
+	-- degraus e, dos lados, corrimão com rampa contínua (uma cunha por degrau)
 	for k = 1, 5 do
-		table.insert(boxes, box(1.6, 4.3 - 0.8 * k, 1.2, 0, 0, 1.1 + 1.2 * (k - 1) + 0.6 + oz, "Accent"))
+		local top = 4.2 - 0.7 * k
+		local low = math.max(top - 1, 0)
+		local z = -1.6 + 1.15 * (k - 0.5)
+		table.insert(boxes, box(1.8, top - low, 1.15, 0, low, z, "ToyPurple"))
+		for _, x in { -1.1, 1.1 } do
+			V.add(
+				boxes,
+				box(0.4, top + 0.1 - low, 1.15, x, low, z, "ToyPurple"),
+				shaped(box(0.4, 0.7, 1.15, x, top + 0.1, z, "ToyPurple"), "Wedge", 180)
+			)
+		end
+	end
+	for _, x in { -1.1, 1.1 } do
+		table.insert(boxes, box(0.4, 0.9, 0.3, x, 0, 4.3, "ToyPurple"))
 	end
 	return { Name = "Slide", Tier = 1, Boxes = boxes }
-end
-
-function CityProps.Swing(V)
-	local box = V.box
-	local boxes = {
-		box(0.4, 5.6, 2.4, -3.2, 0, 0, "Metal"),
-		box(0.4, 5.6, 2.4, 3.2, 0, 0, "Metal"),
-		box(6.8, 0.4, 0.6, 0, 5.6, 0, "Metal"),
-	}
-	for _, x in { -1.4, 1.4 } do
-		table.insert(boxes, box(0.1, 3.4, 0.1, x - 0.5, 2.2, 0, "Metal"))
-		table.insert(boxes, box(0.1, 3.4, 0.1, x + 0.5, 2.2, 0, "Metal"))
-		table.insert(boxes, box(1.2, 0.2, 0.6, x, 2, 0, "Accent"))
-	end
-	return { Name = "Swing", Tier = 1, Boxes = boxes }
 end
 
 function CityProps.Seesaw(V)
 	local box = V.box
 	local boxes = {
-		box(0.8, 1, 0.8, 0, 0, 0, "Metal"),
-		box(7, 0.3, 0.8, 0, 1, 0, "Accent"),
+		box(1, 0.5, 1, 0, 0, 0, "ToyMetal"),
+		box(1.4, 0.5, 1.2, 0, 0.5, 0, "ToyMetal"),
+		box(7, 0.4, 1.4, 0, 1, 0, "ToyYellow"),
 	}
 	for _, s in { -1, 1 } do
-		table.insert(boxes, box(0.2, 0.8, 0.2, s * 2.4, 1.3, 0, "Metal"))
-		table.insert(boxes, box(0.8, 0.2, 0.8, s * 3.1, 1.3, 0, "Plank"))
+		table.insert(boxes, box(0.3, 0.8, 0.8, s * 2.1, 1.4, 0, "ToyMetal"))
+		table.insert(boxes, box(1.1, 0.3, 1.1, s * 2.9, 1.4, 0, "ToyWood"))
 	end
 	return { Name = "Seesaw", Tier = 1, Boxes = boxes }
 end

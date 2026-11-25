@@ -1544,10 +1544,12 @@ local function fillSidewalksPlanned(layout: Layout, templates: { [string]: Templ
 				continue
 			end
 			local byRoad = false
-			for _, d in DIRS do
+			local faceRoad = 0
+			for dirIndex, d in DIRS do
 				local j = index(grid, x + d[1], z + d[2])
 				if j and grid.Kind[j] == "Road" then
 					byRoad = true
+					faceRoad = ROTATION_FOR[dirIndex]
 				end
 			end
 			if byRoad and lampGroup and not nearCross(x, z) then
@@ -1561,8 +1563,9 @@ local function fillSidewalksPlanned(layout: Layout, templates: { [string]: Templ
 			end
 			if rng:next() < planner.SidewalkChance then
 				local name = pick(rng, templates, planner.Sidewalk, capAt(layout, i), minAt(layout, i, cfg))
-				if name then
-					tryPlace(layout, templates, rng, cfg, name, x, z, 0, "Walk", nil)
+				local face = name ~= nil and Placement.entry(planner.Catalog, name).FaceRoad == true
+				if name and (byRoad or not face) then
+					tryPlace(layout, templates, rng, cfg, name, x, z, if face then faceRoad else 0, "Walk", nil)
 				end
 			end
 		end

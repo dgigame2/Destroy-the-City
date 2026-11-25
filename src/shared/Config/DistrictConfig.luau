@@ -85,7 +85,17 @@ local function common(nature: Mix, yard: Mix, small: Mix, market: Mix): { [strin
 			Skyscraper = 1.2,
 			SpireTower = 0.4,
 			TwinTowers = 0.3,
-		}, { Bush = 2, FlowerPot = 2, Bench = 1, Tree = 1, Fountain = 0.6, Gazebo = 0.4, Playground = 0.3 }, 0.12),
+		}, {
+			Bush = 2,
+			FlowerPot = 2,
+			Bench = 1,
+			Tree = 0.4,
+			Oak = 0.3,
+			BentTree = 0.3,
+			Fountain = 0.6,
+			Gazebo = 0.4,
+			Playground = 0.3,
+		}, 0.12),
 		-- indústria e porto (no asfalto)
 		Industrial = spec("Asphalt", {
 			Warehouse = 3,
@@ -114,10 +124,32 @@ local function common(nature: Mix, yard: Mix, small: Mix, market: Mix): { [strin
 	}
 end
 
-local GARDEN_NATURE = { Tree = 5, Bush = 3, Flowers = 1, Hedge = 2, Rock = 0.5, Mushroom = 1 }
-local BEACH_NATURE = { Palm = 5, Bush = 2, Flowers = 2, Hedge = 1, Rock = 1 }
-local FROST_NATURE =
-	{ SnowPine = 5, IceCrystal = 1.2, Snowman = 0.4, SnowPile = 1.2, IceBlock = 0.6, Bush = 1, Rock = 1 }
+local GARDEN_NATURE = {
+	Tree = 1.5,
+	Oak = 1.25,
+	BentTree = 1.25,
+	Pine = 1,
+	Bush = 2,
+	WideBush = 1,
+	Flowers = 1,
+	Hedge = 2,
+	Rock = 0.2,
+	FlatRock = 0.15,
+	TallRock = 0.15,
+	Mushroom = 1,
+}
+local BEACH_NATURE = { Palm = 5, Bush = 2, Flowers = 2, Hedge = 1, Rock = 0.4, FlatRock = 0.3, TallRock = 0.3 }
+local FROST_NATURE = {
+	SnowPine = 5,
+	IceCrystal = 1.2,
+	Snowman = 0.4,
+	SnowPile = 1.2,
+	IceBlock = 0.6,
+	Bush = 1,
+	Rock = 0.4,
+	FlatRock = 0.3,
+	TallRock = 0.3,
+}
 
 -- Gerador planejado (Logic/CityGen + Logic/Placement + Config/ModelCatalog). Uma cidade por vez: hoje só a
 -- Garden Village usa; Beach e Frost continuam no gerador antigo até a Garden ser aprovada.
@@ -182,7 +214,7 @@ local function backs(houseYard: Mix): { [string]: any }
 			Items = { Barrel = 2, Crate = 1, Dumpster = 1, PowerBox = 1 },
 			Count = { 2, 3 },
 			Depth = 3,
-			Side = { FuelPump = 2, PowerBox = 0.5, WarningSign = 0.5 },
+			Side = { FuelPump = 2, PowerBox = 0.5, StopSign = 0.5 },
 			SideCount = 2,
 		}),
 		Warehouse = table.freeze({ Items = { Pallet = 2, Crate = 2, Barrel = 2 }, Count = { 2, 4 }, Depth = 3 }),
@@ -227,6 +259,7 @@ local function cityKits(extra: { any }): { any }
 				p("Barrel", 3, 3),
 				p("Barrel", 4, 3, 0, 0.7),
 				p("WarningSign", 5, 2),
+				p("SpeedSign", 4, 2),
 			}
 		),
 		-- pátio de carga: caminhão encostado, paletes, caixas, barris e caçamba
@@ -271,13 +304,12 @@ local function cityKits(extra: { any }): { any }
 	return table.freeze(list)
 end
 
--- parquinho completo: escorregador, balanço, gangorra, brinquedão, bancos com lixeira, mesa e postes
+-- parquinho completo: escorregador, gangorra, brinquedão (balanços), bancos com lixeira, mesa e postes
 local function playground(districts: Mix, decor: string)
 	return kit("Playground", "Lot", districts, { 10, 9 }, 80, 3, {
 		p(decor, 0, 0),
 		p("Lamp", 9, 0),
 		p("Slide", 1, 2),
-		p("Swing", 4, 2),
 		p("Seesaw", 4, 5),
 		p("Bench", 8, 1, 90),
 		p("Bin", 8, 3),
@@ -365,8 +397,16 @@ local GARDEN_PLANNER = table.freeze({
 		SurfShop = true,
 		Hotel = true,
 	}),
-	Sidewalk = table.freeze({ Bin = 2, Hydrant = 1.5, Mailbox = 1, BusStop = 0.6 }),
-	SidewalkChance = 0.07,
+	Sidewalk = table.freeze({
+		Bin = 2,
+		Hydrant = 1.5,
+		Mailbox = 1,
+		BusStop = 0.6,
+		StopSign = 0.6,
+		WarningSign = 0.6,
+		SpeedSign = 0.6,
+	}),
+	SidewalkChance = 0.09,
 	Beach = table.freeze({
 		Anchor = table.freeze({ Umbrella = 1 }),
 		Companions = table.freeze({ Towel = 2, Umbrella = 1, Palm = 0.4 }),
@@ -384,7 +424,7 @@ local GARDEN_PLANNER = table.freeze({
 		Fence = 0.75,
 		BackGap = 3, -- cerca a 9 studs do fundo da casa
 		Plant = 0.85,
-		Plants = table.freeze({ Bush = 3, Hedge = 2, Flowers = 1 }),
+		Plants = table.freeze({ Bush = 2, WideBush = 1, Hedge = 2, Flowers = 1 }),
 	}),
 	CurbCars = table.freeze({ Chance = 0.6, Spacing = 19, MinRoad = 6 }),
 	ParkingChance = 0.9, -- estacionamento lotado
@@ -640,9 +680,9 @@ end
 return table.freeze({
 	Garden = fill(
 		GARDEN_NATURE,
-		{ Tree = 4, Bush = 3, Flowers = 1, Hedge = 3 },
-		{ Flowers = 1, Hedge = 3, Bush = 3, PicnicTable = 2, Bench = 2, FlowerPot = 2, Mushroom = 1.5 },
-		{ FoodCart = 3, IceCreamStand = 2, BusStop = 1, Car = 2, Tree = 3, Pine = 1 },
+		{ Tree = 1, Oak = 1, BentTree = 1, Pine = 1, Bush = 2, WideBush = 1, Flowers = 1, Hedge = 3 },
+		{ Flowers = 1, Hedge = 3, Bush = 2, WideBush = 1, PicnicTable = 2, Bench = 2, FlowerPot = 2, Mushroom = 1.5 },
+		{ FoodCart = 3, IceCreamStand = 2, BusStop = 1, Car = 2, Tree = 1, Oak = 1, BentTree = 1, Pine = 1 },
 		{},
 		{
 			Umbrella = 2,
@@ -655,7 +695,17 @@ return table.freeze({
 		BEACH_NATURE,
 		{ Palm = 4, Bush = 2, Flowers = 2, Hedge = 2 },
 		{ Towel = 0.6, Cooler = 1, FlowerPot = 2, Bench = 2, Bush = 2, Flowers = 2, PicnicTable = 1.5, Hedge = 1 },
-		{ Umbrella = 3, IceCreamStand = 2, FoodCart = 2, Lifeguard = 1, Palm = 2, Car = 1, Rock = 0.5 },
+		{
+			Umbrella = 3,
+			IceCreamStand = 2,
+			FoodCart = 2,
+			Lifeguard = 1,
+			Palm = 2,
+			Car = 1,
+			Rock = 0.2,
+			FlatRock = 0.15,
+			TallRock = 0.15,
+		},
 		{
 			-- frente de praia: casas de praia, vilas e hotéis
 			Resort = spec("Lot", {
