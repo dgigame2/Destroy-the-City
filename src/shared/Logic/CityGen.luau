@@ -679,6 +679,9 @@ end
 
 local function occupy(layout: Layout, rng: Rng, cfg: Config, name: string, r: Rect, rotation: number)
 	local grid = layout.Grid
+	if layout.Planner and Placement.entry(layout.Planner.Catalog, name).BackToRoad then
+		rotation = (rotation + 180) % 360
+	end
 	for x = r[1], r[3] - 1 do
 		for z = r[2], r[4] - 1 do
 			grid.Occupied[index(grid, x, z) :: number] = true

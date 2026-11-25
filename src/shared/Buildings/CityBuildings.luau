@@ -571,26 +571,65 @@ function CityBuildings.Bank(V)
 end
 
 function CityBuildings.Hangar(V)
+	-- hangar da referência em blocos (reserva da mesh e caixas da destruição): oco, aberto na frente, avião dentro
 	local box = V.box
-	local boxes = { box(26, 8, 22, 0, 0, 0, "Metal") }
-	for i, width in { 24, 20, 14, 6 } do
-		table.insert(boxes, box(width, 1.6, 22, 0, 8 + (i - 1) * 1.6, 0, if i == 4 then "RoofTop" else "Roof"))
+	local boxes = {
+		box(26, 0.4, 22, 0, 0, 0, "Steel"),
+		box(20.8, 5.8, 0.6, 0, 0.4, 9.1, "PlaneBody"),
+		box(16, 1.5, 1, 0, 6.2, -8.7, "TowerBlue"),
+		box(16, 1.5, 0.6, 0, 6.2, 9.1, "PlaneBody"),
+		box(20, 1.6, 18.8, 0, 7.7, 0.2, "TowerBlue"),
+		box(10, 1.5, 18.8, 0, 9.3, 0.2, "TowerBlue"),
+		box(5.8, 1.9, 20, 0, 10.8, 0.2, "TowerBlue"),
+		box(5, 3, 0.4, 0, 7.7, -9.4, "PlaneBody"),
+		-- avião
+		box(1.2, 1.4, 4, 0, 0.4, 1.5, "Tire"),
+		box(2.4, 2.4, 10, 0, 1.8, 1.5, "PlaneBody"),
+		box(0.4, 1.8, 1.8, 0, 4.2, 5.5, "TowerNavy"),
+	}
+	for _, sx in { -1, 1 } do
+		V.add(
+			boxes,
+			box(0.8, 5.8, 16, sx * 10.8, 0.4, 1.4, "PlaneBody"),
+			box(3, 5.8, 2.6, sx * 9.9, 0.4, -7.9, "PlaneBody"),
+			box(4, 1.5, 18.8, sx * 10, 6.2, 0.2, "TowerBlue"),
+			box(4.4, 0.3, 2, sx * 3.4, 2.2, 2, "Steel"),
+			box(0.1, 1.6, 3, sx * 11.25, 3.8, -2, "Window"),
+			box(0.1, 1.6, 3, sx * 11.25, 3.8, 4, "Window"),
+			box(0.8, 1.7, 0.8, sx * 12.4, 0.4, -9.4, "Tire"),
+			box(0.8, 0.8, 0.8, sx * 12.4, 2.1, -9.4, "Light")
+		)
 	end
-	V.add(boxes, box(18, 7, 0.4, 0, 0, -11.2, "Garage"), box(10, 1.4, 0.4, 0, 8.6, -11.2, "Sign"))
 	return { Name = "Hangar", Tier = 5, Boxes = boxes }
 end
 
 function CityBuildings.ControlTower(V)
+	-- torre da referência em blocos (reserva da mesh e caixas da destruição): base azul, corpo branco,
+	-- cabine de vidro mais larga e antenas
 	local box = V.box
 	local boxes = {
-		box(10, 3, 10, 0, 0, 0, "WallWhite"),
-		box(4, 18, 4, 0, 3, 0, "WallWhite"),
-		box(7, 0.6, 7, 0, 21, 0, "Trim"),
-		box(7, 3, 7, 0, 21.6, 0, "Glass"),
-		box(8, 0.6, 8, 0, 24.6, 0, "Accent"),
-		box(0.4, 4, 0.4, 0, 25.2, 0, "Metal"),
-		box(1, 1, 1, 0, 29.2, 0, "Light"),
+		box(9.6, 1.5, 9.6, 0, 0, 0, "TowerBlue"),
+		box(6.8, 2, 6.8, 0, 1.5, 0, "TowerBlue"),
+		box(5.6, 6.1, 5.6, 0, 3.5, 0, "PlaneBody"),
+		box(3, 0.8, 1.2, 0, 0, -5.4, "PlaneFlap"),
+		box(3.8, 2.8, 1.2, 0, 1.5, -4, "TowerBlue"),
+		box(2.6, 2, 0.2, 0, 1.6, -4.7, "TruckCab"),
+		box(8.6, 1.5, 8.6, 0, 9.6, 0, "TowerNavy"),
+		box(10.8, 1.6, 10.8, 0, 11.1, 0, "TowerBlue"),
+		box(10.4, 3.4, 10.4, 0, 12.7, 0, "TowerGlass"),
+		box(12, 1.5, 12, 0, 16.1, 0, "TowerRoof"),
+		box(7.6, 1.4, 7.6, 0, 17.6, 0, "PlaneBody"),
+		box(4.4, 0.7, 4.4, -0.6, 19, 0, "TowerNavy"),
+		box(1.8, 1, 1.8, 0, 19.7, 0, "PlaneBody"),
+		box(0.4, 2.5, 0.4, 0, 20.7, 0, "TowerNavy"),
+		box(0.6, 0.6, 0.6, 0, 23.2, 0, "Light"),
+		box(1.4, 1.8, 1.4, -2, 19.7, 0, "PlaneBody"),
+		box(0.8, 1.6, 0.8, 2.6, 19, 0, "TowerNavy"),
+		box(2.6, 2, 1.2, 2.6, 20.6, 0, "PlaneBody"),
 	}
+	for _, y in { 4.8, 6.3, 7.8 } do
+		table.insert(boxes, box(1.6, 0.7, 0.1, 0, y, -2.85, "TruckCab"))
+	end
 	return { Name = "ControlTower", Tier = 5, Boxes = boxes }
 end
 

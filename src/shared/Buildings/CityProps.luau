@@ -10,17 +10,20 @@ local CityProps: { [string]: (Voxel) -> any } = {}
 
 -- Portão: mesmo tamanho de um pedaço de cerca (entra na linha da cerca).
 function CityProps.Gate(V)
+	-- reserva da mesh: mesmos postes da cerca
 	local box = V.box
-	local boxes = {
-		box(0.8, 3.4, 0.8, -4, 0, 0, "Beam"),
-		box(0.8, 3.4, 0.8, 4, 0, 0, "Beam"),
-	}
+	local boxes = {}
 	for _, s in { -1, 1 } do
-		table.insert(boxes, box(3.2, 0.6, 0.4, s * 2, 0.6, 0, "Plank"))
-		table.insert(boxes, box(3.2, 0.6, 0.4, s * 2, 2.4, 0, "Plank"))
-		for _, x in { 1.2, 2.8 } do
-			table.insert(boxes, box(0.4, 1.2, 0.4, s * x, 1.2, 0, "Plank"))
-		end
+		V.add(
+			boxes,
+			box(1.4, 0.6, 1.4, s * 3.8, 0, 0, "FenceBase"),
+			box(1, 2.2, 1, s * 3.8, 0.6, 0, "FenceWood"),
+			box(1.4, 0.8, 1.4, s * 3.8, 2.8, 0, "FenceWood"),
+			box(0.7, 2.8, 0.6, s * 0.4, 0.4, 0, "FenceWood"),
+			box(2.55, 0.6, 0.4, s * 2.025, 0.6, 0, "FenceWood"),
+			box(2.55, 0.6, 0.4, s * 2.025, 2.2, 0, "FenceWood"),
+			box(0.5, 1, 0.3, s * 1.9, 1.2, 0, "FenceWood")
+		)
 	end
 	return { Name = "Gate", Tier = 1, Boxes = boxes }
 end
@@ -44,17 +47,21 @@ function CityProps.Bicycle(V)
 end
 
 function CityProps.Doghouse(V)
+	-- reserva da mesh: casinha branca de telhado vermelho, tigela e grama
 	local box = V.box
 	return {
 		Name = "Doghouse",
 		Tier = 1,
 		Boxes = {
-			box(3.2, 2.4, 3.2, 0, 0, 0, "Wall"),
-			box(3.8, 0.5, 3.8, 0, 2.4, 0, "Roof"),
-			box(2.6, 0.5, 3.8, 0, 2.9, 0, "Roof"),
-			box(1.4, 0.5, 3.8, 0, 3.4, 0, "Roof"),
-			box(1.2, 1.6, 0.1, 0, 0, -1.65, "Tire"),
-			box(0.8, 0.3, 0.8, 1.2, 0, -2.3, "Accent"),
+			box(4.4, 0.6, 3.6, 0, 0, 0, "ToyRed"),
+			box(3.8, 2.1, 3.2, 0, 0.6, 0, "PlaneBody"),
+			box(5, 0.7, 4.2, 0, 2.7, 0, "ToyRed"),
+			box(3.4, 0.7, 4.2, 0, 3.4, 0, "ToyRed"),
+			box(1.6, 0.8, 4.4, 0, 4.1, 0, "ToyRed"),
+			box(1.5, 1.4, 0.1, 0, 0.6, -1.65, "FenceWood"),
+			box(1.2, 0.6, 1.1, 1.1, 0, -2.45, "ToyRed"),
+			box(0.6, 1, 0.6, 2.6, 0, -1, "Canopy"),
+			box(0.6, 1, 0.6, -2.6, 0, 0, "Canopy"),
 		},
 	}
 end

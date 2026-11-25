@@ -11,6 +11,7 @@ export type Entry = {
 	Only: { [string]: boolean }?,
 	Districts: { [string]: boolean }?,
 	FaceRoad: boolean?,
+	BackToRoad: boolean?,
 }
 export type Catalog = { [string]: Entry }
 

@@ -253,13 +253,17 @@ end
 
 -- Cerca de madeira com dois trilhos (referência do cercado).
 function builders.Fence()
-	-- postes e trilhos encostados (os trilhos ficam entre os postes, sem atravessar)
-	local boxes = {}
-	for _, x in { -4, 0, 4 } do
-		table.insert(boxes, box(0.8, 3.2, 0.8, x, 0, 0, "Beam"))
-	end
-	for _, x in { -2, 2 } do
-		add(boxes, box(3.2, 0.6, 0.4, x, 1, 0, "Plank"), box(3.2, 0.6, 0.4, x, 2.2, 0, "Plank"))
+	-- reserva da mesh: postes com base e topo, poste do meio e trilhos encostados (sem atravessar)
+	local boxes = { box(0.9, 3, 0.8, 0, 0, 0, "FenceWood") }
+	for _, s in { -1, 1 } do
+		add(
+			boxes,
+			box(1.4, 0.6, 1.4, s * 3.8, 0, 0, "FenceBase"),
+			box(1, 2.2, 1, s * 3.8, 0.6, 0, "FenceWood"),
+			box(1.4, 0.8, 1.4, s * 3.8, 2.8, 0, "FenceWood"),
+			box(2.85, 0.7, 0.4, s * 1.875, 0.8, 0, "FenceWood"),
+			box(2.85, 0.7, 0.4, s * 1.875, 2, 0, "FenceWood")
+		)
 	end
 	return { Name = "Fence", Tier = 1, Boxes = boxes }
 end
@@ -805,19 +809,23 @@ function builders.Bus()
 end
 
 function builders.GasStation()
+	-- posto da referência em blocos (reserva da mesh e caixas da destruição): loja atrás, cobertura em cima de tudo
 	local boxes = {
-		box(22, 0.4, 16, 0, 0, 0, "Sidewalk"),
-		box(10, 7, 7, 4, 0.4, 4, "Wall"),
-		box(6, 3.6, 0.4, 4, 0.8, 0.3, "Glass"),
-		box(10.6, 0.8, 7.6, 4, 7.4, 4, "Awning"),
-		box(20, 1.2, 8, 0, 9.2, -3, "Awning"),
-		box(20.4, 0.5, 8.4, 0, 10.4, -3, "Stripe"),
+		box(22, 0.6, 16, 0, 0, 0, "PlaneFlap"),
+		box(16.4, 7.4, 6.4, 1.8, 0.6, 4.2, "PlaneBody"),
+		box(3.4, 3.6, 0.2, 2.7, 0.6, 0.9, "Window"),
+		box(4.4, 2.4, 0.2, -3.3, 2.6, 0.9, "Window"),
+		box(3.2, 2.4, 0.2, 7, 2.6, 0.9, "Window"),
+		box(22, 1.4, 16, 0, 8, 0, "ToyRed"),
+		box(22, 1, 16, 0, 9.4, 0, "PlaneBody"),
+		box(5.6, 2.2, 1.4, 0, 10.4, -7.2, "ToyRed"),
 	}
 	for _, x in { -8, 8 } do
-		table.insert(boxes, box(0.9, 8.8, 0.9, x, 0.4, -3, "Metal"))
+		table.insert(boxes, box(2.4, 1.2, 2.4, x, 0.6, -4.4, "PlaneBody"))
+		table.insert(boxes, box(1.6, 6.2, 1.6, x, 1.8, -4.4, "PlaneFlap"))
 	end
-	for _, x in { -4, 0 } do
-		Voxel.fuelPump(boxes, x, 0.4, -3)
+	for _, x in { -4.2, -0.2 } do
+		Voxel.fuelPump(boxes, x, 0.6, -4.4)
 	end
 	return { Name = "GasStation", Tier = 4, Boxes = boxes }
 end

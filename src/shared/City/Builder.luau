@@ -37,6 +37,7 @@ local REFLECTIVE: { [string]: number } = {
 local TRANSPARENT: { [string]: number } = {
 	Water = 0.25,
 	Ice = 0.15,
+	TowerGlass = 0.25,
 }
 
 -- Papéis que usam o mesmo sorteio de cor de outro papel (o telhado e o topo do telhado combinam).

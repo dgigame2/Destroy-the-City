@@ -148,6 +148,20 @@ return function(t)
 			end
 		end)
 
+		t.test(`{map.Id}: hangar de costas para a rua (a frente dele não olha para a calçada)`, function()
+			local FRONT = { [0] = { 0, -1 }, [90] = { -1, 0 }, [180] = { 0, 1 }, [270] = { 1, 0 } }
+			for _, p in layout.Placements do
+				if p.Template == "Hangar" then
+					local r, f = p.Cells, FRONT[p.Rotation]
+					local mx, mz = (r[1] + r[3] - 1) // 2, (r[2] + r[4] - 1) // 2
+					local x = if f[1] < 0 then r[1] - 1 elseif f[1] > 0 then r[3] else mx
+					local z = if f[2] < 0 then r[2] - 1 elseif f[2] > 0 then r[4] else mz
+					local i = at(x, z)
+					t.falsy(i and (grid.Kind[i] == "Walk" or grid.Kind[i] == "Road"))
+				end
+			end
+		end)
+
 		t.test(`{map.Id}: nada em cima da calçada na frente das portas`, function()
 			for _, p in layout.Placements do
 				for x = p.Cells[1], p.Cells[3] - 1 do

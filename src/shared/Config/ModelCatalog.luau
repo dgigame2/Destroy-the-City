@@ -19,6 +19,7 @@
 -- (SpacingGroup, padrão = o próprio nome): impede fileiras de bancos, vasos colados, bonecos amontoados.
 -- Only = tipos de chão permitidos (nil = o que o gerador escolher). Districts = bairros permitidos.
 -- FaceRoad = na calçada, só encostado na rua e com a frente virada para ela.
+-- BackToRoad = construção de costas para a rua (a frente olha para o meio do terreno).
 
 export type Entry = {
 	Category: string,
@@ -27,6 +28,7 @@ export type Entry = {
 	Only: { [string]: boolean }?,
 	Districts: { [string]: boolean }?,
 	FaceRoad: boolean?,
+	BackToRoad: boolean?,
 }
 
 local SAND = table.freeze({ Sand = true })
@@ -125,7 +127,7 @@ local entries: { [string]: Entry } = {
 	SurfRack = { Category = "Leisure", Spacing = 20 },
 	Kiosk = { Category = "Stall", Spacing = 30 },
 	-- construções com regra própria
-	Hangar = { Category = "Building", Spacing = 60, Districts = AIRPORT },
+	Hangar = { Category = "Building", Spacing = 60, Districts = AIRPORT, BackToRoad = true },
 }
 
 for _, entry in entries do

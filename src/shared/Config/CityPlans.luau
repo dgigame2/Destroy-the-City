@@ -163,7 +163,8 @@ plans.GardenVillage = {
 	Sites = {
 		{ Template = "SoccerField", X = 106, Z = 123, Rotation = 90 },
 		{ Template = "Terminal", X = 66, Z = 118 },
-		{ Template = "ControlTower", X = 86, Z = 132 },
+		{ Template = "ControlTower", X = 86, Z = 132, Rotation = 90 }, -- as duas torres olham para o meio do pátio
+		{ Template = "ControlTower", X = 48, Z = 132, Rotation = 270 },
 		{ Template = "Plane", X = 54, Z = 132, Rotation = 90 },
 		{ Template = "Plane", X = 54, Z = 144, Rotation = 90 },
 		{ Template = "Plane", X = 72, Z = 140 },
