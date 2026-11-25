@@ -15,7 +15,32 @@ function CityBuildings.Hedge(V)
 	return {
 		Name = "Hedge",
 		Tier = 1,
-		Boxes = { box(4, 1.6, 1.4, 0, 0, 0, "Leaves"), box(3.4, 0.6, 1, 0, 1.6, 0, "Leaves2") },
+		Boxes = {
+			-- abaixo de 4 studs de altura de propósito: mais alto ganharia caixa cinza de longe (CityClient)
+			box(1.8, 0.35, 1.6, 0, 0, 0, "Bark"),
+			box(0.35, 0.3, 0.35, -0.45, 0.35, -0.3, "Bark"),
+			box(0.35, 0.3, 0.35, 0.45, 0.35, -0.3, "Bark"),
+			box(2.8, 0.3, 1.2, 0, 0.35, 0.6, "CanopyDark"),
+			-- copa de baixo
+			box(3.2, 0.9, 2.4, 0, 0.65, 0, "Canopy"),
+			box(0.4, 0.6, 1.4, -1.8, 0.75, 0.1, "Canopy"),
+			box(0.4, 0.6, 1.4, 1.8, 0.65, 0.4, "Canopy"),
+			-- galho e copa da direita
+			box(0.3, 0.65, 0.3, 1.1, 0.9, -1.35, "Bark"),
+			box(1.3, 0.4, 1, 1.35, 1.55, -0.95, "Canopy"),
+			box(0.8, 0.3, 0.6, 1.35, 1.95, -0.95, "CanopyTop"),
+			-- galho e copa da esquerda
+			box(0.65, 0.3, 0.3, -1.075, 1.75, 0, "Bark"),
+			box(0.3, 0.45, 0.3, -1.55, 1.75, 0, "Bark"),
+			box(0.95, 0.35, 1, -1.525, 2.2, 0, "Canopy"),
+			box(0.6, 0.25, 0.6, -1.525, 2.55, 0, "CanopyTop"),
+			-- copa de cima
+			box(1.8, 0.45, 1.5, 0.15, 1.55, 0.3, "CanopyDark"),
+			box(2.35, 0.65, 1.8, 0.425, 2, 0.25, "Canopy"),
+			box(2, 0.75, 1.6, 0.1, 2.65, 0.2, "CanopyTop"),
+			box(0.3, 0.5, 0.8, -1.05, 2.65, 0.2, "Canopy"),
+			box(1.1, 0.5, 0.9, 0.2, 3.4, 0.2, "CanopyTop"),
+		},
 	}
 end
 
@@ -45,18 +70,23 @@ function CityBuildings.Towel(V)
 end
 
 function CityBuildings.PicnicTable(V)
-	local box = V.box
-	return {
-		Name = "PicnicTable",
-		Tier = 1,
-		Boxes = {
-			box(0.5, 1.6, 2.6, -1.8, 0, 0, "Beam"),
-			box(0.5, 1.6, 2.6, 1.8, 0, 0, "Beam"),
-			box(4.6, 0.4, 2.2, 0, 1.6, 0, "Plank"),
-			box(4.6, 0.3, 0.8, 0, 0.8, -1.7, "Plank"),
-			box(4.6, 0.3, 0.8, 0, 0.8, 1.7, "Plank"),
-		},
-	}
+	local box, shaped = V.box, V.shaped
+	local boxes = { box(4.6, 0.45, 2.4, 0, 1.6, 0, "ToyWood") }
+	for _, x in { -1.6, 1.6 } do
+		V.add(boxes, box(0.7, 0.8, 2.4, x, 0, 0, "ToyLeg"), box(0.7, 0.8, 1.8, x, 0.8, 0, "ToyLeg"))
+		for _, s in { -1, 1 } do
+			-- ombro inclinado da perna (mais alto no meio da mesa) e pé do banco
+			table.insert(
+				boxes,
+				shaped(box(0.7, 0.8, 0.3, x, 0.8, s * 1.05, "ToyLeg"), "Wedge", if s == 1 then 180 else 0)
+			)
+			table.insert(boxes, box(0.7, 0.75, 0.7, x, 0, s * 1.55, "ToyLeg"))
+		end
+	end
+	for _, s in { -1, 1 } do
+		table.insert(boxes, box(4.6, 0.35, 0.8, 0, 0.75, s * 1.7, "ToyWood"))
+	end
+	return { Name = "PicnicTable", Tier = 1, Boxes = boxes }
 end
 
 -- Iceberg: só decoração do mar congelado (fora da cidade).
@@ -198,42 +228,80 @@ end
 function CityBuildings.Playground(V)
 	local box = V.box
 	local boxes = {
-		box(10, 0.2, 7, 0, 0, 0, "Sandstone"),
-		box(6.5, 0.5, 2.5, -1, 5.2, 0, "Metal"),
+		box(10, 0.4, 7, 0, 0, 0, "ToyWood"),
+		box(7, 0.7, 3.4, 0.9, 5.2, 0, "ToyMetal"),
 	}
-	for _, x in { -4, 2 } do
-		for _, z in { -1, 1 } do
-			table.insert(boxes, box(0.5, 5, 0.5, x, 0.2, z, "Accent"))
+	-- pernas abertas (em dois degraus)
+	for _, x in { -2.1, 3.9 } do
+		for _, s in { -1, 1 } do
+			V.add(boxes, box(0.7, 2.4, 0.7, x, 0.4, s * 1.75, "ToyRed"), box(0.7, 2.4, 0.7, x, 2.8, s * 1.3, "ToyRed"))
 		end
 	end
-	for _, x in { -2.4, 0.4 } do
+	for _, x in { -0.4, 2.2 } do
 		V.add(
 			boxes,
-			box(1.2, 0.3, 0.8, x, 1.6, 0, "Accent"),
-			box(0.15, 3.3, 0.15, x - 0.4, 1.9, 0, "Metal"),
-			box(0.15, 3.3, 0.15, x + 0.4, 1.9, 0, "Metal")
+			box(1.3, 0.35, 0.8, x, 1.55, 0, "ToyRed"),
+			box(0.2, 3.3, 0.2, x - 0.4, 1.9, 0, "ToyMetal"),
+			box(0.2, 3.3, 0.2, x + 0.4, 1.9, 0, "ToyMetal")
 		)
 	end
-	-- caixa de areia e escorregador em degraus no canto
+	-- caixa de areia e torre no canto
 	V.add(
 		boxes,
-		box(2.4, 0.4, 2.4, 4, 0.2, -2, "Plank"),
-		box(1.6, 1.4, 1.6, 4, 0.2, 2, "Accent"),
-		box(1.6, 1, 1.6, 4, 1.6, 2, "Accent"),
-		box(1.2, 0.4, 1.2, 4, 2.6, 2, "Trim")
+		box(2.2, 0.4, 1.1, -3.5, 0.4, -2.7, "Plank"),
+		box(1.8, 1.6, 1.8, -3.8, 0.4, 1.6, "ToyRed"),
+		box(1.9, 1, 1.9, -3.8, 2, 1.6, "ToyRed"),
+		box(1.4, 0.5, 1.4, -3.8, 3, 1.6, "Trim")
 	)
 	return { Name = "Playground", Tier = 3, Boxes = boxes }
 end
 
+-- Caminhão de lixo da referência: cabine azul, caçamba verde em degraus e três eixos com para-lama.
 function CityBuildings.Truck(V)
 	local box = V.box
 	local boxes = {
-		box(3.6, 0.8, 12, 0, 0.8, 0, "Metal"),
-		box(3.6, 3.2, 3, 0, 1.6, -4.5, "Body"),
-		box(3, 1.4, 0.3, 0, 3, -6.15, "Window"),
-		box(3.8, 4, 8.4, 0, 1.6, 1.6, "Container"),
+		box(3, 0.9, 13, 0, 1, 0.2, "Steel"),
+		box(4.8, 0.7, 0.7, 0, 1.2, -6.65, "Steel"),
+		-- caçamba
+		box(3, 0.7, 8, 0, 1.9, 2.3, "TruckDark"),
+		box(4.6, 1.3, 8.6, 0, 2.6, 2.3, "TruckMid"),
+		box(4.8, 2.2, 9, 0, 3.9, 2.3, "TruckGreen"),
+		box(3.2, 0.6, 4, 0, 6.1, 3.4, "TruckLime"),
+		box(3.8, 0.35, 0.8, 0, 6.1, -1.3, "TruckLime"),
+		box(4, 2.6, 0.3, 0, 3.5, 6.95, "TruckLime"),
+		-- cabine
+		box(3, 0.7, 3.9, 0, 1.9, -4.45, "TruckCab"),
+		box(4.6, 1.2, 4.2, 0, 2.6, -4.6, "TruckCab"),
+		box(4.6, 1.9, 3.6, 0, 3.8, -4.3, "TruckCab"),
+		box(3, 0.5, 1.8, 0, 5.7, -4.2, "TruckCab"),
+		V.shaped(box(3.8, 1.6, 0.5, 0, 3.8, -6.35, "Glass"), "Wedge", 0),
 	}
-	V.wheels(boxes, { -2.2, 2.2 }, { -4, 0, 4 }, 1.6)
+	for _, sx in { -1, 1 } do
+		V.add(
+			boxes,
+			box(0.2, 1, 1.8, sx * 2.5, 4, 5, "TruckLime"),
+			box(0.2, 1.3, 2.2, sx * 2.5, 4, -0.4, "TruckLime"),
+			box(0.15, 1.3, 1.5, sx * 2.375, 3.9, -4.4, "Glass"),
+			box(0.4, 1.3, 0.5, sx * 2.5, 3.7, -5.8, "Steel"),
+			box(0.9, 0.7, 0.15, sx * 1.7, 2.8, -6.775, "ToyDark"),
+			box(0.6, 0.45, 0.1, sx * 1.7, 2.925, -6.9, "Light"),
+			box(0.7, 0.5, 0.2, sx * 1.1, 1.2, 6.8, "ToyRed"),
+			-- longarina entre os para-lamas
+			box(0.9, 0.6, 1.6, sx * 1.95, 1.3, -2, "Steel"),
+			box(0.9, 0.6, 1.1, sx * 1.95, 1.3, 2.35, "Steel")
+		)
+		for _, z in { -4.3, 0.3, 4.4 } do
+			V.add(
+				boxes,
+				-- acima de 6 studs³ de propósito: menor, a roda sumiria de longe (QualityConfig.DetailVolume)
+				box(1.3, 2.2, 2.2, sx * 2.15, 0, z, "Tire"),
+				box(0.15, 0.9, 0.9, sx * 2.875, 0.65, z, "Steel"),
+				box(1.2, 0.4, 3, sx * 2.1, 2.2, z, "Steel"),
+				box(1.2, 1.1, 0.4, sx * 2.1, 1.1, z - 1.3, "Steel"),
+				box(1.2, 1.1, 0.4, sx * 2.1, 1.1, z + 1.3, "Steel")
+			)
+		end
+	end
 	return { Name = "Truck", Tier = 3, Boxes = boxes }
 end
 
@@ -368,22 +436,24 @@ function CityBuildings.SoccerField(V)
 end
 
 function CityBuildings.ContainerStack(V)
-	-- contêineres de verdade: corpo, nervuras nas laterais de fora e porta com trancas no fundo
+	-- quatro contêineres sobre pés: nervuras nas laterais de fora e porta com trancas na frente
 	local box = V.box
 	local boxes = {}
-	for _, spot in { { -1.5, 0, "Container" }, { 1.5, 0, "Accent" }, { -1.5, 3, "Body" }, { 1.5, 3, "Bus" } } do
-		local x, y, role = spot[1], spot[2], spot[3]
-		local side = if x < 0 then -1 else 1
-		table.insert(boxes, box(3, 3, 7.6, x, y, 0, role))
-		for k = -2, 2 do
-			table.insert(boxes, box(0.2, 2.6, 0.5, x + side * 1.6, y + 0.2, k * 1.4, role))
-		end
+	for _, spot in { { 1, 0, "ToyBlue" }, { -1, 0, "Cone" }, { 1, 3.1, "ToyRed" }, { -1, 3.1, "ContainerYellow" } } do
+		local side, y, role = spot[1], spot[2], spot[3]
+		local x = side * 1.55
 		V.add(
 			boxes,
-			box(2.6, 2.6, 0.2, x, y + 0.2, 3.9, "Metal"),
-			box(0.15, 2.2, 0.15, x - 0.5, y + 0.4, 4.075, "Trim"),
-			box(0.15, 2.2, 0.15, x + 0.5, y + 0.4, 4.075, "Trim")
+			box(2.8, 0.3, 0.8, x, y, -2.7, role),
+			box(2.8, 0.3, 0.8, x, y, 3.2, role),
+			box(2.9, 2.8, 7.6, x, y + 0.3, 0.2, role),
+			box(2.8, 2.6, 0.3, x, y + 0.4, -3.75, "ToyMetal"),
+			box(0.35, 2, 0.15, x - 0.55, y + 0.7, -3.975, "Trim"),
+			box(0.35, 2, 0.15, x + 0.55, y + 0.7, -3.975, "Trim")
 		)
+		for k = -2, 2 do
+			table.insert(boxes, box(0.3, 2.2, 0.6, side * 3.15, y + 0.3, 0.2 + k * 1.5, role))
+		end
 	end
 	return { Name = "ContainerStack", Tier = 4, Boxes = boxes }
 end
@@ -525,32 +595,76 @@ function CityBuildings.ControlTower(V)
 end
 
 function CityBuildings.Plane(V)
-	-- avião de brinquedo (referências): fuselagem redonda branca, nariz e cauda arredondados, asas,
-	-- turbinas redondas e leme coloridos, fileira de janelas e trem de pouso
+	-- avião da referência: fuselagem branca em degraus, asas para trás, turbinas facetadas e trem de pouso.
+	-- Cauda, pontas das asas e turbinas usam Accent (vermelho, azul, laranja ou roxo, sorteado por avião).
+	-- O que sustenta peças grandes passa de 6 studs³, senão some de longe (QualityConfig.DetailVolume).
 	local box, shaped = V.box, V.shaped
-	return {
-		Name = "Plane",
-		Tier = 5,
-		Boxes = {
-			shaped(box(4, 4, 22, 0, 2.2, 0, "WallWhite"), "CylinderZ"),
-			shaped(box(4, 4, 4, 0, 2.2, -13, "WallWhite"), "Ball"),
-			shaped(box(3, 3, 4, 0, 3.2, 13, "WallWhite"), "Ball"),
-			box(12, 0.6, 6, -8, 3.2, 1, "WallWhite"),
-			box(12, 0.6, 6, 8, 3.2, 1, "WallWhite"),
-			box(0.6, 1.4, 2, -14.3, 3.2, 2.5, "Accent"),
-			box(0.6, 1.4, 2, 14.3, 3.2, 2.5, "Accent"),
-			shaped(box(2, 2, 4, -6, 1.2, -0.5, "Accent"), "CylinderZ"),
-			shaped(box(2, 2, 4, 6, 1.2, -0.5, "Accent"), "CylinderZ"),
-			shaped(box(0.6, 5, 4, 0, 6.2, 11.5, "Accent"), "Wedge", 0),
-			box(4, 0.4, 3, -4, 4.6, 12, "WallWhite"),
-			box(4, 0.4, 3, 4, 4.6, 12, "WallWhite"),
-			box(0.2, 0.8, 16, -2.1, 4.4, -1, "Window"),
-			box(0.2, 0.8, 16, 2.1, 4.4, -1, "Window"),
-			box(0.6, 2.2, 0.6, 0, 0, -9, "Tire"),
-			box(0.6, 3.2, 0.6, -3, 0, 1, "Tire"),
-			box(0.6, 3.2, 0.6, 3, 0, 1, "Tire"),
-		},
+	local boxes = {
+		-- fuselagem
+		box(3, 0.6, 16.5, 0, 2.2, -0.25, "WallWhite"),
+		box(4.2, 2.6, 16.5, 0, 2.8, -0.25, "WallWhite"),
+		box(3.2, 0.6, 16.5, 0, 5.4, -0.25, "WallWhite"),
+		box(2.4, 0.25, 6, 0, 6, -4, "WallWhite"),
+		box(2.4, 0.25, 8, 0, 6, 3.5, "WallWhite"),
+		box(0.8, 0.3, 1.2, 0, 6.25, -5, "WallWhite"),
+		box(0.5, 0.4, 0.5, 0, 6.25, 1.5, "WallWhite"),
+		box(0.5, 0.4, 0.5, 0, 6.25, 2.5, "WallWhite"),
+		-- nariz e para-brisa
+		box(3.9, 2.9, 2, 0, 2.5, -9.5, "WallWhite"),
+		box(3, 0.5, 2, 0, 5.4, -9.5, "WallWhite"),
+		box(3.6, 1.6, 2.3, 0, 2.6, -11.65, "WallWhite"),
+		box(2.8, 1.3, 1.2, 0, 2.7, -13.4, "WallWhite"),
+		box(1.8, 0.9, 0.6, 0, 2.9, -14.3, "WallWhite"),
+		shaped(box(0.3, 1.2, 1.8, 0, 4.2, -11.4, "WallWhite"), "Wedge", 0),
+		-- cauda
+		box(3.6, 2.4, 3, 0, 3.2, 9.5, "WallWhite"),
+		box(2.6, 1.7, 3, 0, 3.9, 12.5, "WallWhite"),
+		box(1.6, 1, 0.6, 0, 4.2, 14.3, "WallWhite"),
+		box(1.6, 0.7, 5.6, 0, 5.6, 10.9, "Accent"),
+		shaped(box(0.8, 4, 2.6, 0, 6.3, 10.3, "Accent"), "Wedge", 0),
+		box(0.8, 4, 2, 0, 6.3, 12.6, "Accent"),
+		box(0.6, 1, 1.7, 0, 10.3, 12.75, "Accent"),
+		-- trem de pouso do nariz
+		box(0.7, 2.1, 0.6, 0, 0.4, -9.5, "Steel"),
 	}
+	for _, sx in { -1, 1 } do
+		V.add(
+			boxes,
+			shaped(box(1.5, 1.2, 1.8, sx * 0.9, 4.2, -11.4, "PlaneWindow"), "Wedge", 0),
+			box(4.4, 0.6, 2.4, sx * 3.5, 4.6, 12.4, "WallWhite"),
+			box(3.2, 0.2, 1.4, sx * 3.7, 5.2, 12.6, "Concrete"),
+			-- asa em degraus, cada vez mais para trás
+			box(3, 0.7, 6.6, sx * 3.6, 2.9, -0.5, "WallWhite"),
+			box(3, 0.7, 5.6, sx * 6.6, 2.9, 0.2, "WallWhite"),
+			box(3, 0.7, 4.6, sx * 9.6, 2.9, 1.1, "WallWhite"),
+			box(2.8, 0.7, 3.4, sx * 12.5, 2.9, 2.1, "WallWhite"),
+			box(2.6, 0.2, 1.6, sx * 6.6, 3.6, 2, "Concrete"),
+			box(2.4, 0.2, 1.3, sx * 9.6, 3.6, 2.5, "Concrete"),
+			box(0.6, 0.8, 3, sx * 14.2, 2.9, 2.3, "Accent"),
+			box(0.6, 1.3, 1.8, sx * 14.2, 3.7, 2.9, "Accent"),
+			shaped(box(0.6, 1.3, 1.2, sx * 14.2, 3.7, 1.4, "Accent"), "Wedge", 0),
+			-- turbina
+			shaped(box(2.4, 2.4, 1.1, sx * 6.6, 0.3, -3.95, "WallWhite"), "CylinderZ"),
+			shaped(box(2.2, 2.2, 1.6, sx * 6.6, 0.4, -2.6, "Accent"), "CylinderZ"),
+			shaped(box(1.8, 1.8, 1.6, sx * 6.6, 0.6, -1, "Steel"), "CylinderZ"),
+			box(0.8, 0.3, 1.8, sx * 6.6, 2.6, -2.5, "WallWhite"),
+			shaped(box(1.7, 1.7, 0.1, sx * 6.6, 0.65, -4.55, "ToyDark"), "CylinderZ"),
+			box(0.6, 0.6, 0.2, sx * 6.6, 1.2, -4.7, "Steel"),
+			-- trem de pouso: rodas do nariz e da asa
+			box(0.4, 1.1, 1.1, sx * 0.55, 0, -9.5, "Tire"),
+			box(0.1, 0.5, 0.5, sx * 0.8, 0.3, -9.5, "Steel"),
+			box(0.7, 2.5, 0.6, sx * 3, 0.4, 0.8, "Steel"),
+			box(0.4, 1.1, 1.1, sx * 2.45, 0, 0.8, "Tire"),
+			box(0.4, 1.1, 1.1, sx * 3.55, 0, 0.8, "Tire"),
+			box(0.1, 0.5, 0.5, sx * 3.8, 0.3, 0.8, "Steel"),
+			-- faixa e janelas
+			box(0.1, 1.1, 13.4, sx * 2.15, 4, -0.5, "PlaneBand")
+		)
+		for k = 0, 9 do
+			table.insert(boxes, box(0.1, 0.7, 0.7, sx * 2.25, 4.2, -6.35 + k * 1.3, "PlaneWindow"))
+		end
+	end
+	return { Name = "Plane", Tier = 5, Boxes = boxes }
 end
 
 function CityBuildings.Terminal(V)

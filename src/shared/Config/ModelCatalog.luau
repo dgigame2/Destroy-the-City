@@ -18,6 +18,7 @@
 -- Spacing = distância mínima (studs, centro a centro) até outro modelo da MESMA categoria de espaçamento
 -- (SpacingGroup, padrão = o próprio nome): impede fileiras de bancos, vasos colados, bonecos amontoados.
 -- Only = tipos de chão permitidos (nil = o que o gerador escolher). Districts = bairros permitidos.
+-- FaceRoad = na calçada, só encostado na rua e com a frente virada para ela.
 
 export type Entry = {
 	Category: string,
@@ -25,6 +26,7 @@ export type Entry = {
 	SpacingGroup: string?,
 	Only: { [string]: boolean }?,
 	Districts: { [string]: boolean }?,
+	FaceRoad: boolean?,
 }
 
 local SAND = table.freeze({ Sand = true })
@@ -41,6 +43,8 @@ local entries: { [string]: Entry } = {
 	Plane = { Category = "Aircraft", Spacing = 45, Only = table.freeze({ Asphalt = true, Runway = true }) },
 	-- natureza
 	Tree = { Category = "Tree", Spacing = 12, SpacingGroup = "Tree" },
+	Oak = { Category = "Tree", Spacing = 12, SpacingGroup = "Tree" },
+	BentTree = { Category = "Tree", Spacing = 12, SpacingGroup = "Tree" },
 	Pine = { Category = "Tree", Spacing = 10, SpacingGroup = "Tree" },
 	SnowPine = { Category = "Tree", Spacing = 10, SpacingGroup = "Tree" },
 	Palm = { Category = "Tree", Spacing = 14, SpacingGroup = "Tree" },
@@ -48,10 +52,13 @@ local entries: { [string]: Entry } = {
 	DeadTree = { Category = "Tree", Spacing = 10, SpacingGroup = "Tree" },
 	Cactus = { Category = "Plant", Spacing = 10 },
 	Bush = { Category = "Plant", Spacing = 7 },
+	WideBush = { Category = "Plant", Spacing = 10, SpacingGroup = "Bush" },
 	Hedge = { Category = "Plant", Spacing = 6 },
 	Flowers = { Category = "Plant", Spacing = 12 },
 	Mushroom = { Category = "Plant", Spacing = 14 },
 	Rock = { Category = "Plant", Spacing = 14 },
+	FlatRock = { Category = "Plant", Spacing = 14, SpacingGroup = "Rock" },
+	TallRock = { Category = "Plant", Spacing = 14, SpacingGroup = "Rock" },
 	RockPillar = { Category = "Plant", Spacing = 14 },
 	IceCrystal = { Category = "Plant", Spacing = 14 },
 	Snowman = { Category = "Plant", Spacing = 30 },
@@ -89,14 +96,16 @@ local entries: { [string]: Entry } = {
 	Grill = { Category = "Leisure", Spacing = 16 },
 	PatioSet = { Category = "Leisure", Spacing = 16 },
 	Slide = { Category = "Leisure" },
-	Swing = { Category = "Leisure" },
 	Seesaw = { Category = "Leisure" },
 	Crate = { Category = "Yard" },
 	Barrel = { Category = "Yard" },
 	Pallet = { Category = "Yard" },
 	Dumpster = { Category = "Yard", Spacing = 20 },
 	Barrier = { Category = "Street" },
-	WarningSign = { Category = "Street" },
+	-- placas de trânsito: espaço entre elas contado junto, frente virada para a rua
+	WarningSign = { Category = "Street", Spacing = 50, SpacingGroup = "RoadSign", FaceRoad = true },
+	StopSign = { Category = "Street", Spacing = 50, SpacingGroup = "RoadSign", FaceRoad = true },
+	SpeedSign = { Category = "Street", Spacing = 50, SpacingGroup = "RoadSign", FaceRoad = true },
 	FuelPump = { Category = "Street" },
 	ShoppingCart = { Category = "Street" },
 	PowerBox = { Category = "Street", Spacing = 40 },

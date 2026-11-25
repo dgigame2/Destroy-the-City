@@ -38,15 +38,33 @@ local builders: { [string]: () -> any } = {}
 
 -- Tier 1: props ------------------------------------------------------------
 
+-- Poste com lampião. Poste e braço deslocados para caber em 1 célula (3 studs): mais largo não cabe na calçada.
 function builders.Lamp()
 	return {
 		Name = "Lamp",
 		Tier = 1,
 		Boxes = {
-			box(1.6, 0.6, 1.6, 0, 0, 0, "Metal"),
-			box(0.8, 8.6, 0.8, 0, 0.6, 0, "Metal"),
-			box(1.6, 1.4, 1.6, 0, 9.2, 0, "Light"),
-			box(2.2, 0.5, 2.2, 0, 10.6, 0, "Metal"),
+			box(1.7, 0.6, 1.7, -0.6, 0, 0, "ToyMetal"),
+			box(1.4, 1.7, 1.4, -0.6, 0.6, 0, "ToyMetal"),
+			box(1, 0.5, 1, -0.6, 2.3, 0, "ToyMetal"),
+			box(0.6, 0.6, 0.1, -0.6, 1.1, -0.75, "RockDark"),
+			box(0.6, 0.6, 0.1, -0.6, 1.1, 0.75, "RockDark"),
+			box(0.7, 5.4, 0.7, -0.6, 2.8, 0, "Bark"),
+			box(1, 0.8, 1, -0.6, 8.2, 0, "LampDark"),
+			box(0.5, 0.3, 0.5, -0.6, 9, 0, "LampDark"),
+			box(0.9, 0.6, 0.9, -0.6, 9.3, 0, "Bark"),
+			box(1.5, 0.5, 0.5, 0.65, 8.35, 0, "Bark"),
+			box(0.4, 0.45, 0.35, -0.05, 7.5, 0, "LampDark"),
+			box(0.4, 0.45, 0.35, 0.35, 7.9, 0, "LampDark"),
+			box(0.25, 0.4, 0.25, 0.85, 7.95, 0, "LampDark"),
+			box(0.6, 0.3, 0.6, 0.85, 7.65, 0, "LampDark"),
+			box(1.1, 0.35, 1.1, 0.85, 7.3, 0, "LampDark"),
+			box(0.8, 1.2, 0.8, 0.85, 6.1, 0, "Light"),
+			box(1.1, 0.25, 1.1, 0.85, 5.85, 0, "LampDark"),
+			box(0.15, 1.2, 0.15, 0.375, 6.1, -0.475, "LampDark"),
+			box(0.15, 1.2, 0.15, 0.375, 6.1, 0.475, "LampDark"),
+			box(0.15, 1.2, 0.15, 1.325, 6.1, -0.475, "LampDark"),
+			box(0.15, 1.2, 0.15, 1.325, 6.1, 0.475, "LampDark"),
 		},
 	}
 end
@@ -56,10 +74,12 @@ function builders.Bench()
 		Name = "Bench",
 		Tier = 1,
 		Boxes = {
-			box(0.6, 1.2, 1.6, -2, 0, 0, "Beam"),
-			box(0.6, 1.2, 1.6, 2, 0, 0, "Beam"),
-			box(5, 0.5, 1.8, 0, 1.2, 0, "Plank"),
-			box(5, 1.4, 0.4, 0, 1.7, 0.7, "Plank"),
+			box(0.7, 1.2, 1.6, -1.9, 0, 0, "ToyLeg"),
+			box(0.7, 1.2, 1.6, 1.9, 0, 0, "ToyLeg"),
+			box(5, 0.5, 1.8, 0, 1.2, 0, "ToyWood"),
+			box(0.6, 0.5, 0.4, -1.9, 1.7, 0.65, "ToyLeg"),
+			box(0.6, 0.5, 0.4, 1.9, 1.7, 0.65, "ToyLeg"),
+			box(4.8, 1.2, 0.5, 0, 2.2, 0.65, "ToyWood"),
 		},
 	}
 end
@@ -69,21 +89,60 @@ function builders.Bin()
 		Name = "Bin",
 		Tier = 1,
 		Boxes = {
-			box(1.8, 2.2, 1.8, 0, 0, 0, "Accent"),
-			box(2.1, 0.4, 2.1, 0, 2.2, 0, "Trim"),
+			box(1.6, 0.9, 1.6, 0, 0, 0, "Accent"),
+			box(1.8, 0.9, 1.8, 0, 0.9, 0, "Accent"),
+			box(2.1, 0.5, 2.1, 0, 1.8, 0, "Trim"),
+			box(1.8, 0.25, 1.8, 0, 2.3, 0, "Trim"),
 		},
 	}
 end
 
 -- Arbusto: três bolas low-poly encostadas (referência dos packs de natureza).
+-- Arbusto redondo em camadas.
 function builders.Bush()
 	return {
 		Name = "Bush",
 		Tier = 1,
 		Boxes = {
-			shaped(box(3, 2.4, 3, -1.5, 0, 0, "Leaves"), "Ball"),
-			shaped(box(3, 2.4, 3, 1.5, 0, 0.2, "Leaves2"), "Ball"),
-			shaped(box(2.2, 2, 2.2, 0, 2.4, 0.1, "Leaves"), "Ball"),
+			box(1.3, 0.4, 1.3, 0, 0, 0, "Bark"),
+			box(4, 0.3, 3.6, 0, 0.4, 0, "CanopyDark"),
+			box(5, 1.1, 4, 0, 0.7, 0, "Canopy"),
+			box(2.2, 1.1, 0.8, -1.3, 0.7, -2.4, "Canopy"),
+			box(0.5, 1.1, 2, -2.75, 0.9, 0.3, "Canopy"),
+			box(0.5, 1.1, 2.2, 2.75, 1, 0.2, "CanopyTop"),
+			box(4, 1.1, 3.4, 0.1, 1.8, 0.2, "Canopy"),
+			box(1.1, 0.8, 0.5, -1, 1.8, -1.75, "CanopyTop"),
+			box(1.4, 0.9, 0.5, 1.2, 0.9, -2.25, "CanopyTop"),
+			box(2.4, 0.9, 0.8, 0.4, 0.9, 2.4, "Canopy"),
+			box(0.5, 0.8, 1.8, -2.15, 1.8, 0.4, "Canopy"),
+			box(2.6, 1.2, 2.4, -0.1, 2.9, 0.1, "CanopyTop"),
+			box(0.7, 0.6, 1.6, 1.55, 2.9, 0.3, "Canopy"),
+		},
+	}
+end
+
+-- Arbusto largo e baixo.
+function builders.WideBush()
+	return {
+		Name = "WideBush",
+		Tier = 1,
+		Boxes = {
+			box(2.1, 0.4, 1.3, 0, 0, 0, "Bark"),
+			box(3, 0.4, 2.6, 0, 0.4, 0, "CanopyDark"),
+			box(5, 1.2, 4, 0, 0.8, 0, "CanopyDark"),
+			box(1.4, 0.6, 2.4, -3.2, 0.6, 0, "CanopyDark"),
+			box(2, 1.1, 3, -3.5, 1.2, -0.3, "CanopyTop"),
+			box(1.3, 0.6, 2, 3.15, 0.7, 0.2, "CanopyDark"),
+			box(2, 1, 2.8, 3.5, 1.3, 0.2, "Canopy"),
+			box(1.9, 0.9, 1.9, 3.2, 2.3, 0.1, "CanopyTop"),
+			box(2.6, 1, 0.9, 1.2, 1, -2.45, "CanopyTop"),
+			box(1.6, 0.8, 0.7, -1.4, 0.7, -2.35, "Canopy"),
+			box(2.6, 0.9, 0.8, 0.2, 1, 2.4, "Canopy"),
+			box(3.8, 1.2, 3, 0, 2, 0, "Canopy"),
+			box(1.6, 1.2, 1.6, -2.9, 2.3, 0.6, "Canopy"),
+			box(0.7, 0.6, 0.9, -4.05, 2.3, 0.7, "Canopy"),
+			box(2.6, 1.1, 2.2, 0, 3.2, -0.1, "CanopyTop"),
+			box(0.6, 0.5, 1.4, 1.6, 3.2, 0.3, "Canopy"),
 		},
 	}
 end
@@ -93,10 +152,11 @@ function builders.Hydrant()
 		Name = "Hydrant",
 		Tier = 1,
 		Boxes = {
-			box(1.1, 1.8, 1.1, 0, 0, 0, "Accent"),
-			box(0.35, 0.5, 0.6, -0.725, 1.1, 0, "Accent"),
-			box(0.35, 0.5, 0.6, 0.725, 1.1, 0, "Accent"),
-			box(0.8, 0.5, 0.8, 0, 1.8, 0, "Trim"),
+			box(1.1, 0.9, 1.1, 0, 0, 0, "Accent"),
+			box(1.25, 0.9, 1.25, 0, 0.9, 0, "Accent"),
+			box(1.5, 0.4, 1.5, 0, 1.8, 0, "Accent"),
+			box(0.6, 0.5, 0.3, 0, 1.1, -0.775, "Accent"),
+			box(1, 0.5, 1, 0, 2.2, 0, "Trim"),
 		},
 	}
 end
@@ -120,25 +180,39 @@ function builders.FlowerPot()
 		Name = "FlowerPot",
 		Tier = 1,
 		Boxes = {
-			shaped(box(1.6, 1.2, 1.6, 0, 0, 0, "Pot"), "Cylinder"),
-			shaped(box(2, 0.3, 2, 0, 1.2, 0, "Pot"), "Cylinder"),
-			shaped(box(1.8, 1.4, 1.8, 0, 1.5, 0, "Leaves"), "Ball"),
-			shaped(box(0.7, 0.7, 0.7, -0.4, 2.9, 0, "Flower"), "Ball"),
-			shaped(box(0.7, 0.7, 0.7, 0.4, 2.9, 0.3, "Flower2"), "Ball"),
+			box(1.4, 0.8, 1.4, 0, 0, 0, "Pot"),
+			box(1.7, 0.6, 1.7, 0, 0.8, 0, "Pot"),
+			box(2.1, 0.5, 2.1, 0, 1.4, 0, "Pot"),
+			box(1.1, 0.2, 1.1, 0, 1.9, 0, "CanopyDark"),
+			box(2.1, 1.1, 1.8, 0, 2.1, 0, "Canopy"),
+			box(0.3, 0.2, 0.3, -0.5, 3.2, -0.2, "CanopyDark"),
+			box(0.3, 0.2, 0.3, 0.5, 3.2, 0.35, "CanopyDark"),
+			box(0.65, 0.5, 0.65, -0.5, 3.4, -0.2, "Flower"),
+			box(0.65, 0.5, 0.65, 0.5, 3.4, 0.35, "Flower2"),
 		},
 	}
 end
 
 -- Cogumelos (referência da floresta low-poly): um grande e um pequeno, pé redondo e chapéu em domo.
+-- Cogumelos de blocos (cor do chapéu sorteada; o marrom tem manchas da mesma cor).
 function builders.Mushroom()
 	return {
 		Name = "Mushroom",
 		Tier = 1,
 		Boxes = {
-			shaped(box(0.9, 1.6, 0.9, 0, 0, 0, "Stem"), "Cylinder"),
-			shaped(box(3, 1.6, 3, 0, 1.6, 0, "Cap"), "Ball"),
-			shaped(box(0.5, 0.8, 0.5, 1.9, 0, 1.2, "Stem"), "Cylinder"),
-			shaped(box(1.4, 0.8, 1.4, 1.9, 0.8, 1.2, "Cap"), "Ball"),
+			box(1.2, 2.2, 1.2, 0, 0, 0, "Stem"),
+			box(3, 0.9, 3, 0, 2.2, 0, "Cap"),
+			box(2.5, 0.7, 2.5, 0, 3.1, 0, "Cap"),
+			box(0.6, 0.8, 0.6, 1.9, 0, 1.2, "Stem"),
+			box(1.4, 0.4, 1.4, 1.9, 0.8, 1.2, "Cap"),
+			box(1.1, 0.3, 1.1, 1.9, 1.2, 1.2, "Cap"),
+			box(0.9, 0.1, 0.7, 0, 3.8, 0, "CapSpot"),
+			box(0.8, 0.5, 0.1, 0.6, 2.4, -1.55, "CapSpot"),
+			box(0.5, 0.4, 0.1, -0.7, 3.3, -1.3, "CapSpot"),
+			box(0.1, 0.5, 0.8, -1.55, 2.4, 0.3, "CapSpot"),
+			box(0.1, 0.5, 0.7, 1.55, 2.4, -0.4, "CapSpot"),
+			box(0.4, 0.1, 0.4, 1.9, 1.5, 1.2, "CapSpot"),
+			box(0.4, 0.25, 0.1, 1.9, 0.85, 0.45, "CapSpot"),
 		},
 	}
 end
@@ -148,21 +222,30 @@ function builders.Mailbox()
 		Name = "Mailbox",
 		Tier = 1,
 		Boxes = {
-			box(0.4, 2, 0.4, 0, 0, 0, "Beam"),
-			box(1.2, 1, 1.8, 0, 2, 0, "Accent"),
-			box(1.2, 0.4, 1.4, 0, 3, 0, "Accent"),
+			box(0.55, 2, 0.55, 0, 0, 0, "Trunk"),
+			box(1.3, 0.9, 1.8, 0, 2, 0, "Accent"),
+			box(1.3, 0.5, 1.3, 0, 2.9, 0.25, "Accent"),
 		},
 	}
 end
 
 -- Canteiro de flores (referência da ilha: florzinhas espalhadas na grama).
+-- Três flores em cruz direto no chão (a cor das pétalas é sorteada por grupo).
 function builders.Flowers()
-	local boxes = { box(4, 0.3, 3, 0, 0, 0, "Leaves") }
-	for i, spot in { { -1.3, -0.8 }, { 0.2, 0.7 }, { 1.4, -0.6 }, { -0.4, -0.2 } } do
+	local boxes = {
+		box(0.35, 0.6, 0.35, -1.5, 0, -0.7, "CanopyDark"),
+		box(0.35, 0.4, 0.35, -1, 0, -1, "CanopyDark"),
+	}
+	-- {x, z, altura do caule, largura da flor}
+	for _, f in { { -0.7, 0.7, 1.6, 1.5 }, { 1.1, 0.2, 1.2, 1.3 }, { 0.1, -0.8, 0.7, 1.1 } } do
+		local x, z, top, petal = f[1], f[2], f[3], f[4] / 3
 		add(
 			boxes,
-			shaped(box(0.25, 1, 0.25, spot[1], 0.3, spot[2], "Leaves2"), "Cylinder"),
-			shaped(box(0.9, 0.7, 0.9, spot[1], 1.3, spot[2], if i % 2 == 0 then "Flower2" else "Flower"), "Ball")
+			box(0.4, f[3], 0.4, x, 0, z, "CanopyDark"),
+			box(petal * 3, 0.35, petal, x, top, z, "Petal"),
+			box(petal, 0.35, petal, x, top, z - petal, "Petal"),
+			box(petal, 0.35, petal, x, top, z + petal, "Petal"),
+			box(petal, 0.1, petal, x, top + 0.35, z, "PetalCore")
 		)
 	end
 	return { Name = "Flowers", Tier = 1, Boxes = boxes }
@@ -183,29 +266,150 @@ end
 
 -- Tier 2: árvores, natureza dos biomas e veículos ----------------------------------
 
--- Árvore redonda low-poly (packs de natureza): tronco redondo, copa grande em bola e bolas menores.
+-- Árvore de copas em camadas, com três galhos.
 function builders.Tree()
 	return {
 		Name = "Tree",
 		Tier = 2,
 		Boxes = {
-			shaped(box(1.4, 4.4, 1.4, 0, 0, 0, "Trunk"), "Cylinder"),
-			shaped(box(7.4, 6.4, 7.4, 0, 4.4, 0, "Leaves"), "Ball"),
-			shaped(box(3.6, 3.2, 3.6, 0.6, 10.8, -0.4, "Leaves2"), "Ball"),
-			shaped(box(3.2, 3, 3.2, 5.3, 6.4, 0.6, "Leaves2"), "Ball"),
-			shaped(box(2.8, 2.6, 2.8, -5.1, 7, -0.8, "Leaves"), "Ball"),
+			-- base e tronco
+			box(4.6, 0.9, 4.6, 0, 0, 0, "Bark"),
+			box(3, 0.8, 3, 0, 0.9, 0, "Bark"),
+			box(1.7, 10.3, 1.7, 0, 1.7, 0, "Bark"),
+			-- copa do topo
+			box(5, 0.6, 5, 0, 12, 0, "CanopyDark"),
+			box(8, 2.2, 7, 0, 12.6, 0, "Canopy"),
+			box(0.8, 1.8, 3, -4.4, 13.4, 0.5, "Canopy"),
+			box(6.2, 1.9, 5.2, -0.2, 14.8, 0.2, "CanopyTop"),
+			-- galho e copa da esquerda
+			box(2.2, 1, 1, -1.95, 6.4, 0, "Bark"),
+			box(1, 1.8, 1, -3.55, 6.4, 0, "Bark"),
+			box(3, 0.6, 3, -3.9, 8.2, -0.4, "CanopyDark"),
+			box(5.4, 1.7, 5.6, -3.8, 8.8, -0.6, "Canopy"),
+			box(3.8, 1.4, 4, -4, 10.5, -0.4, "CanopyTop"),
+			-- galho e copa da direita
+			box(2.4, 1, 1, 2.05, 7.6, 0, "Bark"),
+			box(1, 1.6, 1, 3.75, 7.6, 0, "Bark"),
+			box(4, 0.6, 3.4, 4.2, 9.2, 0.3, "CanopyDark"),
+			box(5.8, 1.7, 5.4, 4, 9.8, 0.4, "Canopy"),
+			box(3.8, 0.9, 3.8, 4.5, 11.5, 0.4, "CanopyTop"),
+			-- galhinho baixo
+			box(1.6, 0.8, 0.8, 1.65, 3.9, 0, "Bark"),
+			box(0.8, 0.9, 0.8, 2.85, 3.9, 0, "Bark"),
+			box(2.8, 1.4, 2.6, 2.9, 4.8, 0, "Canopy"),
+			box(1.9, 0.7, 1.8, 2.9, 6.2, 0, "CanopyTop"),
 		},
 	}
 end
 
+-- Árvore larga de tronco grosso.
+function builders.Oak()
+	return {
+		Name = "Oak",
+		Tier = 2,
+		Boxes = {
+			-- base e tronco
+			box(5.4, 0.9, 5, 0, 0, 0, "Bark"),
+			box(3.8, 0.8, 3.6, 0, 0.9, 0, "Bark"),
+			box(2.6, 5.4, 2.4, 0, 1.7, 0, "Bark"),
+			box(1.2, 2.6, 0.4, 0.6, 1.7, -1.4, "Bark"),
+			-- copa do topo
+			box(7, 1, 5, 0.6, 7.1, 0.4, "CanopyDark"),
+			box(8, 2.9, 5.7, 0.6, 8.1, 0.75, "Canopy"),
+			box(3.8, 1.9, 1.8, 1.2, 7, -3, "CanopyTop"),
+			box(1.2, 0.7, 1.2, 1, 6.3, -2.9, "Canopy"),
+			box(1.2, 1.8, 2.4, -4, 8.6, 1, "Canopy"),
+			box(1, 1.7, 2.4, 5.1, 8.5, 0.8, "CanopyTop"),
+			box(4.2, 1.2, 3.8, 0.2, 11, 0.6, "CanopyTop"),
+			-- galho e copa da esquerda
+			box(2.4, 1.2, 1.2, -2.5, 3.9, 0, "Bark"),
+			box(1.2, 1.5, 1.2, -4.3, 3.9, 0, "Bark"),
+			box(1.4, 0.6, 1.4, -5.9, 4.8, 0, "CanopyDark"),
+			box(4.6, 1.7, 4.4, -4.7, 5.4, -0.4, "Canopy"),
+			box(3.4, 1.2, 3, -5.1, 7.1, -0.6, "CanopyTop"),
+			-- galhinho baixo
+			box(1.2, 0.7, 0.8, -1.9, 2.6, -0.2, "Bark"),
+			box(2.2, 1.1, 2, -3.6, 2.4, -0.2, "Canopy"),
+			box(1, 0.5, 1, -3.4, 1.9, -0.2, "CanopyDark"),
+			-- galho e copa da direita
+			box(3.2, 1.1, 1.2, 2.9, 3, 0, "Bark"),
+			box(1, 1.3, 1.2, 5, 3, 0, "Bark"),
+			box(1.2, 1.1, 1.2, 2, 4.1, -0.1, "Canopy"),
+			box(4.3, 2, 4.2, 4.85, 4.3, 0, "Canopy"),
+			box(1.1, 0.7, 1.1, 6.3, 3.6, -0.4, "CanopyTop"),
+			box(3, 0.8, 2.8, 5.1, 6.3, 0.2, "CanopyTop"),
+		},
+	}
+end
+
+-- Árvore de tronco torto.
+function builders.BentTree()
+	return {
+		Name = "BentTree",
+		Tier = 2,
+		Boxes = {
+			-- base e tronco torto (em degraus)
+			box(5, 0.9, 4.6, 0, 0, 0, "Bark"),
+			box(3.6, 0.8, 3.2, 0, 0.9, 0, "Bark"),
+			box(2, 4, 1.8, -0.3, 1.7, 0, "Bark"),
+			box(1, 1.3, 0.4, 0.2, 1.7, -1.1, "Bark"),
+			-- cada trecho passa do QualityConfig.DetailVolume: menor que isso some de longe e a copa flutua
+			box(1.9, 2, 1.8, 0.2, 5.7, 0, "Bark"),
+			box(1.7, 2.2, 1.7, 1.05, 7.7, 0, "Bark"),
+			box(1.65, 2.3, 1.65, 1.625, 9.9, 0, "Bark"),
+			-- copa do topo e galho que a segura
+			box(1.6, 0.8, 0.9, 3.25, 10.4, 0, "Bark"),
+			box(0.9, 1.8, 0.9, 4.5, 10.4, 0, "Bark"),
+			box(6, 0.7, 4.6, 2.6, 12.2, 0, "CanopyDark"),
+			box(7.6, 2.4, 6.4, 2.9, 12.9, 0, "Canopy"),
+			box(5, 1.6, 0.6, 1.4, 13.2, -3.5, "Canopy"),
+			box(5.4, 1, 5, 2.7, 15.3, 0.2, "Canopy"),
+			box(3.6, 1.3, 3.4, 3, 16.3, 0.2, "CanopyTop"),
+			-- galho e copa da esquerda
+			box(1.85, 1, 1, -1.675, 6.7, 0, "Bark"),
+			box(1.1, 1.8, 1, -3.15, 6.7, 0, "Bark"),
+			box(2.2, 0.5, 2.2, -4.1, 8.5, 0, "CanopyDark"),
+			box(4.6, 1.7, 4.2, -3.7, 9, -0.2, "Canopy"),
+			box(1.6, 1.5, 2.6, -0.6, 9.2, -0.9, "Canopy"),
+			box(3.6, 1.2, 3.2, -3.6, 10.7, 0, "CanopyTop"),
+			-- galho e copa da direita
+			box(2.2, 0.8, 0.9, 2.25, 5.8, 0, "Bark"),
+			box(0.8, 1.5, 0.8, 3.75, 5.8, 0, "Bark"),
+			box(0.9, 0.7, 0.9, 2.7, 6.6, 0, "CanopyTop"),
+			box(1, 0.5, 1, 4.8, 6.8, 0, "CanopyDark"),
+			box(3, 1.3, 2.6, 4.2, 7.3, 0, "Canopy"),
+			box(1.8, 0.8, 1.6, 4.1, 8.6, 0, "CanopyTop"),
+			-- galhinho alto
+			box(1.3, 0.6, 0.7, -1.55, 13, 0, "Bark"),
+			box(0.7, 1.2, 0.7, -2.55, 13, 0, "Bark"),
+			box(1.2, 1, 1.2, -3.5, 13.1, -0.3, "Canopy"),
+			box(1.4, 1.1, 1.3, -2.4, 14.2, 0, "CanopyTop"),
+		},
+	}
+end
+
+-- Pinheiro alto em camadas.
 function builders.Pine()
-	local boxes = { box(1.2, 2.4, 1.2, 0, 0, 0, "Trunk") }
-	local widths = { 6, 4.6, 3.4, 2.2 }
-	for i, wdt in widths do
-		table.insert(boxes, box(wdt, 2, wdt, 0, 2.4 + (i - 1) * 2, 0, if i % 2 == 0 then "Leaves2" else "Pine"))
-	end
-	table.insert(boxes, box(1, 1.2, 1, 0, 10.4, 0, "Pine"))
-	return { Name = "Pine", Tier = 2, Boxes = boxes }
+	return {
+		Name = "Pine",
+		Tier = 2,
+		Boxes = {
+			-- base e tronco
+			box(3.6, 0.9, 3.6, 0, 0, 0, "Bark"),
+			box(2.4, 0.6, 2.4, 0, 0.9, 0, "Bark"),
+			box(1.4, 3.9, 1.4, 0, 1.5, 0, "Bark"),
+			-- camadas
+			box(4.2, 0.4, 4.2, 0, 5.4, 0, "CanopyDark"),
+			box(6, 1.9, 6, 0, 5.8, 0, "Canopy"),
+			box(4.2, 0.3, 4.2, 0, 7.7, 0, "CanopyDark"),
+			box(5.1, 1.8, 5.1, 0, 8, 0, "Canopy"),
+			box(4.3, 2.1, 4.3, 0, 9.8, 0, "CanopyTop"),
+			box(2.8, 0.3, 2.8, 0, 11.9, 0, "CanopyDark"),
+			box(3.3, 1.7, 3.3, 0, 12.2, 0, "Canopy"),
+			box(2.5, 1.7, 2.5, 0, 13.9, 0, "CanopyTop"),
+			box(1.5, 1.7, 1.5, 0, 15.6, 0, "Canopy"),
+		},
+	}
 end
 
 -- Pinheiro com neve nas camadas (referência da neve).
@@ -220,15 +424,64 @@ function builders.SnowPine()
 	return { Name = "SnowPine", Tier = 2, Boxes = boxes }
 end
 
+-- Pedra alta com pedras menores em volta.
 function builders.Rock()
 	return {
 		Name = "Rock",
 		Tier = 2,
-		-- pedras facetadas (bolas low-poly achatadas), como nos packs de natureza
 		Boxes = {
-			shaped(box(4.4, 2.6, 3.6, 0, 0, 0, "Rock"), "Ball"),
-			shaped(box(2.4, 1.6, 2.2, -0.4, 2.6, 0.1, "Rock"), "Ball"),
-			shaped(box(2, 1.4, 1.6, 3.2, 0, 1.2, "Rock"), "Ball"),
+			box(4.6, 2.2, 3.6, 0.3, 0, 0.4, "Rock"),
+			box(3.8, 2.2, 3, 0.3, 2.2, 0.4, "Rock"),
+			box(2.1, 1.1, 2.4, -3.05, 0, -0.3, "Rock"),
+			box(1.8, 0.7, 2, -2.9, 1.1, -0.3, "Rock"),
+			box(1.3, 1, 1, 0.1, 0, -1.9, "Rock"),
+			box(1.4, 2, 2, 3.3, 0, 0.9, "Rock"),
+			box(0.7, 0.5, 0.1, -0.8, 3.3, -1.15, "RockDark"),
+			box(0.8, 0.6, 0.1, 1.2, 3.5, -1.15, "RockDark"),
+			box(0.9, 0.5, 0.1, 1.8, 0.7, -1.45, "RockDark"),
+			box(0.6, 0.5, 0.1, -3.2, 0.3, -1.55, "RockDark"),
+			box(0.1, 0.6, 0.8, 2.25, 3, 0.6, "RockDark"),
+		},
+	}
+end
+
+-- Pedra baixa e larga.
+function builders.FlatRock()
+	return {
+		Name = "FlatRock",
+		Tier = 2,
+		Boxes = {
+			box(4.6, 1.4, 3, 0.2, 0, 0.5, "Rock"),
+			box(4, 1.1, 2.4, 0.2, 1.4, 0.5, "Rock"),
+			box(2.2, 1.5, 2.2, -3.2, 0, -0.2, "Rock"),
+			box(3, 1.3, 1.4, 1.6, 0, -1.7, "Rock"),
+			box(1.4, 1.8, 2.2, 3.2, 0, 0.6, "Rock"),
+			box(0.8, 0.5, 0.1, 2.2, 0.3, -2.45, "RockDark"),
+			box(0.6, 0.4, 0.1, -3, 0.7, -1.35, "RockDark"),
+			box(0.7, 0.4, 0.1, 0.9, 1.8, -0.75, "RockDark"),
+			box(0.6, 0.5, 0.1, -0.9, 0.2, -1.05, "RockDark"),
+		},
+	}
+end
+
+-- Pedra em torre.
+function builders.TallRock()
+	return {
+		Name = "TallRock",
+		Tier = 2,
+		Boxes = {
+			box(3, 3.4, 3, -0.3, 0, 0.3, "Rock"),
+			box(2.6, 3, 2.6, -0.3, 3.4, 0.3, "Rock"),
+			box(1.8, 2.6, 2.4, 2.1, 0, 0.2, "Rock"),
+			box(1.5, 1.8, 2, 1.95, 2.6, 0.2, "Rock"),
+			box(1.9, 2.4, 2.2, -2.75, 0, -0.5, "Rock"),
+			box(1.5, 0.6, 1.8, -2.65, 2.4, -0.5, "Rock"),
+			box(1.1, 0.9, 0.8, -0.6, 0, -1.6, "Rock"),
+			box(1.1, 1.4, 1.4, 3.55, 0, 0.2, "Rock"),
+			box(0.5, 0.5, 0.1, -1.1, 5.4, -1.05, "RockDark"),
+			box(0.5, 0.6, 0.1, -1, 4.2, -1.05, "RockDark"),
+			box(0.6, 0.5, 0.1, 2, 3.3, -0.85, "RockDark"),
+			box(0.6, 0.6, 0.1, -2.9, 1.2, -1.65, "RockDark"),
 		},
 	}
 end
@@ -330,18 +583,29 @@ function builders.IceCrystal()
 end
 
 -- Guarda-sol listrado com toalha (referência da ilha).
+-- Guarda-sol listrado em degraus: cantos coloridos e uma cruz branca em cada camada.
 function builders.Umbrella()
-	return {
-		Name = "Umbrella",
-		Tier = 2,
-		Boxes = {
-			box(0.5, 6, 0.5, 0, 0, 0, "Metal"),
-			box(6.4, 0.5, 6.4, 0, 6, 0, "Awning"),
-			box(4.4, 0.5, 4.4, 0, 6.5, 0, "Stripe"),
-			box(2.2, 0.5, 2.2, 0, 7, 0, "Awning"),
-			box(2.4, 0.2, 4.4, 1.8, 0, 0.6, "Towel"),
-		},
+	local boxes = {
+		box(2, 0.3, 2, 0, 0, 0, "Trunk"),
+		box(0.6, 4.9, 0.6, 0, 0.3, 0, "Trunk"),
 	}
+	local y = 5.2
+	for _, layer in { { 6.4, 0.6 }, { 4.8, 0.5 }, { 3.2, 0.5 } } do
+		local w, h = layer[1], layer[2]
+		local mid = w * 0.36
+		local corner = (w - mid) / 2
+		local off = (mid + corner) / 2
+		table.insert(boxes, box(w, h, mid, 0, y, 0, "Stripe"))
+		for _, sz in { -1, 1 } do
+			table.insert(boxes, box(mid, h, corner, 0, y, sz * off, "Stripe"))
+			for _, sx in { -1, 1 } do
+				table.insert(boxes, box(corner, h, corner, sx * off, y, sz * off, "Parasol"))
+			end
+		end
+		y += h
+	end
+	add(boxes, box(1.8, 0.5, 1.8, 0, y, 0, "Parasol"), box(1, 0.1, 1, 0, y + 0.5, 0, "Stripe"))
+	return { Name = "Umbrella", Tier = 2, Boxes = boxes }
 end
 
 -- Pilar de rocha em camadas tortas (referência da savana).
@@ -358,17 +622,45 @@ function builders.RockPillar()
 	}
 end
 
+-- Carro de blocos da referência: capô e teto em degraus, para-brisa inclinado e para-lamas sobre rodas quadradas.
 function builders.Car()
 	local boxes = {
-		box(5, 1.6, 10, 0, 0.8, 0, "Body"),
-		box(4.6, 0.4, 9.4, 0, 2.4, 0, "Body"),
-		box(4.2, 1.6, 5, 0, 2.8, 0.6, "Glass"),
-		box(4.4, 0.6, 5.2, 0, 4.4, 0.6, "Body"),
-		box(1.2, 0.6, 0.3, -1.6, 1.4, -5.15, "Light"),
-		box(1.2, 0.6, 0.3, 1.6, 1.4, -5.15, "Light"),
-		box(4.6, 0.5, 0.4, 0, 0.8, -5.2, "Metal"),
+		box(4.6, 1.5, 10, 0, 0.7, 0, "Body"),
+		box(4.6, 0.6, 9.2, 0, 2.2, 0.1, "Body"),
+		box(3.4, 0.4, 2.6, 0, 2.8, -2.9, "Body"),
+		-- cabine
+		shaped(box(4, 1.8, 0.8, 0, 2.8, -1.1, "Glass"), "Wedge", 0),
+		box(3.6, 1.8, 4.2, 0, 2.8, 1.4, "Glass"),
+		box(4.6, 0.6, 5, 0, 4.6, 1.1, "Body"),
+		box(4, 0.4, 4.2, 0, 5.2, 1.1, "Body"),
+		-- frente
+		box(1.5, 0.3, 0.2, 0, 1.25, -5.1, "Metal"),
+		box(1.5, 0.3, 0.2, 0, 1.75, -5.1, "Metal"),
+		box(2.6, 0.6, 0.4, 0, 0.55, -5.2, "Metal"),
+		-- traseira
+		box(4.6, 0.6, 0.4, 0, 0.55, 5.2, "Metal"),
 	}
-	wheels(boxes, { -2.9, 2.9 }, { -3.2, 3.2 }, 1.8)
+	for _, sx in { -1, 1 } do
+		add(
+			boxes,
+			box(1.1, 0.8, 0.2, 1.5 * sx, 1.25, -5.1, "Light"),
+			box(1.2, 0.8, 0.6, 1.9 * sx, 0.45, -5.3, "Metal"),
+			box(0.9, 0.5, 0.2, 1.6 * sx, 1.4, 5.1, "ToyRed"),
+			box(0.2, 1.8, 0.8, 1.9 * sx, 2.8, -0.3, "Trim"),
+			box(0.2, 0.3, 2, 1.9 * sx, 2.8, 1.1, "Trim"),
+			box(0.2, 1.8, 1.4, 1.9 * sx, 2.8, 2.8, "Trim"),
+			box(0.6, 0.6, 3.2, 2.6 * sx, 0.9, 0, "Body")
+		)
+		for _, z in { -3.1, 3.1 } do
+			add(
+				boxes,
+				box(1, 2.2, 2.2, 2.8 * sx, 0, z, "Tire"),
+				box(0.15, 0.9, 0.9, 3.375 * sx, 0.65, z, "Metal"),
+				box(0.8, 0.5, 2.8, 2.7 * sx, 2.2, z, "Body"),
+				box(0.8, 1.2, 0.4, 2.7 * sx, 1, z - 1.3, "Body")
+			)
+		end
+	end
 	return { Name = "Car", Tier = 2, Boxes = boxes }
 end
 
@@ -525,7 +817,7 @@ function builders.GasStation()
 		table.insert(boxes, box(0.9, 8.8, 0.9, x, 0.4, -3, "Metal"))
 	end
 	for _, x in { -4, 0 } do
-		table.insert(boxes, box(1.4, 2.6, 1, x, 0.4, -3, "Accent"))
+		Voxel.fuelPump(boxes, x, 0.4, -3)
 	end
 	return { Name = "GasStation", Tier = 4, Boxes = boxes }
 end
