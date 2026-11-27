@@ -381,6 +381,16 @@ function CityBuildings.Cafe(V)
 	return { Name = "Cafe", Tier = 4, Boxes = boxes }
 end
 
+-- Mesmos blocos do Cafe com outra mesh (MeshModelsConfig): floricultura e mercadinho (o Cafe virou a padaria).
+-- Nomes começando com "Cafe" ficam juntos no sorteio; com a mesma soma de pesos a cidade sai igual.
+for _, name in { "CafeFlowers", "CafeGrocery" } do
+	CityBuildings[name] = function(V)
+		local template = CityBuildings.Cafe(V)
+		template.Name = name
+		return template
+	end
+end
+
 function CityBuildings.CornerStore(V)
 	local box = V.box
 	return {
@@ -398,19 +408,37 @@ function CityBuildings.CornerStore(V)
 	}
 end
 
+-- Casa de telhado azul-marinho (mesh: assets/blender/build_houses.py, GableHouse.glb). Blocos = reserva sem mesh e
+-- caixas da destruição: dois andares, corpo central com porta e sacada, telhado em degraus e chaminé.
 function CityBuildings.Villa(V)
 	local box = V.box
 	local boxes = {
-		box(14, 5, 10, 0, 0, 3, "WallWhite"),
-		box(15, 0.6, 11, 0, 5, 3, "Trim"),
-		box(8, 4, 8, -3, 5.6, 4, "WallWhite"),
-		box(9, 0.6, 9, -3, 9.6, 4, "Roof"),
-		box(2.4, 3.6, 0.4, -4, 0, -2.2, "Door"),
-		box(6, 2.6, 0.4, 3, 1, -2.2, "Glass"),
-		box(4, 2, 0.4, -3, 6.6, -0.2, "Glass"),
-		box(10, 0.4, 5, 0, 0, -5.5, "Stone"),
-		box(8, 0.1, 3, 0, 0.4, -5.5, "Pool"),
+		box(13.5, 0.9, 8.3, 0, 0, 0.1, "RoofNavy"),
+		box(13.2, 3.85, 8, 0, 0.9, 0.1, "HouseWall"),
+		box(13.32, 0.22, 8, 0, 4.75, 0.1, "HouseWall"),
+		box(13.2, 3.33, 8, 0, 4.97, 0.1, "HouseWall"),
+		box(14.1, 0.7, 10.2, 0, 8.3, 0.1, "RoofNavy"),
+		box(14.1, 0.7, 7.6, 0, 9, 0.1, "RoofNavy"),
+		box(14.1, 0.7, 5, 0, 9.7, 0.1, "RoofNavy"),
+		box(14.1, 0.7, 2.4, 0, 10.4, 0.1, "RoofNavy"),
+		box(5.1, 7.4, 0.45, 0, 0.9, -4.125, "HouseWall"),
+		box(1.55, 3, 0.2, 0, 0.9, -4.45, "TowerBlue"),
+		box(5, 0.45, 1.3, 0, 4.75, -5, "RoofNavy"),
+		box(4.6, 0.85, 0.2, 0, 5.2, -5.55, "RoofNavy"),
+		box(2.6, 2.3, 0.2, 0, 5.8, -4.45, "TruckCab"),
+		box(2.2, 0.32, 0.9, 0, 0, -4.8, "PlaneFlap"),
+		box(1.25, 1.8, 1.25, 5, 10.4, 1.95, "ToyLeg"),
+		box(1.7, 0.6, 1.7, 5, 12.2, 1.95, "PlaneFlap"),
 	}
+	for _, m in { -1, 1 } do
+		V.add(
+			boxes,
+			box(2.6, 1.7, 0.2, m * 4.55, 2.05, -4, "TruckCab"),
+			box(2.6, 1.7, 0.2, m * 4.55, 5.6, -4, "TruckCab"),
+			box(0.95, 0.8, 0.95, m * 1.6, 0, -4.9, "Steel"),
+			box(0.8, 0.7, 0.8, m * 1.6, 0.8, -4.9, "Leaves")
+		)
+	end
 	return { Name = "Villa", Tier = 4, Boxes = boxes }
 end
 

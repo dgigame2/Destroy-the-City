@@ -41,18 +41,34 @@ local function common(nature: Mix, yard: Mix, small: Mix, market: Mix): { [strin
 	parkNature.Bench = 1
 	return {
 		-- casinhas: começo da cidade
-		Suburb = spec(
-			"Lot",
-			{ Bungalow = 4, House = 4, Cottage = 3, BigHouse = 2, Townhouse = 1.5, Shop = 0.6, Car = 0.6 },
-			yard,
-			0.25
-		),
+		-- Casas grandes (Townhouse, BigHouse, Villa) divididas em ~1/3 cada e com quase o mesmo total de antes nas
+		-- 9 cidades reais (3 mapas x 3 escalas; pesos achados por busca). A Villa é a menor e cabe em mais lugares.
+		Suburb = spec("Lot", {
+			Bungalow = 4,
+			House = 4,
+			Cottage = 3,
+			BigHouse = 0.83,
+			Townhouse = 0.45,
+			Villa = 0.33,
+			Shop = 0.132,
+			ShopBakery = 0.192,
+			ShopFlowers = 0.276,
+			Car = 0.6,
+		}, yard, 0.25),
 		-- ruas comerciais
 		Commercial = spec("Lot", {
-			Shop = 3,
-			Cafe = 2.5,
+			-- lojinhas de toldo: Shop/Cafe (cada grupo soma o peso antigo, a cidade sai igual) divididos em mercadinho,
+			-- padaria e floricultura pela conta nas 9 cidades reais: cidade 1 = 26/26/26 (MeshModelsConfig)
+			Shop = 0.66,
+			ShopBakery = 0.96,
+			ShopFlowers = 1.38,
+			Cafe = 0.875,
+			CafeFlowers = 0.6,
+			CafeGrocery = 1.025,
 			CornerStore = 2.5,
-			Townhouse = 1.5,
+			Townhouse = 0.42,
+			BigHouse = 0.64,
+			Villa = 0.30,
 			Supermarket = 0.8,
 			Bank = 0.8,
 			Office = 1.2,
@@ -65,11 +81,17 @@ local function common(nature: Mix, yard: Mix, small: Mix, market: Mix): { [strin
 		Apartments = spec("Lot", {
 			Apartment = 3,
 			ApartmentTall = 2,
-			Townhouse = 2,
+			Townhouse = 0.67,
+			BigHouse = 0.57,
+			Villa = 0.23,
 			Office = 1,
 			Hospital = 0.3,
-			Shop = 1,
-			Cafe = 1,
+			Shop = 0.22,
+			ShopBakery = 0.32,
+			ShopFlowers = 0.46,
+			Cafe = 0.35,
+			CafeFlowers = 0.24,
+			CafeGrocery = 0.41,
 		}, nature, 0.18),
 		-- centro: torres
 		Downtown = spec("Lot", {
@@ -194,6 +216,8 @@ local function backs(houseYard: Mix): { [string]: any }
 	local office = table.freeze({ Items = { Dumpster = 1, PowerBox = 1, BikeRack = 0.6 }, Count = { 1, 2 }, Depth = 3 })
 	local result: { [string]: any } = {
 		Shop = shop,
+		ShopBakery = shop,
+		ShopFlowers = shop,
 		CornerStore = shop,
 		SurfShop = shop,
 		Cafe = table.freeze({
@@ -228,6 +252,8 @@ local function backs(houseYard: Mix): { [string]: any }
 	for _, name in { "Bungalow", "House", "Cottage", "BigHouse", "Townhouse", "Villa", "BeachHouse", "SnowCabin" } do
 		result[name] = house
 	end
+	result.CafeFlowers = result.Cafe
+	result.CafeGrocery = result.Cafe
 	return table.freeze(result)
 end
 
@@ -390,7 +416,11 @@ local GARDEN_PLANNER = table.freeze({
 	EntrancePots = 0.3,
 	Storefronts = table.freeze({
 		Shop = true,
+		ShopBakery = true,
+		ShopFlowers = true,
 		Cafe = true,
+		CafeFlowers = true,
+		CafeGrocery = true,
 		CornerStore = true,
 		Supermarket = true,
 		Bank = true,
@@ -710,18 +740,26 @@ return table.freeze({
 			-- frente de praia: casas de praia, vilas e hotéis
 			Resort = spec("Lot", {
 				BeachHouse = 4,
-				Villa = 3,
+				Villa = 1.29,
+				Townhouse = 0.93,
+				BigHouse = 0.80,
 				SurfShop = 1.5,
 				Hotel = 1.5,
-				Cafe = 1,
+				Cafe = 0.35,
+				CafeFlowers = 0.24,
+				CafeGrocery = 0.41,
 				IceCreamStand = 1,
 			}, BEACH_NATURE, 0.25),
-			Suburb = spec(
-				"Lot",
-				{ BeachHouse = 3, Bungalow = 3, House = 3, Villa = 1.5, Cottage = 1, Townhouse = 1, Car = 0.6 },
-				{ Palm = 4, Bush = 2, Flowers = 2, Hedge = 2 },
-				0.3
-			),
+			Suburb = spec("Lot", {
+				BeachHouse = 3,
+				Bungalow = 3,
+				House = 3,
+				Villa = 1.09,
+				Cottage = 1,
+				Townhouse = 1.16,
+				BigHouse = 0.77,
+				Car = 0.6,
+			}, { Palm = 4, Bush = 2, Flowers = 2, Hedge = 2 }, 0.3),
 		},
 		{ Umbrella = 4, Towel = 1.2, BeachChair = 2, Cooler = 1, Palm = 2, Lifeguard = 0.6, IceCreamStand = 0.4 },
 		BEACH_PLANNER
@@ -732,13 +770,32 @@ return table.freeze({
 		{ Snowman = 0.6, SnowPile = 1.5, IceBlock = 1, Bush = 2, Bench = 2, FlowerPot = 1, Hedge = 2, PicnicTable = 1 },
 		{ Igloo = 2, FoodCart = 2, IceCrystal = 2, SnowPine = 3, Car = 1.5, BusStop = 1 },
 		{
-			Suburb = spec(
+			Suburb = spec("Lot", {
+				SnowCabin = 4,
+				Bungalow = 3,
+				House = 2,
+				Cottage = 2,
+				Igloo = 1.5,
+				Townhouse = 0.64,
+				BigHouse = 0.65,
+				Villa = 0.57,
+				Car = 0.6,
+			}, { SnowPine = 4, Snowman = 0.5, SnowPile = 1.5, Bush = 1, Hedge = 1 }, 0.3),
+			Lodge = spec(
 				"Lot",
-				{ SnowCabin = 4, Bungalow = 3, House = 2, Cottage = 2, Igloo = 1.5, Townhouse = 1, Car = 0.6 },
-				{ SnowPine = 4, Snowman = 0.5, SnowPile = 1.5, Bush = 1, Hedge = 1 },
+				{
+					SkiLodge = 2,
+					SnowCabin = 3,
+					Cafe = 0.35,
+					CafeFlowers = 0.24,
+					CafeGrocery = 0.41,
+					Shop = 0.22,
+					ShopBakery = 0.32,
+					ShopFlowers = 0.46,
+				},
+				FROST_NATURE,
 				0.3
 			),
-			Lodge = spec("Lot", { SkiLodge = 2, SnowCabin = 3, Cafe = 1, Shop = 1 }, FROST_NATURE, 0.3),
 		},
 		{ SnowPile = 2, IceCrystal = 2, IceBlock = 1, Snowman = 0.6 },
 		FROST_PLANNER

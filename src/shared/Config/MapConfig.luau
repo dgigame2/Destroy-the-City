@@ -127,6 +127,13 @@ local BASE: Palette = {
 	HouseTrim = { { 238, 206, 170 } },
 	RoofOrange = { { 238, 128, 28 } },
 	RoofTeal = { { 24, 166, 156 } },
+	-- casas grandes do Blender (Townhouse, Villa = GableHouse, BigHouse = Mansion)
+	RoofBrown = { { 150, 74, 46 } },
+	RoofNavy = { { 70, 82, 148 } },
+	RoofClay = { { 198, 84, 56 } },
+	-- floricultura (CornerFlowers)
+	FlowerPink = { { 236, 84, 150 } },
+	PinkLight = { { 250, 196, 218 } },
 	Body = { { 40, 200, 110 }, { 236, 64, 64 }, { 50, 130, 245 }, { 252, 200, 50 }, { 245, 245, 245 } },
 	Tire = { { 40, 40, 46 } },
 	Light = { { 255, 236, 160 } },

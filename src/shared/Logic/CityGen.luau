@@ -1559,7 +1559,8 @@ local function fillSidewalksPlanned(layout: Layout, templates: { [string]: Templ
 				local cx, cz = CityGen.cellToWorld(grid, cfg.CellSize, x + 0.5, z + 0.5)
 				local far = capAt(layout, i) >= cfg.FarLampCap
 				if not Placement.near(idx, lampGroup, cx, cz, if far then lampSpacing * 2 else lampSpacing) then
-					if tryPlace(layout, templates, rng, cfg, "Lamp", x, z, 0, "Walk", nil) then
+					-- braço da luminária (frente do modelo) por cima da rua
+					if tryPlace(layout, templates, rng, cfg, "Lamp", x, z, faceRoad, "Walk", nil) then
 						continue
 					end
 				end

@@ -38,33 +38,21 @@ local builders: { [string]: () -> any } = {}
 
 -- Tier 1: props ------------------------------------------------------------
 
--- Poste com lampião. Poste e braço deslocados para caber em 1 célula (3 studs): mais largo não cabe na calçada.
+-- Poste de rua (mesh: assets/blender/build_lamp.py). Poste no fundo da célula e braço para a frente (-Z, rua).
+-- Os blocos são a reserva sem mesh: a luminária fica mais curta para caber em 1 célula (3 studs).
 function builders.Lamp()
 	return {
 		Name = "Lamp",
 		Tier = 1,
 		Boxes = {
-			box(1.7, 0.6, 1.7, -0.6, 0, 0, "ToyMetal"),
-			box(1.4, 1.7, 1.4, -0.6, 0.6, 0, "ToyMetal"),
-			box(1, 0.5, 1, -0.6, 2.3, 0, "ToyMetal"),
-			box(0.6, 0.6, 0.1, -0.6, 1.1, -0.75, "RockDark"),
-			box(0.6, 0.6, 0.1, -0.6, 1.1, 0.75, "RockDark"),
-			box(0.7, 5.4, 0.7, -0.6, 2.8, 0, "Bark"),
-			box(1, 0.8, 1, -0.6, 8.2, 0, "LampDark"),
-			box(0.5, 0.3, 0.5, -0.6, 9, 0, "LampDark"),
-			box(0.9, 0.6, 0.9, -0.6, 9.3, 0, "Bark"),
-			box(1.5, 0.5, 0.5, 0.65, 8.35, 0, "Bark"),
-			box(0.4, 0.45, 0.35, -0.05, 7.5, 0, "LampDark"),
-			box(0.4, 0.45, 0.35, 0.35, 7.9, 0, "LampDark"),
-			box(0.25, 0.4, 0.25, 0.85, 7.95, 0, "LampDark"),
-			box(0.6, 0.3, 0.6, 0.85, 7.65, 0, "LampDark"),
-			box(1.1, 0.35, 1.1, 0.85, 7.3, 0, "LampDark"),
-			box(0.8, 1.2, 0.8, 0.85, 6.1, 0, "Light"),
-			box(1.1, 0.25, 1.1, 0.85, 5.85, 0, "LampDark"),
-			box(0.15, 1.2, 0.15, 0.375, 6.1, -0.475, "LampDark"),
-			box(0.15, 1.2, 0.15, 0.375, 6.1, 0.475, "LampDark"),
-			box(0.15, 1.2, 0.15, 1.325, 6.1, -0.475, "LampDark"),
-			box(0.15, 1.2, 0.15, 1.325, 6.1, 0.475, "LampDark"),
+			box(1.4, 0.3, 1.4, 0, 0, 0.75, "Metal"),
+			box(0.9, 1.35, 0.9, 0, 0.3, 0.75, "PlaneFlap"),
+			box(0.6, 0.25, 0.6, 0, 1.65, 0.75, "Metal"),
+			box(0.4, 5.3, 0.4, 0, 1.9, 0.75, "PlaneFlap"),
+			box(0.4, 0.4, 1.4, 0, 7.2, 0.25, "PlaneFlap"),
+			box(0.46, 0.46, 0.3, 0, 7.17, -0.6, "Metal"),
+			box(0.9, 0.42, 0.75, 0, 7.2, -1.125, "PlaneFlap"),
+			box(0.72, 0.18, 0.6, 0, 7.02, -1.125, "Light"),
 		},
 	}
 end
@@ -753,29 +741,38 @@ end
 
 -- Tier 4: sobrado, loja, ônibus, posto ----------------------------------------------
 
+-- Casarão (mesh: assets/blender/build_houses.py, Mansion.glb). Blocos = reserva sem mesh e caixas da destruição:
+-- alas brancas com cinta vermelha, bloco central vermelho com marquise, telhados em degraus.
 function builders.BigHouse()
-	-- sobrado moderno (referência da casa branca de telhado cinza): base, faixa entre os andares, varanda de
-	-- vidro em cima, garagem, telhado de duas águas com beiral e chaminé encostada na lateral
-	local w, d = 16, 12
 	local boxes = {
-		box(w + 0.6, 0.8, d + 0.6, 0, 0, 0, "Stone"),
-		box(w, 6.4, d, 0, 0.8, 0, "Wall"),
-		box(w + 0.4, 0.5, d + 0.4, 0, 7.2, 0, "Trim"),
-		box(w, 5.6, d, 0, 7.7, 0, "Wall"),
-		box(2.4, 4.4, 0.4, -4.5, 0.8, -d / 2 - 0.2, "Door"),
-		box(4, 0.4, 1.6, -4.5, 5.6, -d / 2 - 0.8, "Trim"),
-		box(6, 4.6, 0.4, 3.5, 0.8, -d / 2 - 0.2, "Garage"),
-		-- varanda do 2º andar: piso e guarda-corpo de vidro
-		box(6, 0.4, 1.4, -4, 7.7, -d / 2 - 0.9, "Trim"),
-		box(6, 1.2, 0.2, -4, 8.1, -d / 2 - 1.5, "Glass"),
-		box(5, 3.2, 0.4, -4, 9, -d / 2 - 0.2, "Glass"),
-		box(3, 2.6, 0.4, 4, 9.4, -d / 2 - 0.2, "Window"),
-		box(1.4, 20.5, 1.6, w / 2 + 1.1, 0, 2.5, "Chimney"),
+		box(17.6, 1, 8.4, 0, 0, 0.4, "Metal"),
+		box(7, 1, 0.7, 0, 0, -4.15, "Metal"),
+		box(6.6, 9, 8.4, 0, 1, -0.3, "ToyRed"),
+		box(8.2, 0.6, 10, 0, 10, -0.3, "RoofClay"),
+		box(5.6, 1.9, 7, 0, 10.6, -0.3, "RoofClay"),
+		box(3.4, 0.35, 4.6, 0, 12.5, -0.3, "RoofClay"),
+		box(6, 0.7, 1.3, 0, 5, -5.15, "HouseWall"),
+		box(1.75, 3.2, 0.2, 0, 1, -4.6, "TowerBlue"),
+		box(3.4, 2, 0.2, 0, 6.55, -4.6, "TruckCab"),
+		box(3.8, 0.42, 1.25, 0, 0, -5.125, "PlaneFlap"),
+		box(3.1, 0.42, 0.75, 0, 0.42, -4.875, "PlaneFlap"),
 	}
-	frontWindows(boxes, d, { -1.2 }, 2.8, 2, 2.2)
-	sideWindows(boxes, w, { -3, 3 }, 3, 2.4, 2.4)
-	sideWindows(boxes, w, { -3, 3 }, 9.4, 2.4, 2.4)
-	gable(boxes, w, d, 0, 0, 13.3, 5.5, 0.4, 0.8, "Roof")
+	for _, m in { -1, 1 } do
+		local x = m * 5.95
+		add(
+			boxes,
+			box(5.3, 4, 8, x, 1, 0.4, "HouseWall"),
+			box(5.8, 0.8, 9, m * 6.2, 5, 0.4, "ToyRed"),
+			box(5.3, 3.5, 8, x, 5.8, 0.4, "HouseWall"),
+			box(6, 0.55, 9.6, m * 6.3, 9.3, 0.4, "RoofClay"),
+			box(4, 1.9, 6.4, m * 6.2, 9.85, 0.4, "RoofClay"),
+			box(3.4, 2.1, 0.2, x, 2, -3.7, "TruckCab"),
+			box(2.6, 1.5, 0.2, x, 6.6, -3.7, "TruckCab"),
+			box(3.7, 1, 1, x, 0, -4.35, "Metal"),
+			box(3.95, 0.55, 1.15, x, 1, -4.35, "HouseWall"),
+			box(3.5, 0.5, 0.8, x, 1.55, -4.35, "Leaves")
+		)
+	end
 	return { Name = "BigHouse", Tier = 4, Boxes = boxes }
 end
 
@@ -792,6 +789,16 @@ function builders.Shop()
 	-- toldo listrado reto sobre a vitrine
 	stripes(boxes, -9, 9, 2, 6, -d / 2 - 1.4, 2.8)
 	return { Name = "Shop", Tier = 4, Boxes = boxes }
+end
+
+-- Mesmos blocos da Shop com outra mesh (MeshModelsConfig): padaria e floricultura. Os nomes começam com "Shop" para
+-- ficarem juntos no sorteio (Rng.weighted ordena os nomes); com a mesma soma de pesos a cidade sai igual.
+for _, name in { "ShopBakery", "ShopFlowers" } do
+	builders[name] = function()
+		local template = builders.Shop()
+		template.Name = name
+		return template
+	end
 end
 
 function builders.Bus()

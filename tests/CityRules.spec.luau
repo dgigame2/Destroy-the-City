@@ -162,6 +162,21 @@ return function(t)
 			end
 		end)
 
+		t.test(`{map.Id}: poste da calçada com o braço (frente) por cima da rua`, function()
+			local FRONT = { [0] = { 0, -1 }, [90] = { -1, 0 }, [180] = { 0, 1 }, [270] = { 1, 0 } }
+			local count = 0
+			for _, p in layout.Placements do
+				local i = at(p.Cells[1], p.Cells[2])
+				if p.Template == "Lamp" and i and grid.Kind[i] == "Walk" then
+					local f = FRONT[p.Rotation]
+					local j = at(p.Cells[1] + f[1], p.Cells[2] + f[2])
+					t.truthy(j ~= nil and grid.Kind[j] == "Road")
+					count += 1
+				end
+			end
+			t.truthy(count > 0)
+		end)
+
 		t.test(`{map.Id}: nada em cima da calçada na frente das portas`, function()
 			for _, p in layout.Placements do
 				for x = p.Cells[1], p.Cells[3] - 1 do
